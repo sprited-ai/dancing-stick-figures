@@ -1,0 +1,160 @@
+# stickdance-128 v1 prompt list. format: group<TAB>prompt
+# groups marked * are held out (test only)
+idle	A person stands still and breathes.
+idle	A person stands idle, shifting weight from foot to foot.
+idle	A person stands with hands on hips.
+idle	A person stands and looks around.
+idle	A person stands and stretches their arms overhead.
+idle	A person stands and scratches their head.
+idle	A person stands and crosses their arms.
+idle	A person stands and taps their foot.
+idle	A person stands and shrugs.
+idle	A person stands and nods.
+locomotion	A person walks forward.
+locomotion	A person walks forward slowly.
+locomotion	A person walks briskly.
+locomotion	A person walks in a circle.
+locomotion	A person walks backwards.
+locomotion	A person walks sideways to the left.
+locomotion	A person walks sideways to the right.
+locomotion	A person jogs forward.
+locomotion	A person runs forward.
+locomotion	A person sprints.
+locomotion	A person tiptoes forward.
+locomotion	A person marches in place.
+locomotion	A person walks with a limp.
+locomotion	A person walks like a zombie.
+locomotion	A person walks proudly with a swagger.
+locomotion	A person walks while looking at their phone.
+locomotion	A person walks and turns around.
+locomotion	A person walks up an imaginary staircase.
+locomotion	A person crawls forward on hands and knees.
+locomotion	A person crouches and walks forward.
+locomotion	A person skips forward.
+locomotion	A person gallops sideways.
+locomotion	A person shuffles forward.
+locomotion	A person strolls casually.
+gesture	A person waves hello with the right hand.
+gesture	A person waves hello with the left hand.
+gesture	A person waves goodbye with both hands.
+gesture	A person points forward.
+gesture	A person points up at the sky.
+gesture	A person points to the left.
+gesture	A person claps their hands.
+gesture	A person gives a thumbs up.
+gesture	A person beckons someone to come closer.
+gesture	A person bows politely.
+gesture	A person bows deeply.
+gesture	A person salutes.
+gesture	A person shakes their head no.
+gesture	A person nods yes.
+gesture	A person shrugs with palms up.
+gesture	A person covers their face with both hands.
+gesture	A person puts a hand on their forehead.
+gesture	A person looks at their wristwatch.
+gesture	A person stretches out both arms wide.
+gesture	A person raises both arms in celebration.
+gesture	A person pumps a fist in the air.
+gesture	A person crosses their arms and taps a foot.
+gesture	A person scratches their chin thoughtfully.
+gesture	A person cups a hand to their ear to listen.
+gesture	A person blows a kiss.
+gesture	A person gives a high five.
+gesture	A person applauds enthusiastically.
+gesture	A person throws their hands up in frustration.
+gesture	A person wipes sweat from their brow.
+gesture	A person yawns and stretches.
+dance	A person dances energetically, waving arms and stepping side to side.
+dance	A person dances slowly and gracefully.
+dance	A person does the robot dance.
+dance	A person does the twist.
+dance	A person does the floss dance.
+dance	A person does the running man dance.
+dance	A person does the disco point dance.
+dance	A person does the macarena.
+dance	A person does a hip hop dance.
+dance	A person does a ballet pirouette.
+dance	A person does a ballet plie and rises onto their toes.
+dance	A person does the chicken dance.
+dance	A person does the YMCA dance.
+dance	A person does a salsa step.
+dance	A person waltzes with an imaginary partner.
+dance	A person does the sprinkler dance.
+dance	A person does the shopping cart dance.
+dance	A person headbangs to heavy metal.
+dance	A person sways to slow music.
+dance	A person does the worm.
+dance	A person does a body wave.
+dance	A person does the dougie.
+dance	A person does the charleston.
+dance	A person does a tap dance.
+dance	A person does the cabbage patch dance.
+dance	A person does the raise the roof dance.
+dance	A person dances the cha cha.
+dance	A person does the mashed potato dance.
+dance	A person does the swim dance.
+dance	A person does a breakdance freeze.
+dance	A person does the funky chicken.
+dance	A person dances with arms in the air.
+dance	A person does the two step.
+dance	A person does the electric slide.
+sport	A person jumps up and down.
+sport	A person jumps up and down with arms raised.
+sport	A person does jumping jacks.
+sport	A person does squats.
+sport	A person does lunges.
+sport	A person does a high kick.
+sport	A person kicks a ball.
+sport	A person throws a ball overhand.
+sport	A person throws a ball underhand.
+sport	A person swings a baseball bat.
+sport	A person swings a golf club.
+sport	A person swings a tennis racket.
+sport	A person shoots a basketball.
+sport	A person dribbles a basketball.
+sport	A person punches the air like a boxer.
+sport	A person shadow boxes.
+sport	A person does a karate chop.
+sport	A person does a roundhouse kick.
+sport	A person jumps rope.
+sport	A person does a standing long jump.
+sport	A person balances on one leg.
+sport	A person does a yoga tree pose.
+sport	A person does a yoga warrior pose.
+sport	A person touches their toes.
+sport	A person does arm circles.
+sport	A person does side bends.
+sport	A person does a burpee.
+sport	A person does a push up.
+sport	A person does a sit up.
+sport	A person swims freestyle in place.
+sport	A person rows a boat.
+sport	A person lifts a heavy box.
+sport	A person lifts weights overhead.
+transitions	A person sits down on a chair.
+transitions	A person stands up from a chair.
+transitions	A person kneels down.
+transitions	A person stands up from kneeling.
+transitions	A person lies down on the floor.
+transitions	A person gets up from the floor.
+transitions	A person picks something up from the floor.
+transitions	A person turns around 180 degrees.
+transitions	A person spins around in place.
+transitions	A person stumbles and regains balance.
+transitions	A person trips and falls forward.
+transitions	A person ducks under something.
+transitions	A person steps over an obstacle.
+transitions	A person climbs over a low wall.
+transitions	A person sits down cross-legged.
+*acrobatic	A person does a cartwheel.
+*acrobatic	A person does a somersault.
+*acrobatic	A person does a backflip.
+*acrobatic	A person does a handstand.
+*acrobatic	A person does a spinning jump.
+*acrobatic	A person does a helicopter kick.
+*acrobatic	A person does a split.
+*acrobatic	A person does a leap with arms outstretched.
+*moonwalk	A person moonwalks backwards.
+*moonwalk	A person moonwalks in a circle.
+*moonwalk	A person moonwalks and spins.
+*moonwalk	A person moonwalks slowly.
