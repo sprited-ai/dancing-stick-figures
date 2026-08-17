@@ -59,6 +59,57 @@ def _mitten(d, wrist, tip, w, col, lat=None):
         _circ(d, end, fw / 2, col)
 
 
+def _mitten_shape(d, wrist, tip, w, col, lat=None):
+    """filled mitten: capsule palm along wrist->tip whose width follows palm facing (|lat|),
+    plus a thumb nub on the lateral side. Reads cleanest at 128px."""
+    ux, uy = tip[0] - wrist[0], tip[1] - wrist[1]
+    L = math.hypot(ux, uy)
+    if L < 1e-3:
+        _circ(d, wrist, w * 0.8, col)
+        return
+    ux, uy = ux / L, uy / L
+    if lat is None:
+        px, py, m = -uy, ux, 1.0
+    else:
+        m = math.hypot(lat[0], lat[1]) / (LAT_LEN * SS)
+        px, py = ((lat[0], lat[1]) if m > 1e-3 else (-uy, ux))
+        if m > 1e-3:
+            px, py = px / (m * LAT_LEN * SS), py / (m * LAT_LEN * SS)
+    pw = w * (0.55 + 0.55 * m)
+    a = (wrist[0] + ux * L * 0.15, wrist[1] + uy * L * 0.15)
+    b = (wrist[0] + ux * L * 0.9, wrist[1] + uy * L * 0.9)
+    d.line([a, b], fill=col, width=max(1, int(pw)))
+    _circ(d, a, pw / 2, col)
+    _circ(d, b, pw / 2, col)
+    tb = (wrist[0] + ux * L * 0.45 + px * pw * 0.55 * m, wrist[1] + uy * L * 0.45 + py * pw * 0.55 * m)
+    _circ(d, tb, w * 0.42, col)
+
+
+HANDS = {"mitten": _mitten_shape, "fingers": _mitten}
+
+
+def _foot_segment(d, ankle, toe, w, col):
+    _seg(d, ankle, toe, w, col)
+
+
+def _foot_shoe(d, ankle, toe, w, col):
+    """capsule from a heel point behind the ankle to the toe, 1.25x the stroke."""
+    ux, uy = toe[0] - ankle[0], toe[1] - ankle[1]
+    L = math.hypot(ux, uy)
+    if L < 1e-3:
+        _circ(d, ankle, w * 0.7, col)
+        return
+    ux, uy = ux / L, uy / L
+    heel = (ankle[0] - ux * w * 0.35, ankle[1] - uy * w * 0.35)
+    sw = w * 1.25
+    d.line([heel, toe], fill=col, width=max(1, int(sw)))
+    _circ(d, heel, sw / 2, col)
+    _circ(d, toe, sw / 2, col)
+
+
+FEET = {"shoe": _foot_shoe, "segment": _foot_segment}
+
+
 def render(j2: dict, depth: dict, body: Body, colored: bool = True, halo: bool = True,
            bg=(0, 0, 0, 0), halo_rgb=(255, 255, 255)) -> Image.Image:
     im = Image.new("RGBA", (W, W), bg)
@@ -93,7 +144,9 @@ def render(j2: dict, depth: dict, body: Body, colored: bool = True, halo: bool =
                     lat = None
                     if latk in j:
                         lat = (j[latk][0] - a[0], j[latk][1] - a[1])
-                    _mitten(d, a, b, ww, col, lat)
+                    HANDS[body.hand_style](d, a, b, ww, col, lat)
+                elif seg.startswith("foot"):
+                    FEET[body.foot_style](d, a, b, ww, col)
                 else:
                     _seg(d, a, b, ww, col)
     return im.resize((SIZE, SIZE), Image.BOX)

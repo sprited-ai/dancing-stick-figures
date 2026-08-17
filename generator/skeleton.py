@@ -49,6 +49,8 @@ class Body:
     hip_w: float = 4.5
     shoulder_w: float = 7.0
     stroke: float = 4.0
+    hand_style: str = "mitten"    # "mitten" (filled, default) | "fingers" (palm + 3 fingers)
+    foot_style: str = "shoe"      # "shoe" (default) | "segment"
 
     def length(self, seg: str) -> float:
         base = seg.split("_")[0]
