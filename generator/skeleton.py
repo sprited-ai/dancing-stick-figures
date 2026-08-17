@@ -105,6 +105,16 @@ def fk3d(pose: Pose, body: Body) -> dict[str, tuple[float, float, float]]:
             dx, dy, dz = _dir(pose.swing.get(seg, 0.0), pose.abd.get(seg, 0.0), side)
             L = body.length(seg)
             j[child] = (x + dx * L, y + dy * L, z + dz * L)
+    # palm lateral probe for keyed styles: palms face the body (thumb forward), so the finger
+    # fan spreads along the figure's forward axis, orthogonalised to the hand direction.
+    for s in "LR":
+        wx, wy, wz = j[f"wrist_{s}"]; hx, hy, hz = j[f"hand_{s}"]
+        ux, uy, uz = hx - wx, hy - wy, hz - wz
+        n = math.sqrt(ux * ux + uy * uy + uz * uz) or 1.0
+        ux, uy, uz = ux / n, uy / n, uz / n
+        lx, ly, lz = 1.0 - ux * ux, -ux * uy, -ux * uz          # (1,0,0) minus its u-component
+        n = math.sqrt(lx * lx + ly * ly + lz * lz) or 1.0
+        j[f"wrist_{s}_lat"] = (wx + 10.0 * lx / n, wy + 10.0 * ly / n, wz + 10.0 * lz / n)
     return j
 
 

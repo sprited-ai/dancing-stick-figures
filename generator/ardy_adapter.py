@@ -9,7 +9,7 @@ from __future__ import annotations
 import math
 import numpy as np
 from .skeleton import Body, Camera, project
-from .render import render
+from .render import render, LAT_LEN
 
 CSKEL27 = ["Hips", "Spine", "Spine1", "Spine2", "Spine3", "Neck", "Head",
            "RightShoulder", "RightArm", "RightForeArm", "RightHand", "RightHandEnd", "RightHandThumb1",
@@ -68,6 +68,14 @@ def frame_joints(Q: np.ndarray, t: int) -> dict:
     hx, hy, hz = out["head"]; nx, ny, nz = out["neck"]
     d = _unit(np.array([hx - nx, hy - ny, hz - nz]))
     out["head"] = (hx + d[0] * 6, hy + d[1] * 6, hz + d[2] * 6)
+    # palm roll from the thumb: lateral = thumb direction made perpendicular to hand direction.
+    # Fingers fan along this axis; when it foreshortens (palm edge-on) the fan collapses.
+    for s, side in (("L", "Left"), ("R", "Right")):
+        w = j[IDX[f"{side}Hand"]]; e = j[IDX[f"{side}HandEnd"]]; th = j[IDX[f"{side}HandThumb1"]]
+        u = _unit(e - w)
+        lat = th - w
+        lat = _unit(lat - u * (lat @ u))
+        out[f"wrist_{s}_lat"] = tuple(w + lat * LAT_LEN)
     return out
 
 

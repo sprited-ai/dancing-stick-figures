@@ -32,14 +32,23 @@ def _seg(d, a, b, w, col):
     _circ(d, b, w / 2, col)
 
 
-def _mitten(d, wrist, tip, w, col):
+LAT_LEN = 10.0   # px length of the palm-lateral probe vector (see skeleton/adapter)
+
+
+def _mitten(d, wrist, tip, w, col, lat=None):
+    """palm blob + 3 fingers. `lat` = projected palm-lateral vector (screen px, already
+    foreshortened, |lat| <= LAT_LEN*SS): finger spread axis. Palm facing camera -> full fan;
+    edge-on -> fingers stack. None -> spread perpendicular in screen space (2D fallback)."""
     ux, uy = tip[0] - wrist[0], tip[1] - wrist[1]
     L = math.hypot(ux, uy)
-    if L < 1e-3:                       # foreshortened to a point: just a palm blob
+    if L < 1e-3:
         _circ(d, wrist, w * 0.7, col)
         return
     ux, uy = ux / L, uy / L
-    px, py = -uy, ux
+    if lat is None:
+        px, py = -uy, ux
+    else:
+        px, py = lat[0] / (LAT_LEN * SS), lat[1] / (LAT_LEN * SS)   # magnitude in [0,1]
     palm = (wrist[0] + ux * L * 0.35, wrist[1] + uy * L * 0.35)
     _circ(d, palm, w * 0.65, col)
     fw = max(2 * SS, w * 0.5)
@@ -80,7 +89,11 @@ def render(j2: dict, depth: dict, body: Body, colored: bool = True, halo: bool =
                 col = halo_col if pass_halo else (*(PALETTE[seg] if colored else INK), 255)
                 ww = hw if pass_halo else w
                 if seg.startswith("hand"):
-                    _mitten(d, a, b, ww, col)
+                    latk = SEGMENTS[seg][0] + "_lat"          # e.g. wrist_L_lat
+                    lat = None
+                    if latk in j:
+                        lat = (j[latk][0] - a[0], j[latk][1] - a[1])
+                    _mitten(d, a, b, ww, col, lat)
                 else:
                     _seg(d, a, b, ww, col)
     return im.resize((SIZE, SIZE), Image.BOX)
