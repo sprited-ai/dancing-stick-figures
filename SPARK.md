@@ -203,9 +203,25 @@ Why this is more than cosmetic:
 `mono` (ink-only) stays as a secondary config for the "harder, ambiguous" variant — useful
 precisely *because* it's bimodal — but colour is the default and the one on the hero grid.
 
-### 3.2 Skeleton — with hands and feet
+### 3.2 Skeleton — 3D, orthographically projected, with hands and feet
 
-19 joints, 18 segments, 2D. Hands and feet are **in** (Jin's call; also see §3.2b):
+**The skeleton is 3D; the dataset is its orthographic projection** (Jin's call). 19 joints,
+18 segments. Limbs are parameterised by (swing θ in the sagittal plane, abduction φ out of it);
+torso by lean / twist / squash. A `Camera(yaw, pitch)` projects to 128px and returns per-joint
+depth. Consequences:
+
+- **Depth ordering is computed, not hard-coded** — chains sort by mean depth every frame, so
+  an arm passing in front of the head just works from any angle.
+- **Camera yaw is a dataset parameter** (full 360°, plus small pitch). Foreshortening is real.
+  This is where most of the dataset's *genuine* diversity comes from.
+- **The label carries both** `joint_xyz` (figure-local 3D) and `joint_xy` (projected) plus
+  `cam_yaw`/`cam_pitch`. So the dataset also supports a **2D → 3D lifting** task, and the
+  oracle can score generated samples for 3D-consistency (does a valid rigid 3D skeleton
+  explain this 2D image?), which is a much stronger check than 2D-only.
+- **ARDY drops straight in**: its `posed_joints [T, 27, 3]` map onto our 19 joints and go
+  through the *same* `project()` + `render()`. See `generator/ardy_adapter.py`.
+
+Hands and feet are **in** (also Jin's call; see §3.2b):
 
 ```
              head
@@ -278,6 +294,8 @@ Each sample draws from a seeded parameter vector:
 
 | param | range | effect |
 |---|---|---|
+| `cam_yaw` | 0 – 360° | camera azimuth (0 = facing camera, 90 = side, facing right) |
+| `cam_pitch` | −5 – 20° | camera elevation |
 | `tempo_scale` | 0.6 – 1.6 | frames-per-cycle |
 | `amp_scale` | 0.7 – 1.3 | global motion amplitude |
 | `asym` | 0.0 – 0.3 | left/right amplitude imbalance |
@@ -307,8 +325,10 @@ throughout.
   "style_id":     9,
   "style_name":   "floss",
   "params":       { "tempo_scale": 1.12, "amp_scale": 0.94, ... },
-  "joint_angles": [18 floats, radians],
+  "cam":          { "yaw": 1.31, "pitch": 0.08 },
+  "joint_xyz":    [[x,y,z] × 19, figure-local px, y up, x forward, z left],
   "joint_xy":     [[x,y] × 19, normalized to [0,1] in image space],
+  "joint_depth":  [19 floats, camera depth, larger = nearer],
   "bone_lengths": [12 floats, px],
   "visible":      [19 bools],   // occluded-by-torso flag
   "appearance":   { "stroke_rgb": [17,17,17], "bg_rgba": [0,0,0,0], "stroke_width": 4 }
