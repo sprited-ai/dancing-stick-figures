@@ -54,7 +54,7 @@ def sample_cameras(rng: random.Random) -> list[Camera]:
     cams = []
     for _ in range(n):
         yaw = rng.choice(CANON_YAWS) + rng.uniform(-6, 6) if rng.random() < 0.7 else rng.uniform(-180, 180)
-        pitch = rng.uniform(-5, 15)
+        pitch = rng.uniform(-3, 10)
         cams.append(Camera(yaw=math.radians(yaw), pitch=math.radians(pitch),
                            center=(64.0 + rng.uniform(-3, 3), 66.0 + rng.uniform(-3, 3))))
     return cams

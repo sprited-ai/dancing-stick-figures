@@ -385,7 +385,7 @@ Per frame, four aligned images + one label row:
 Schema in §3.5 (cskel27, metres, camera). Frames are grouped into clips (`clip_id`,
 `frame_idx`) so the same shards serve image, video, and interpolation tasks.
 
-- **Camera**: canonical views (0°, ±45°, ±90°, ±135°, 180°) 70% + uniform yaw 30%; pitch −5°…15°.
+- **Camera**: canonical views (0°, ±45°, ±90°, ±135°, 180°) 70% + uniform yaw 30%; pitch −3°…10°.
 - **Background**: transparent only. Compositing over white/black is one line in the loader.
 - **Normals**: camera space. No mono variant (alpha already carries the silhouette).
 - **Split**: by clip, 90/5/5. Two prompt groups held out entirely (test-only) for a
