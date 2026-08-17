@@ -15,7 +15,7 @@ import pyarrow.parquet as pq
 from PIL import Image
 from .skeleton import Body, Camera, project, NAMES
 from .render import render_all, SIZE
-from .ardy_adapter import load, to_figure_frame, frame_joints
+from .ardy_adapter import load, load_root, to_figure_frame, frame_joints
 
 FPS = 20
 DEPTH_RANGE = (-1.5, 1.5)          # metres toward camera, Hips-relative -> uint16
@@ -76,6 +76,7 @@ def build_clip(args):
     npz_path, group, held, out_dir, shard_tag = args
     P, fps, text = load(npz_path)
     Q = to_figure_frame(P)
+    rpos, rvel, rhead = load_root(npz_path)
     stem = os.path.splitext(os.path.basename(npz_path))[0]
     seed = int(stem.rsplit("_s", 1)[1]) if "_s" in stem else 0
     clip_id = f"{group}/{stem}"
@@ -100,6 +101,7 @@ def build_clip(args):
                 cam_yaw=float(cam.yaw), cam_pitch=float(cam.pitch), cam_center_x=cam.center[0], cam_center_y=cam.center[1],
                 px_per_m=body.px_per_m, stroke=body.stroke, bone_scale=json.dumps(body.bone_scale),
                 joint_xyz=xyz.tobytes(), joint_xy=xy.tobytes(), joint_depth=jd.tobytes(), joint_visible=vis.tobytes(),
+                root_pos=rpos[t].tobytes(), root_vel=rvel[t].tobytes(), root_heading=rhead[t].tobytes(),
                 color={"bytes": png_bytes(o["color"]), "path": None},
                 depth={"bytes": depth_png(o["depth"]), "path": None},
                 normal={"bytes": png_bytes(o["normal"]), "path": None},
@@ -115,6 +117,7 @@ SCHEMA = pa.schema([
     ("seed", pa.int32()), ("cam_yaw", pa.float32()), ("cam_pitch", pa.float32()), ("cam_center_x", pa.float32()),
     ("cam_center_y", pa.float32()), ("px_per_m", pa.float32()), ("stroke", pa.float32()), ("bone_scale", pa.string()),
     ("joint_xyz", pa.binary()), ("joint_xy", pa.binary()), ("joint_depth", pa.binary()), ("joint_visible", pa.binary()),
+    ("root_pos", pa.binary()), ("root_vel", pa.binary()), ("root_heading", pa.binary()),
     ("color", IMG), ("depth", IMG), ("normal", IMG), ("seg", IMG),
 ])
 

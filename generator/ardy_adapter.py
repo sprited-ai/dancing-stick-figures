@@ -24,15 +24,40 @@ def load(npz_path: str):
     return P, fps, text
 
 
-def to_figure_frame(P: np.ndarray, keep_root_xz: bool = False) -> np.ndarray:
-    """World -> cskel figure frame (x left, y up, z fwd), Hips-centred, metres. [T,27,3]"""
+def load_root(npz_path: str):
+    """Root trajectory in the frame-0 figure frame (x left, y up, z fwd): pos [T,3] m, vel [T,3] m/s,
+    heading [T,2] (cos, sin of yaw relative to frame 0; +ve = turning left)."""
+    d = np.load(npz_path, allow_pickle=True)
+    P = np.asarray(d["posed_joints"], dtype=np.float64)
+    fps = float(d["fps"]) if "fps" in d else 20.0
+    R, up = _frame0_basis(P)
+    hips = IDX["Hips"]
+    pos = (P[:, hips] - P[0, hips]) @ R.T
+    vel = np.gradient(pos, 1.0 / fps, axis=0)
+    hipL, hipR = IDX["LeftUpLeg"], IDX["RightUpLeg"]
+    left = P[:, hipL] - P[:, hipR]
+    left = left - np.outer(left @ up, up)
+    left = left / np.maximum(np.linalg.norm(left, axis=1, keepdims=True), 1e-9)
+    l0 = left @ R.T                       # in frame-0 basis: x=left, z=fwd
+    yaw = np.arctan2(l0[:, 2], l0[:, 0])  # 0 at frame 0
+    heading = np.stack([np.cos(yaw), np.sin(yaw)], 1)
+    return pos.astype(np.float32), vel.astype(np.float32), heading.astype(np.float32)
+
+
+def _frame0_basis(P):
     hips, hipL, hipR, head = IDX["Hips"], IDX["LeftUpLeg"], IDX["RightUpLeg"], IDX["Head"]
     up = np.zeros(3); up[int(np.argmax(np.abs(P[0, head] - P[0, hips])))] = 1.0
     if (P[0, head] - P[0, hips]) @ up < 0: up = -up
     left = P[0, hipL] - P[0, hipR]
     left = _unit(left - up * (left @ up))
-    fwd = _unit(np.cross(left, up))          # z = x × y  (right-handed: x left, y up, z fwd)
-    R = np.stack([left, up, fwd])            # rows = new axes
+    fwd = _unit(np.cross(left, up))
+    return np.stack([left, up, fwd]), up
+
+
+def to_figure_frame(P: np.ndarray, keep_root_xz: bool = False) -> np.ndarray:
+    """World -> cskel figure frame (x left, y up, z fwd), Hips-centred, metres. [T,27,3]"""
+    hips = IDX["Hips"]
+    R, up = _frame0_basis(P)
     Q = (P - P[:, hips:hips + 1, :]) if not keep_root_xz else (P - P[0:1, hips:hips + 1, :])
     Q = Q @ R.T
     if not keep_root_xz:                     # keep vertical root motion, kill horizontal drift

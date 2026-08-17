@@ -1,3 +1,5 @@
 scratch/*.png
 out/
 __pycache__/
+ardy_out/
+data/
