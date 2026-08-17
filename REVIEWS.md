@@ -74,3 +74,15 @@ Actions taken / queued:
   approach the real floor; FVD only as Δ over floor with CI.
 - v1.1 render candidates (AD): ink stroke ≈ limb stroke, head +10 %, larger palette value gaps
   (magenta↔red-orange, green↔cyan), faint ground line. Decide after a1.
+
+## Round 3 — loss/objective review (PhD-level agent, 2026-08-17)
+
+Verdict: both objectives sound; the loss is just a bad proxy here (λ<−4 irreducible variance ≈ all of the
+0.009). Keep A as classic (min-SNR would kill the *layout* regime our benchmark cares about; ZT-SNR a
+footnote). B: `shift s` ≡ logit-normal μ=ln s; **shift 3 → promote if B1 wins** (b0 already runs it).
+**Foreground weighting is biased** (weights depending on x0 tilt the posterior → halos/ghost limbs);
+only (t, position) weights are valid. Alpha: premultiplied MSE ideal; ink lives only in α — log per-channel.
+Video: frame-difference weighting valid; **PYoCo mixed noise (β≈0.5)** is the one trick with evidence for
+per-frame re-roll. Diagnostics: fg-loss in 4 λ-buckets; fixed-grid val x̂0 fg-MSE + fg-IoU at stratified λ;
+bg-haze + |Δ_t α| from samples. Ablations: A0/A1(min-SNR)/A2(w_bg=0.2, negative lesson)/B0(shift1)/B1(shift3)/
+B2(shift3+mixed noise) — 6×7k steps ≈ one night. → E14.
