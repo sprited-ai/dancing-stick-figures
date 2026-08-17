@@ -54,3 +54,23 @@ session log; this file keeps the decisions and the ranked backlog.
 Skip/attention bookkeeping in UNet3D; v-pred target + DDIM algebra; premultiplied RGBA in
 [-1,1] as input; nearest-upsample + conv; zero-inits; bf16 autocast + fp32 master; depth/normal/
 seg + cskel27 labels are worth shipping (as a separate config); camera distribution.
+
+## Round 2 — mid-training review of run a0 @ steps 2000/4000 (2026-08-17)
+
+Three personas: diffusion practitioner ("on track, normal-to-ahead; EMA lag hides early progress"),
+animator/AD ("a figure, not yet animation — head/hips re-roll per frame; torso too heavy; feet not
+on a ground plane"), skeptical ML reviewer ("nothing claimable yet; FVD n=64 uninterpretable; fixed
+seeds, CIs, real-real floor, NN-to-train required").
+
+Actions taken / queued:
+- trainer (next run): fixed noise seeds for the sample grid; sample raw AND EMA early; 16 samples;
+  EMA warmup 0.999→0.9995 @5k.
+- eval watcher: n=256 videos, 3 sampling seeds, bootstrap 95 % CI over videos; FVD real-vs-real
+  floor (split) → report ΔFVD; per-frame (tvr/lie/cpe) vs per-video (temporal) metrics separated.
+- oracle: temporal metrics from the animator's checks — head/torso jitter across frames, per-colour
+  limb-angle smoothness, figure-height variance; plus mass_drift.
+- memorisation: nearest-neighbour-to-train grid per sample (todo).
+- claims: no "consumer GPU" until a 4090 preset is measured; no "motion" until temporal metrics
+  approach the real floor; FVD only as Δ over floor with CI.
+- v1.1 render candidates (AD): ink stroke ≈ limb stroke, head +10 %, larger palette value gaps
+  (magenta↔red-orange, green↔cyan), faint ground line. Decide after a1.
