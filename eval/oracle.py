@@ -92,12 +92,48 @@ def score_frames(frames, keys=("tvr", "lie", "cpe", "fg")) -> dict:
     return {k: float(np.mean(v)) for k, v in acc.items()}
 
 
+def _axis_angle(mask):
+    """principal-axis angle (rad, in [0,pi)) of a binary mask, or nan."""
+    ys, xs = np.nonzero(mask)
+    if len(xs) < 6: return np.nan
+    x = xs - xs.mean(); y = ys - ys.mean()
+    cov = np.array([[np.mean(x * x), np.mean(x * y)], [np.mean(x * y), np.mean(y * y)]])
+    w, v = np.linalg.eigh(cov)
+    a = np.arctan2(v[1, 1], v[0, 1])
+    return a % np.pi
+
+
 def score_video(frames_thw4: np.ndarray) -> dict:
-    """[T,H,W,4] -> per-frame means + temporal: colour-mass drift (std over time of each colour's pixel count
-    relative to its mean; large = limbs appearing/disappearing)."""
+    """[T,H,W,4] -> per-frame means (tvr/lie/cpe/fg) + per-video temporal metrics:
+      mass_drift    std/mean over time of each colour's pixel count (limbs appearing/disappearing)
+      head_jitter   mean |Δ centroid of ink+all fg| between consecutive frames, px (a held or smoothly moving
+                    figure: small; per-frame re-rolls: large)
+      angle_jerk    mean over limb colours of mean |second difference| of the limb's principal-axis angle, rad
+                    (smooth arcs: small)
+      height_var    std over time of the figure's vertical extent / mean extent (figure shouldn't change size)
+    Real-data floors: measure with eval.corrupt --video or on cached val windows."""
     per = [score_frame(f) for f in frames_thw4]
     out = {k: float(np.mean([p[k] for p in per])) for k in ("tvr", "lie", "cpe", "fg")}
-    counts = np.array([[(label_colours(f)[0] == i).sum() for i in range(len(NAMES))] for f in frames_thw4], np.float32)
+    labs = [label_colours(f) for f in frames_thw4]
+    counts = np.array([[(l == i).sum() for i in range(len(NAMES))] for l, _ in labs], np.float32)
     rel = counts.std(0) / np.maximum(counts.mean(0), 1)
     out["mass_drift"] = float(rel[1:].mean())
+    cents, heights = [], []
+    for l, fg in labs:
+        ys, xs = np.nonzero(fg)
+        if len(xs) < 10: cents.append((np.nan, np.nan)); heights.append(np.nan); continue
+        cents.append((xs.mean(), ys.mean())); heights.append(ys.max() - ys.min())
+    c = np.array(cents); h = np.array(heights)
+    d = np.linalg.norm(np.diff(c, axis=0), axis=1)
+    out["head_jitter"] = float(np.nanmean(d)) if np.isfinite(d).any() else 1e3
+    out["height_var"] = float(np.nanstd(h) / max(np.nanmean(h), 1)) if np.isfinite(h).any() else 1.0
+    jerks = []
+    for i, n in enumerate(NAMES):
+        if n == "ink": continue
+        ang = np.array([_axis_angle(l == i) for l, _ in labs])
+        if np.isfinite(ang).sum() < 3: continue
+        # unwrap on the half-circle
+        dd = np.diff(ang); dd = (dd + np.pi / 2) % np.pi - np.pi / 2
+        j = np.abs(np.diff(dd)); jerks.append(np.nanmean(j))
+    out["angle_jerk"] = float(np.mean(jerks)) if jerks else 1.0
     return out

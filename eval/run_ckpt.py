@@ -23,7 +23,40 @@ def to_uint8_rgba(x):
     return (np.clip(np.concatenate([rgb, a], -1), 0, 1) * 255).astype(np.uint8), v
 
 
-def evaluate(run, cache, n=64, dev="cuda", real_cache=None):
+TEMPORAL = ("mass_drift", "head_jitter", "angle_jerk", "height_var")
+FRAME = ("tvr", "lie", "cpe")
+
+
+def boot_ci(vals, B=500, seed=0):
+    r = np.random.RandomState(seed); v = np.asarray(vals, np.float64)
+    if len(v) < 2: return (float(v.mean()), float(v.mean()))
+    m = [r.choice(v, len(v), replace=True).mean() for _ in range(B)]
+    return (float(np.percentile(m, 2.5)), float(np.percentile(m, 97.5)))
+
+
+_floor_cache = {}
+
+
+def real_floor(cache, T, S, n, dev):
+    """oracle floor on real val windows + FVD real-vs-real (two disjoint halves)."""
+    key = (cache, T, S, n)
+    if key in _floor_cache: return _floor_cache[key]
+    ds = VideoWindows(cache, T, "val", 1, size=S)
+    idx = np.random.RandomState(1).permutation(len(ds))
+    a_ = torch.stack([ds[int(i)][0] for i in idx[:n]]); b_ = torch.stack([ds[int(i)][0] for i in idx[n:2 * n]]) if len(ds) >= 2 * n else None
+    rgba, _ = to_uint8_rgba(a_)
+    per = [score_video(v) for v in rgba]
+    fl = {k: float(np.mean([p[k] for p in per])) for k in FRAME + TEMPORAL}
+    ra = rgba_premult_to_rgb(((a_.clamp(-1, 1) + 1) / 2).permute(0, 2, 3, 4, 1).numpy())
+    if b_ is not None:
+        rb = rgba_premult_to_rgb(((b_.clamp(-1, 1) + 1) / 2).permute(0, 2, 3, 4, 1).numpy())
+        fl["fvd_real_real"] = fvd(ra, rb, device=dev)
+    fl["_real_rgb"] = ra
+    _floor_cache[key] = fl
+    return fl
+
+
+def evaluate(run, cache, n=64, dev="cuda", real_cache=None, seeds=(0, 1, 2)):
     ck = torch.load(os.path.join(run, "ckpt.pt"), map_location=dev)
     a = ck["args"]; step = ck["step"]
     n_cls = len(ck.get("groups", [])) if a.get("cond") == "group" else 0
@@ -31,25 +64,31 @@ def evaluate(run, cache, n=64, dev="cuda", real_cache=None):
     model.load_state_dict(ck["ema"]); model.eval()
     ac = alphas_cumprod().to(dev)
     T, S = a.get("frames", 16), a.get("size", 128)
-    outs = []
-    for i in range(0, n, 8):
-        ys = (torch.arange(8, device=dev) % n_cls) if n_cls else None
-        with torch.no_grad():
-            xs = sample(model, (8, 4, T, S, S), ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
-                        null_y=torch.full((8,), n_cls, device=dev) if n_cls else None)
-        outs.append(xs)
-    xs = torch.cat(outs, 0)[:n]
-    rgba, prem = to_uint8_rgba(xs)
-    per = [score_video(v) for v in rgba]
-    m = {k: float(np.mean([p[k] for p in per])) for k in ("tvr", "lie", "cpe", "fg", "mass_drift")}
-    # real val windows for FVD
-    ds = VideoWindows(cache, T, "val", 1, size=S) if real_cache is None else real_cache
-    idx = np.random.RandomState(0).choice(len(ds), n, replace=len(ds) < n)
-    real = torch.stack([ds[int(i)][0] for i in idx])
-    real_rgb = rgba_premult_to_rgb(((real.clamp(-1, 1) + 1) / 2).permute(0, 2, 3, 4, 1).numpy())
-    fake_rgb = rgba_premult_to_rgb(prem)
-    m["fvd"] = fvd(real_rgb, fake_rgb, device=dev)
-    m["step"] = int(step); m["n"] = int(n)
+    fl = real_floor(cache, T, S, n, dev)
+    m = {"step": int(step), "n": int(n), "seeds": list(seeds), "floor": {k: v for k, v in fl.items() if not k.startswith("_")}}
+    per_seed = []
+    for sd in seeds:
+        g = torch.Generator(device=dev).manual_seed(1000 + sd)
+        outs = []
+        for i in range(0, n, 8):
+            ys = (torch.arange(8, device=dev) % n_cls) if n_cls else None
+            noise = torch.randn((8, 4, T, S, S), device=dev, generator=g)
+            with torch.no_grad():
+                xs = sample(model, noise.shape, ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
+                            null_y=torch.full((8,), n_cls, device=dev) if n_cls else None, noise=noise)
+            outs.append(xs)
+        xs = torch.cat(outs, 0)[:n]
+        rgba, prem = to_uint8_rgba(xs)
+        per = [score_video(v) for v in rgba]
+        r = {k: [p[k] for p in per] for k in FRAME + TEMPORAL + ("fg",)}
+        r["fvd"] = fvd(fl["_real_rgb"], rgba_premult_to_rgb(prem), device=dev)
+        per_seed.append(r)
+    for k in FRAME + TEMPORAL + ("fg",):
+        allv = [v for r in per_seed for v in r[k]]
+        m[k] = float(np.mean(allv)); m[k + "_ci"] = boot_ci(allv)
+    fv = [r["fvd"] for r in per_seed]
+    m["fvd"] = float(np.mean(fv)); m["fvd_std"] = float(np.std(fv))
+    if "fvd_real_real" in fl: m["dfvd"] = m["fvd"] - fl["fvd_real_real"]
     del model; torch.cuda.empty_cache()
     return m
 
@@ -58,6 +97,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", required=True); ap.add_argument("--cache", required=True)
     ap.add_argument("--n", type=int, default=64); ap.add_argument("--watch", action="store_true")
+    ap.add_argument("--seeds", type=int, default=3)
     a = ap.parse_args()
     os.makedirs(os.path.join(a.run, "eval"), exist_ok=True)
     from torch.utils.tensorboard import SummaryWriter
@@ -72,11 +112,15 @@ def main():
                 step = last
             if step != last:
                 try:
-                    m = evaluate(a.run, a.cache, a.n)
+                    m = evaluate(a.run, a.cache, a.n, seeds=tuple(range(a.seeds)))
                     json.dump(m, open(os.path.join(a.run, "eval", f"{m['step']:06d}.json"), "w"), indent=1)
-                    for k in ("tvr", "lie", "cpe", "mass_drift", "fvd"): tb.add_scalar(f"eval/{k}", m[k], m["step"])
+                    for k in FRAME + TEMPORAL + ("fvd",): tb.add_scalar(f"eval/{k}", m[k], m["step"])
+                    if "dfvd" in m: tb.add_scalar("eval/dfvd", m["dfvd"], m["step"])
+                    for k in FRAME + TEMPORAL:
+                        tb.add_scalar(f"floor/{k}", m["floor"][k], m["step"])
                     tb.flush()
-                    print(f"step {m['step']}: " + " ".join(f"{k} {m[k]:.3f}" for k in ("tvr", "lie", "cpe", "mass_drift", "fvd")), flush=True)
+                    print(f"step {m['step']}: " + " ".join(f"{k} {m[k]:.3f}" for k in FRAME + TEMPORAL + ("fvd",)) +
+                          (f" dfvd {m['dfvd']:.1f}" if "dfvd" in m else ""), flush=True)
                     last = m["step"]
                 except Exception as e:
                     print("eval failed:", e, flush=True); time.sleep(60)

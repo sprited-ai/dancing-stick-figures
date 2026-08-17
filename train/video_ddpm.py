@@ -163,8 +163,8 @@ def alphas_cumprod(T=1000, s=0.008):
 
 
 @torch.no_grad()
-def sample(model, shape, ac, device, steps=50, y=None, cfg=0.0, null_y=None):
-    x = torch.randn(shape, device=device)
+def sample(model, shape, ac, device, steps=50, y=None, cfg=0.0, null_y=None, noise=None):
+    x = torch.randn(shape, device=device) if noise is None else noise.clone()
     ts = torch.linspace(len(ac) - 1, 0, steps + 1).long().to(device)
     for i in range(steps):
         t, tn = ts[i], ts[i + 1]
@@ -294,7 +294,7 @@ def main():
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step(); opt.zero_grad(set_to_none=True)
         loss = loss * a.accum
         with torch.no_grad():
-            d = min(0.9995, (1 + step) / (10 + step))
+            d = min(0.999 if step < 5000 else 0.9995, (1 + step) / (10 + step))   # EMA warmup: shorter horizon early
             for pe, pm in zip(ema.parameters(), model.parameters()): pe.lerp_(pm, 1 - d)
         step += 1
         ema_loss = loss.item() if ema_loss is None else 0.98 * ema_loss + 0.02 * loss.item()
@@ -309,10 +309,19 @@ def main():
                 tb.add_scalar("perf/s_per_it", spi, step); tb.add_scalar("perf/peak_gb", torch.cuda.max_memory_allocated() / 1e9, step)
                 if " val " in msg: tb.add_scalar("loss/val", float(msg.split(" val ")[1]), step)
         if step % a.sample_every == 0 or step == a.steps:
-            ys = torch.arange(8, device=dev) % n_cls if n_cls else None
-            xs = sample(ema, (8, 4, a.frames, a.size, a.size), ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
-                        null_y=torch.full((8,), n_cls, device=dev) if n_cls else None)
+            NS = 16
+            ys = torch.arange(NS, device=dev) % n_cls if n_cls else None
+            g = torch.Generator(device=dev).manual_seed(1234)                       # FIXED noise -> comparable across steps
+            noise = torch.randn((NS, 4, a.frames, a.size, a.size), device=dev, generator=g)
+            xs = sample(ema, noise.shape, ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
+                        null_y=torch.full((NS,), n_cls, device=dev) if n_cls else None, noise=noise)
             to_gif(xs, os.path.join(a.out, f"sample_{step:06d}.gif"))
+            if step <= 10000:                                                       # early: also raw weights (EMA lags)
+                model.eval()
+                xr = sample(model, noise.shape, ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
+                            null_y=torch.full((NS,), n_cls, device=dev) if n_cls else None, noise=noise)
+                model.train()
+                to_gif(xr, os.path.join(a.out, f"sample_raw_{step:06d}.gif"))
             torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups),
                        os.path.join(a.out, "ckpt.pt"))
             print(f"  wrote sample_{step:06d}.gif", flush=True)
