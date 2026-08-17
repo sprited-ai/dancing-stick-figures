@@ -156,12 +156,166 @@ def _idle_bob():
     return ks
 
 
+def _run():
+    # higher amplitude, both feet airborne twice per cycle, strong arm pump, forward lean
+    T = [i / 8 for i in range(8)]
+    thigh = [40, 20, -5, -25, -40, -30, 0, 30]
+    knee = [-15, -20, -10, -5, -20, -90, -100, -60]
+    dorsi = [10, -10, -20, -30, -35, -10, 5, 10]
+    upper = [-35, -20, 0, 20, 35, 25, 0, -20]
+    elbow = [80, 85, 90, 95, 100, 95, 90, 85]
+    legL = [(t, _leg("L", th, kn, do)) for t, th, kn, do in zip(T, thigh, knee, dorsi)]
+    armL = [(t, _arm("L", up, el, wrist=15, abd=12)) for t, up, el in zip(T, upper, elbow)]
+    body = [(t, {"root.y": [-2, 3, 5, 3, -2, 3, 5, 3][i], "lean": 12, "bend": 6,
+                 "twist": -14 * math.cos(2 * math.pi * t), "head_tilt": 4}) for i, t in enumerate(T)]
+    return _merge(legL, _mirror_LR(_shift(legL, 0.5)), armL, _mirror_LR(_shift(armL, 0.5)), body)
+
+
+def _robot():
+    # stepped: 8 held poses, elbows/knees at right angles, torso rigid, alternating twist
+    T = [i / 8 for i in range(8)]
+    ks = []
+    for i, t in enumerate(T):
+        d = {}
+        aL = [0, 0, -30, -30, 0, 0, 30, 30][i]; aR = [30, 30, 0, 0, -30, -30, 0, 0][i]
+        eL = [90, 90, 90, 90, 90, 90, 90, 90][i]
+        fL_abd = [20, 60, 60, 20, 20, 60, 60, 20][i]; fR_abd = [60, 20, 20, 60, 60, 20, 20, 60][i]
+        d.update(_arm("L", aL, eL, wrist=0, abd=10, abd_fore=fL_abd, abd_hand=fL_abd))
+        d.update(_arm("R", aR, eL, wrist=0, abd=10, abd_fore=fR_abd, abd_hand=fR_abd))
+        kn = [-10, -10, -30, -30, -10, -10, -30, -30][i]
+        d.update(_leg("L", [5, 5, 0, 0, -5, -5, 0, 0][i], kn, 0, abd=6)); d.update(_leg("R", [-5, -5, 0, 0, 5, 5, 0, 0][i], kn, 0, abd=6))
+        d.update({"root.y": [0, -1, 0, -1, 0, -1, 0, -1][i], "lean": 0, "twist": [15, 15, -15, -15, 15, 15, -15, -15][i],
+                  "head_tilt": [0, 0, 8, 8, 0, 0, -8, -8][i]})
+        ks.append((t, d))
+    return ks
+
+
+def _twist():
+    # hips vs shoulders counter-rotate, arms bent at chest height swinging opposite to hips, knees soft
+    T = [i / 8 for i in range(8)]
+    ks = []
+    for i, t in enumerate(T):
+        s = math.sin(2 * math.pi * t)
+        d = {}
+        d.update(_arm("L", -10 + 25 * s, 95, wrist=5, abd=25, abd_fore=10, abd_hand=10))
+        d.update(_arm("R", -10 - 25 * s, 95, wrist=5, abd=25, abd_fore=10, abd_hand=10))
+        d.update(_leg("L", 5 * s, -25 - 10 * abs(s), 0, abd=8)); d.update(_leg("R", -5 * s, -25 - 10 * abs(s), 0, abd=8))
+        d.update({"root.y": -1.5 * abs(s), "lean": 3, "twist": 40 * s, "head_tilt": 0})
+        ks.append((t, d))
+    return ks
+
+
+def _disco_point():
+    # alternating point up-and-across (Saturday Night Fever), hip pop on the beat
+    T = [i / 8 for i in range(8)]
+    ks = []
+    for i, t in enumerate(T):
+        # beat 0: R arm up-right, L hand on hip; beat 4: mirror
+        up = math.cos(2 * math.pi * t)          # +1 -> R up, -1 -> L up
+        d = {}
+        rup = max(0, up); lup = max(0, -up)
+        d.update({"swing.arm_R": 20 * rup, "abd.arm_R": 30 + 130 * rup, "swing.fore_R": 20 * rup, "abd.fore_R": 30 + 140 * rup,
+                  "swing.hand_R": 20 * rup, "abd.hand_R": 30 + 150 * rup})
+        d.update({"swing.arm_L": 20 * lup, "abd.arm_L": 30 + 130 * lup, "swing.fore_L": 20 * lup, "abd.fore_L": 30 + 140 * lup,
+                  "swing.hand_L": 20 * lup, "abd.hand_L": 30 + 150 * lup})
+        # the down arm rests on the hip: upper arm slightly out, forearm across
+        if rup < lup:
+            d.update({"swing.arm_R": -5, "abd.arm_R": 25, "swing.fore_R": 60, "abd.fore_R": -30, "swing.hand_R": 60, "abd.hand_R": -30})
+        else:
+            d.update({"swing.arm_L": -5, "abd.arm_L": 25, "swing.fore_L": 60, "abd.fore_L": -30, "swing.hand_L": 60, "abd.hand_L": -30})
+        d.update(_leg("L", 5, -15 - 10 * lup, 0, abd=12)); d.update(_leg("R", 5, -15 - 10 * rup, 0, abd=12))
+        d.update({"root.y": -1.5 + 1.5 * abs(up), "root.x": 3 * (rup - lup) if False else 0, "lean": -4, "twist": 15 * up,
+                  "head_tilt": -3})
+        ks.append((t, d))
+    return ks
+
+
+def _jump():
+    # anticipation crouch -> launch -> apex -> land squash -> recover. one jump per cycle.
+    T = [0, .15, .3, .45, .6, .75, .9]
+    kn = [-25, -60, -10, 0, 0, -50, -35]         # knee bend
+    ry = [0, -8, 8, 22, 8, -6, -3]               # root height (cm)
+    sq = [0, .06, 0, 0, 0, .10, .04]
+    up = [-10, -40, 40, 60, 40, -30, -20]        # arm swing (back on crouch, up on launch)
+    bend = [5, 25, -5, -10, -5, 20, 10]
+    ks = []
+    for i, t in enumerate(T):
+        d = {}
+        for s in "LR":
+            d.update(_leg(s, -kn[i] * 0.45, kn[i], 0 if i not in (2, 3) else -30, abd=5))
+            d.update(_arm(s, up[i], 15, wrist=10, abd=15))
+        d.update({"root.y": ry[i], "squash": sq[i], "lean": bend[i] * 0.4, "bend": bend[i], "head_tilt": -bend[i] * 0.5})
+        ks.append((t, d))
+    return ks
+
+
+def _floss():
+    # arms straight, swing side to side crossing in front/behind the hips; hips swing opposite
+    T = [i / 8 for i in range(8)]
+    ks = []
+    for i, t in enumerate(T):
+        s = math.sin(2 * math.pi * t); c = math.cos(2 * math.pi * t)
+        # both arms move together laterally: abd of one grows as the other shrinks (crossing the body)
+        # arms in front of body (swing +) on one half, behind (swing -) on the other
+        front = 25 * c
+        d = {}
+        d.update({"swing.arm_L": front, "abd.arm_L": 20 - 45 * s, "swing.fore_L": front, "abd.fore_L": 20 - 45 * s,
+                  "swing.hand_L": front, "abd.hand_L": 20 - 45 * s})
+        d.update({"swing.arm_R": front, "abd.arm_R": 20 + 45 * s, "swing.fore_R": front, "abd.fore_R": 20 + 45 * s,
+                  "swing.hand_R": front, "abd.hand_R": 20 + 45 * s})
+        d.update(_leg("L", 0, -12, 0, abd=10)); d.update(_leg("R", 0, -12, 0, abd=10))
+        d.update({"root.x": 4 * s, "root.y": -1, "lean": 2, "twist": -10 * s, "head_tilt": 0})
+        ks.append((t, d))
+    return ks
+
+
+def _moonwalk():
+    # (held-out) walk-cycle legs played "backwards" with the sliding foot flat and the other on toe;
+    # arms hang loose, slight backward lean, head down.
+    T = [i / 8 for i in range(8)]
+    thigh = [-20, -10, 0, 10, 20, 12, 0, -12]
+    knee = [-5, -15, -35, -25, -5, -8, -10, -6]
+    dorsi = [-25, -30, -20, 0, 0, 0, 0, -10]
+    legL = [(t, _leg("L", th, kn, do)) for t, th, kn, do in zip(T, thigh, knee, dorsi)]
+    arms = [(t, {**_arm("L", -6 + 4 * math.sin(2 * math.pi * t), 15, wrist=8, abd=6),
+                 **_arm("R", -6 - 4 * math.sin(2 * math.pi * t), 15, wrist=8, abd=6)}) for t in T]
+    body = [(t, {"root.y": -1.5, "lean": -6, "bend": 8, "twist": 6 * math.cos(2 * math.pi * t), "head_tilt": 15}) for t in T]
+    return _merge(legL, _mirror_LR(_shift(legL, 0.5)), arms, body)
+
+
+def _helicopter_kick():
+    # (held-out) plant on L leg, R leg sweeps a big horizontal circle; arms out for balance, torso leans away
+    T = [i / 8 for i in range(8)]
+    ks = []
+    for i, t in enumerate(T):
+        a = 2 * math.pi * t
+        d = {}
+        # R leg: swing forward/back = cos, abduction = sin (circle), knee nearly straight
+        d.update({"swing.leg_R": 45 * math.cos(a), "abd.leg_R": 40 + 35 * math.sin(a), "swing.shin_R": 45 * math.cos(a) - 8,
+                  "abd.shin_R": 40 + 35 * math.sin(a), "swing.foot_R": 45 * math.cos(a) + 70, "abd.foot_R": 40 + 35 * math.sin(a)})
+        d.update(_leg("L", -8 * math.cos(a), -20, 0, abd=4))
+        d.update(_arm("L", 0, 10, wrist=0, abd=85 - 10 * math.sin(a))); d.update(_arm("R", 0, 10, wrist=0, abd=85 + 10 * math.sin(a)))
+        d.update({"root.x": -3 * math.sin(a), "root.y": -3, "lean": -10 * math.cos(a), "twist": 25 * math.sin(a), "head_tilt": 0})
+        ks.append((t, d))
+    return ks
+
+
 STYLES = {
     "idle_bob": _idle_bob,
     "walk": _walk,
+    "run": _run,
     "jumping_jack": _jumping_jack,
     "wave": _wave,
+    "robot": _robot,
+    "twist": _twist,
+    "disco_point": _disco_point,
+    "jump": _jump,
+    "floss": _floss,
+    "moonwalk": _moonwalk,          # held out (test only)
+    "helicopter_kick": _helicopter_kick,   # held out (test only)
 }
+STEPPED = {"robot"}
+HELD_OUT = {"moonwalk", "helicopter_kick"}
 _CACHE: dict[str, Clip] = {}
 
 
@@ -173,7 +327,7 @@ def clip(style: str) -> Clip:
 
 def pose(style: str, t: float, mp: MotionParams | None = None) -> Pose:
     """t in [0,1) cyclic -> Pose. THE seam."""
-    mp = mp or MotionParams()
+    mp = mp or MotionParams(stepped=(style in STEPPED))
     c = clip(style)
     p = Pose()
     for seg in LIMB_SEGS:
