@@ -50,7 +50,7 @@ def sample_body(rng: random.Random) -> Body:
 
 
 def sample_cameras(rng: random.Random) -> list[Camera]:
-    n = 2 if rng.random() < 0.3 else 1
+    n = 3   # v1: three cameras per clip (seed/camera diversity before prompt diversity)
     cams = []
     for _ in range(n):
         yaw = rng.choice(CANON_YAWS) + rng.uniform(-6, 6) if rng.random() < 0.7 else rng.uniform(-180, 180)

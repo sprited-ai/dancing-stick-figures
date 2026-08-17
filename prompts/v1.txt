@@ -95,39 +95,39 @@ dance	A person does the funky chicken.
 dance	A person dances with arms in the air.
 dance	A person does the two step.
 dance	A person does the electric slide.
-sport	A person jumps up and down.
-sport	A person jumps up and down with arms raised.
-sport	A person does jumping jacks.
-sport	A person does squats.
-sport	A person does lunges.
-sport	A person does a high kick.
-sport	A person kicks a ball.
-sport	A person throws a ball overhand.
-sport	A person throws a ball underhand.
-sport	A person swings a baseball bat.
-sport	A person swings a golf club.
-sport	A person swings a tennis racket.
-sport	A person shoots a basketball.
-sport	A person dribbles a basketball.
-sport	A person punches the air like a boxer.
-sport	A person shadow boxes.
-sport	A person does a karate chop.
-sport	A person does a roundhouse kick.
-sport	A person jumps rope.
-sport	A person does a standing long jump.
-sport	A person balances on one leg.
-sport	A person does a yoga tree pose.
-sport	A person does a yoga warrior pose.
-sport	A person touches their toes.
-sport	A person does arm circles.
-sport	A person does side bends.
-sport	A person does a burpee.
-sport	A person does a push up.
-sport	A person does a sit up.
-sport	A person swims freestyle in place.
-sport	A person rows a boat.
-sport	A person lifts a heavy box.
-sport	A person lifts weights overhead.
+*sport	A person jumps up and down.
+*sport	A person jumps up and down with arms raised.
+*sport	A person does jumping jacks.
+*sport	A person does squats.
+*sport	A person does lunges.
+*sport	A person does a high kick.
+*sport	A person kicks a ball.
+*sport	A person throws a ball overhand.
+*sport	A person throws a ball underhand.
+*sport	A person swings a baseball bat.
+*sport	A person swings a golf club.
+*sport	A person swings a tennis racket.
+*sport	A person shoots a basketball.
+*sport	A person dribbles a basketball.
+*sport	A person punches the air like a boxer.
+*sport	A person shadow boxes.
+*sport	A person does a karate chop.
+*sport	A person does a roundhouse kick.
+*sport	A person jumps rope.
+*sport	A person does a standing long jump.
+*sport	A person balances on one leg.
+*sport	A person does a yoga tree pose.
+*sport	A person does a yoga warrior pose.
+*sport	A person touches their toes.
+*sport	A person does arm circles.
+*sport	A person does side bends.
+*sport	A person does a burpee.
+*sport	A person does a push up.
+*sport	A person does a sit up.
+*sport	A person swims freestyle in place.
+*sport	A person rows a boat.
+*sport	A person lifts a heavy box.
+*sport	A person lifts weights overhead.
 transitions	A person sits down on a chair.
 transitions	A person stands up from a chair.
 transitions	A person kneels down.
@@ -143,15 +143,3 @@ transitions	A person ducks under something.
 transitions	A person steps over an obstacle.
 transitions	A person climbs over a low wall.
 transitions	A person sits down cross-legged.
-*acrobatic	A person does a cartwheel.
-*acrobatic	A person does a somersault.
-*acrobatic	A person does a backflip.
-*acrobatic	A person does a handstand.
-*acrobatic	A person does a spinning jump.
-*acrobatic	A person does a helicopter kick.
-*acrobatic	A person does a split.
-*acrobatic	A person does a leap with arms outstretched.
-*moonwalk	A person moonwalks backwards.
-*moonwalk	A person moonwalks in a circle.
-*moonwalk	A person moonwalks and spins.
-*moonwalk	A person moonwalks slowly.
