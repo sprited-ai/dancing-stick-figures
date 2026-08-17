@@ -105,10 +105,26 @@ trained on Rigplay mocap.
   agreement with the input; regressor PCK reported. `[TODO train regressor; PCK@2px]`
 
 ### 4.2 Validation  `[the core table]`
-- Floor: real held-out frames → all metrics ≈ 0. `[TODO]`
-- Ceiling / specificity: four controlled corruptions of real frames — L/R colour swap, +30 % bone
-  stretch, delete a hand, add a third arm — each metric should respond to its intended corruption
-  and not to the others. `[TODO Table 3 / heatmap]`
+- **v0 result (regressor-free, 200 held-out frames re-rendered from labels; `eval/corrupt.py`):**
+
+| condition | tvr | lie | cpe | fg |
+|---|---|---|---|---|
+| stored parquet frame | 0.184 | 0.077 | 0.026 | 0.058 |
+| real | 0.180 | 0.071 | 0.023 | 0.058 |
+| swap_LR_partial | 0.182 | 0.271 | 0.029 | 0.058 |
+| swap_LR_full | 0.177 | 0.074 | 0.023 | 0.058 |
+| stretch_bone | 0.189 | 0.070 | 0.023 | 0.059 |
+| delete_hand | 0.176 | 0.070 | 0.022 | 0.057 |
+| extra_arm | 0.268 | 0.064 | 0.029 | 0.062 |
+
+tvr = fraction of the 8 limb colours with #components != 1 · lie = fraction of 8 expected colour adjacencies missing (v0; full L/R chain swap is *not* expected to be caught) · cpe = impure foreground fraction · fg = foreground fraction.
+
+  Reading: LIE responds to a partial L/R swap (0.07→0.27), TVR to an extra limb (0.18→0.27); both
+  are specific (other corruptions leave them at floor). The **floor is not zero** (tvr 0.18, lie
+  0.07) because self-occlusion splits a limb colour into two components — regressor-free metrics
+  must be reported as deltas from the real-frame floor. Full L/R swap, bone stretch and hand
+  deletion are geometric and invisible to colour statistics → they need the regressor-based SRE
+  `[TODO E3]`. Fig: corruption sheet `out/_oracle_corruptions.png`.
 - Relation to FVD: metrics vs FVD across training checkpoints of the baselines; report
   correlation and at least one disagreement (Fig). `[TODO]`
 - Failure modes of the oracle itself (thin strokes, occlusion, off-manifold samples). `[TODO]`
