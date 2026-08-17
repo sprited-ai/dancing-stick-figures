@@ -111,6 +111,13 @@ def main():
             except Exception:
                 step = last
             if step != last:
+                snap = os.path.join(a.run, f"ckpt_{int(step):06d}.pt")
+                if not os.path.exists(snap):
+                    try:
+                        ck = torch.load(p, map_location="cpu", weights_only=False)
+                        torch.save({k: ck[k] for k in ck if k != "opt"}, snap)
+                    except Exception as e:
+                        print("snapshot failed:", e, flush=True)
                 try:
                     m = evaluate(a.run, a.cache, a.n, seeds=tuple(range(a.seeds)))
                     json.dump(m, open(os.path.join(a.run, "eval", f"{m['step']:06d}.json"), "w"), indent=1)

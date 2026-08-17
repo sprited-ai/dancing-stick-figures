@@ -252,6 +252,8 @@ def main():
                     except Exception: pass
             torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups, arch="dit_fm"),
                        os.path.join(a.out, "ckpt.pt"))
+            torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), groups=ds.groups, arch="dit_fm"),
+                       os.path.join(a.out, f"ckpt_{step:06d}.pt"))
             print(f"  wrote sample_{step:06d}.gif", flush=True)
 
 

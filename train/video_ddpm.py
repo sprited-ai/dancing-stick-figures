@@ -331,6 +331,8 @@ def main():
                 to_gif(xr, os.path.join(a.out, f"sample_raw_{step:06d}.gif"))
             torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups),
                        os.path.join(a.out, "ckpt.pt"))
+            torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), groups=ds.groups),          # history (EMA only)
+                       os.path.join(a.out, f"ckpt_{step:06d}.pt"))
             print(f"  wrote sample_{step:06d}.gif", flush=True)
             if tb:   # first frame of the sample grid as an image, whole clip as video
                 v = ((xs.clamp(-1, 1) + 1) / 2)
