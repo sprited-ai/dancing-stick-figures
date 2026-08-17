@@ -27,9 +27,6 @@ locomotion	A person walks like a zombie.
 locomotion	A person walks proudly with a swagger.
 locomotion	A person walks while looking at their phone.
 locomotion	A person walks and turns around.
-locomotion	A person walks up an imaginary staircase.
-locomotion	A person crawls forward on hands and knees.
-locomotion	A person crouches and walks forward.
 locomotion	A person skips forward.
 locomotion	A person gallops sideways.
 locomotion	A person shuffles forward.
