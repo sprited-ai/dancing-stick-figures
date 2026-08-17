@@ -240,7 +240,8 @@ def main():
                 to_gif(xs, os.path.join(a.out, f"sample_{name}{step:06d}.gif"))
                 if not name and tb:
                     v = ((xs.clamp(-1, 1) + 1) / 2); rgb = (v[:, :3] + (1 - v[:, 3:4])).clamp(0, 1)
-                    tb.add_video("samples", rgb.permute(0, 2, 1, 3, 4).cpu(), step, fps=10)
+                    try: tb.add_video("samples", rgb.permute(0, 2, 1, 3, 4).cpu(), step, fps=10)
+                    except Exception: pass
             torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups, arch="dit_fm"),
                        os.path.join(a.out, "ckpt.pt"))
             print(f"  wrote sample_{step:06d}.gif", flush=True)

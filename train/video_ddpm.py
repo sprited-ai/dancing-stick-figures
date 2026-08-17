@@ -328,7 +328,8 @@ def main():
             if tb:   # first frame of the sample grid as an image, whole clip as video
                 v = ((xs.clamp(-1, 1) + 1) / 2)
                 rgb = (v[:, :3] + (1 - v[:, 3:4])).clamp(0, 1)          # premult over white -> [B,3,T,H,W]
-                tb.add_video("samples", rgb.permute(0, 2, 1, 3, 4).cpu(), step, fps=10)
+                try: tb.add_video("samples", rgb.permute(0, 2, 1, 3, 4).cpu(), step, fps=10)
+                    except Exception: pass
 
 
 if __name__ == "__main__":
