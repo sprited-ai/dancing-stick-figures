@@ -1,0 +1,50 @@
+{
+ "version": "0.1.0",
+ "clips": 4,
+ "frames": 840,
+ "shards": {
+  "train": 2,
+  "val": 1,
+  "test": 0
+ },
+ "fps": 20,
+ "size": 128,
+ "depth_range": [
+  -1.5,
+  1.5
+ ],
+ "joints": [
+  "Hips",
+  "Spine",
+  "Spine1",
+  "Spine2",
+  "Spine3",
+  "Neck",
+  "Head",
+  "RightShoulder",
+  "RightArm",
+  "RightForeArm",
+  "RightHand",
+  "RightHandEnd",
+  "RightHandThumb1",
+  "LeftShoulder",
+  "LeftArm",
+  "LeftForeArm",
+  "LeftHand",
+  "LeftHandEnd",
+  "LeftHandThumb1",
+  "RightUpLeg",
+  "RightLeg",
+  "RightFoot",
+  "RightToeBase",
+  "LeftUpLeg",
+  "LeftLeg",
+  "LeftFoot",
+  "LeftToeBase"
+ ],
+ "held_out_groups": [
+  "acrobatic",
+  "moonwalk"
+ ],
+ "seconds": 8
+}
