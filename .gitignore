@@ -6,3 +6,6 @@ data/
 viewer/node_modules/
 viewer/dist/
 viewer/public/clips/
+runs_a0/
+runs_a1/
+paper/refs/*.pdf
