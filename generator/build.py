@@ -77,6 +77,14 @@ def build_clip(args):
     P, fps, text = load(npz_path)
     Q = to_figure_frame(P)
     rpos, rvel, rhead = load_root(npz_path)
+    # QA flags per clip (kept in the data, not filtered — users decide): levitation = Hips ever > 1.6 m
+    # above its frame-0 floor (only jumps get near 1.5); frozen = mean joint speed < 0.02 m/s.
+    hips_h = rpos[:, 1] + (P[0, 0, 1] - P[0, [21, 22, 25, 26], 1].min())
+    speed = float(np.linalg.norm(np.diff(Q, axis=0), axis=-1).mean() * fps)
+    qa = []
+    if hips_h.max() > 1.6: qa.append("levitation")
+    if speed < 0.02: qa.append("frozen")
+    qa_flags = ",".join(qa)
     stem = os.path.splitext(os.path.basename(npz_path))[0]
     seed = int(stem.rsplit("_s", 1)[1]) if "_s" in stem else 0
     clip_id = f"{group}/{stem}"
@@ -97,7 +105,7 @@ def build_clip(args):
             vis = np.array([(o["seg"] == i + 1).any() for i in range(len(NAMES))], bool)
             rows.append(dict(
                 sample_id=f"{clip_id}/c{ci}/f{t:03d}", clip_id=f"{clip_id}/c{ci}", frame_idx=t, n_frames=int(Q.shape[0]),
-                fps=FPS, split=split, group=group, held_out=group in held, text=text, seed=seed,
+                fps=FPS, split=split, group=group, held_out=group in held, text=text, seed=seed, qa_flags=qa_flags,
                 cam_yaw=float(cam.yaw), cam_pitch=float(cam.pitch), cam_center_x=cam.center[0], cam_center_y=cam.center[1],
                 px_per_m=body.px_per_m, stroke=body.stroke, bone_scale=json.dumps(body.bone_scale),
                 joint_xyz=xyz.tobytes(), joint_xy=xy.tobytes(), joint_depth=jd.tobytes(), joint_visible=vis.tobytes(),
@@ -114,7 +122,7 @@ IMG = pa.struct([("bytes", pa.binary()), ("path", pa.string())])
 SCHEMA = pa.schema([
     ("sample_id", pa.string()), ("clip_id", pa.string()), ("frame_idx", pa.int32()), ("n_frames", pa.int32()),
     ("fps", pa.int32()), ("split", pa.string()), ("group", pa.string()), ("held_out", pa.bool_()), ("text", pa.string()),
-    ("seed", pa.int32()), ("cam_yaw", pa.float32()), ("cam_pitch", pa.float32()), ("cam_center_x", pa.float32()),
+    ("seed", pa.int32()), ("qa_flags", pa.string()), ("cam_yaw", pa.float32()), ("cam_pitch", pa.float32()), ("cam_center_x", pa.float32()),
     ("cam_center_y", pa.float32()), ("px_per_m", pa.float32()), ("stroke", pa.float32()), ("bone_scale", pa.string()),
     ("joint_xyz", pa.binary()), ("joint_xy", pa.binary()), ("joint_depth", pa.binary()), ("joint_visible", pa.binary()),
     ("root_pos", pa.binary()), ("root_vel", pa.binary()), ("root_heading", pa.binary()),

@@ -3,3 +3,6 @@ out/
 __pycache__/
 ardy_out/
 data/
+viewer/node_modules/
+viewer/dist/
+viewer/public/clips/
