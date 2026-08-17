@@ -1,7 +1,7 @@
 """Renderer: projected joints + depth -> 128x128 RGBA. Vector at 4x supersample, box down.
 
-Chains are depth-sorted (far first). Each chain gets a whole-chain halo pass, then a stroke
-pass, so shared joints inside a chain are never nicked. Hands = mitten (palm + 3 fingers).
+Chains are depth-sorted (far first). Optional halo (off by default: colour + occlusion order
+already carry identity + depth; halo left white nicks at chain junctions). Hands = mitten.
 """
 from __future__ import annotations
 import math
@@ -116,7 +116,7 @@ def _foot_shoe(d, ankle, toe, w, col):
 FEET = {"shoe": _foot_shoe, "segment": _foot_segment}
 
 
-def render(j2: dict, depth: dict, body: Body, colored: bool = True, halo: bool = True,
+def render(j2: dict, depth: dict, body: Body, colored: bool = True, halo: bool = False,
            bg=(0, 0, 0, 0), halo_rgb=(255, 255, 255)) -> Image.Image:
     im = Image.new("RGBA", (W, W), bg)
     d = ImageDraw.Draw(im)
