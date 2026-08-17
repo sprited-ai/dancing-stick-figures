@@ -205,7 +205,14 @@ def main():
         for g in opt.param_groups: g["lr"] = lr
         with torch.autocast("cuda", dtype=torch.bfloat16):
             pred = model(xt, t, y)
-        loss = F.mse_loss(pred.float(), eps - x) / a.accum
+        err = (pred.float() - (eps - x)) ** 2
+        loss = err.mean() / a.accum
+        with torch.no_grad():                                   # diagnostics only
+            fgm = (x[:, 3:4] > -0.9).float()
+            fg_loss = float((err * fgm).sum() / fgm.sum().clamp_min(1))
+            per = err.flatten(1).mean(1)
+            lb = float(per[t > 0.8].mean()) if (t > 0.8).any() else float("nan")   # near noise
+            hb = float(per[t < 0.2].mean()) if (t < 0.2).any() else float("nan")   # near data
         loss.backward()
         if (step + 1) % a.accum != 0:
             step += 1; continue
@@ -218,12 +225,13 @@ def main():
         ema_loss = loss.item() if ema_loss is None else 0.98 * ema_loss + 0.02 * loss.item()
         if step == 10 or step % 50 == 0:
             spi = (time.time() - t0) / step
-            msg = f"step {step} loss {ema_loss:.4f} lr {lr:.2e} {spi:.2f}s/it peak {torch.cuda.max_memory_allocated()/1e9:.1f}GB ETA {(a.steps-step)*spi/3600:.1f}h"
+            msg = f"step {step} loss {ema_loss:.4f} fg {fg_loss:.4f} t>.8 {lb:.4f} t<.2 {hb:.4f} lr {lr:.2e} {spi:.2f}s/it peak {torch.cuda.max_memory_allocated()/1e9:.1f}GB ETA {(a.steps-step)*spi/3600:.1f}h"
             vl = vloss() if (vdl is not None and step % a.val_every == 0) else None
             if vl is not None: msg += f" val {vl:.4f}"
             print(msg, flush=True); log.write(msg + "\n"); log.flush()
             if tb:
                 tb.add_scalar("loss/train_ema", ema_loss, step); tb.add_scalar("lr", lr, step)
+                tb.add_scalar("loss/fg", fg_loss, step); tb.add_scalar("loss/t_gt_0.8", lb, step); tb.add_scalar("loss/t_lt_0.2", hb, step)
                 tb.add_scalar("perf/s_per_it", spi, step); tb.add_scalar("perf/peak_gb", torch.cuda.max_memory_allocated() / 1e9, step)
                 if vl is not None: tb.add_scalar("loss/val", vl, step)
         if step % a.sample_every == 0 or step == a.steps:
