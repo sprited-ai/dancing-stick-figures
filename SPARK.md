@@ -355,22 +355,32 @@ throughout.
 `joint_xy` in image space is the important one — it's directly usable as a ControlNet-style
 conditioning signal, and as the regression target for the pose oracle in §6.
 
-### 3.6 Configs and splits
+### 3.6 v1 configs, splits, scale (decided 2026-08-17)
 
-| config | contents | purpose |
+**128×128 only for v1** (Jin). Renderer is resolution-agnostic; 256 later is free.
+
+Per frame, four aligned images + one label row:
+
+| channel | format | notes |
 |---|---|---|
-| `color-frames` | 65,536 frames · fixed limb palette (§3.1b) · transparent bg | **default**; hero grid, DDPM v0, oracle |
-| `mono-frames` | 65,536 frames · ink stroke only | the mirror-ambiguous variant; harder |
-| `clips-32` | 4,096 clips × 32 frames = 131,072 · colour | video-gen, frame interp, next-frame |
+| `color` | RGBA PNG | colour-coded bones, transparent bg. The main image. |
+| `depth` | 16-bit PNG | camera-toward depth, metres, Hips-relative, bg = 0 |
+| `normal` | RGB PNG | camera-space, `n*0.5+0.5` |
+| `seg` | uint8 PNG | bone id 0–27 (cskel index + 1) |
 
-(`styled-frames` — random palettes per figure — dropped from week 1. With a fixed semantic
-palette it's a different, less useful axis. Revisit as `stickdance-styled` if there's demand.)
+| config | motion source | frames | labels |
+|---|---|---|---|
+| `keyed` | 12 hand-keyed styles × params × camera | 32k | style_id, phase, exact params |
+| `ardy` | ~100 ARDY prompts × seeds × camera | 32k | text prompt |
 
-Splits: `train` 90% / `val` 5% / `test` 5%, **split by clip and by figure, never by frame** —
-otherwise near-duplicate frames leak across the boundary and every metric lies to you.
-Styles 10–11 are test-only.
+Both share the schema in §3.5 (cskel27, metres, camera). Frames are grouped into clips
+(`clip_id`, `frame_idx`) so the same shards serve image, video, and interpolation tasks.
 
-Total ≈ 262k frames ≈ **~1.0 GB**. Generation cost is minutes of CPU, not GPU-hours.
+- **Camera**: canonical views (0°, ±45°, ±90°, ±135°, 180°) 70% + uniform yaw 30%; pitch −5°…15°.
+- **Background**: transparent only. Compositing over white/black is one line in the loader.
+- **Normals**: camera space. **mono**: not shipped in v1 (one renderer flag; note on card).
+- **Split**: by clip, 90/5/5. Held-out keyed styles (moonwalk, helicopter_kick) test-only.
+- **Scale**: v1 ≈ 64k frames ≈ 300 MB. v1.1 4× if v1 lands.
 
 ### 3.7 Format
 
