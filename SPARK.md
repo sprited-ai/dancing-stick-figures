@@ -54,6 +54,15 @@ better. Ship that in the Space.
 
 ---
 
+### Lineage: `motionseed.1` (2025-07)
+
+Jin already tried this once — `~/dev/motionseed.1`, a private "sprite animation dataset,
+motion-first, pixel-native, scale-aware, per-frame metadata." It stalled at the
+collect-other-people's-data stage (KTH, CMU mocap, Iwara). The four principles were right;
+the sourcing wasn't. `stickdance-128` is motionseed with one change: **we own the generator**,
+so per-frame metadata is exact instead of annotated and licensing is trivial instead of a
+research project. Worth saying so on the card — it's a real research line, not a first attempt.
+
 ## 2. What we are NOT doing, and why
 
 You floated: NVIDIA "ARDY" for motion generation, or Seedance → video → pose extraction →
