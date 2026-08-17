@@ -203,20 +203,40 @@ Why this is more than cosmetic:
 `mono` (ink-only) stays as a secondary config for the "harder, ambiguous" variant — useful
 precisely *because* it's bimodal — but colour is the default and the one on the hero grid.
 
-### 3.2 Skeleton
+### 3.2 Skeleton — with hands and feet
 
-15 joints, 14 bones, 2D:
+19 joints, 18 segments, 2D. Hands and feet are **in** (Jin's call; also see §3.2b):
 
 ```
              head
               |
-            neck ── shoulder_L ── elbow_L ── wrist_L
-              |   └─ shoulder_R ── elbow_R ── wrist_R
+            neck ── shoulder_L ── elbow_L ── wrist_L ── hand_L
+              |   └─ shoulder_R ── elbow_R ── wrist_R ── hand_R
             spine
               |
-            pelvis ── hip_L ── knee_L ── ankle_L
-                   └─ hip_R ── knee_R ── ankle_R
+            pelvis ── hip_L ── knee_L ── ankle_L ── toe_L
+                   └─ hip_R ── knee_R ── ankle_R ── toe_R
 ```
+
+### 3.2b Hands and feet at 128px
+
+Probed in `scratch/hands_probe.py`. Findings:
+
+- **Feet: a 7px segment from ankle, pointing in the facing direction, shin colour.** Reads
+  instantly. Foot direction is a free "which way is the figure facing" cue that black-stick
+  figures don't have.
+- **Hands: a plain blob at the wrist is too small to read at 128px** — barely distinguishable
+  from a bare wrist. Rejected.
+- **Hands: mitten = palm blob + 3 fingers (2px each, ~10px hand width), forearm colour.**
+  Fingers individually smear at 128px but the *hand* gestalt is unmistakable. **This is the
+  default.** It's on-brand for pixel art, and it makes the §6 pitch literally true.
+- New param `wrist_angle` (±30°, per hand, animated) so hands aren't just forearm extensions.
+  Adds a hand-pose dimension for the oracle: finger count + wrist angle + which arm it's on.
+
+Fingers at 2px are borderline by design — that borderline *is* the interesting difficulty.
+A model that gets fingers right at 128px has learned something real. If it turns out to be
+too hard for DDPM v0, `hands=blob-large` (r=5px) is a one-flag fallback that keeps hands
+detectable while removing finger structure.
 
 Bone lengths are sampled per-figure (within anatomical ratios) and held constant for the
 whole clip. **This is deliberate**: constant bone length within a clip is what makes
@@ -266,6 +286,8 @@ Each sample draws from a seeded parameter vector:
 | `squash_gain` | 0 – 0.25 | torso compression coupled to vertical velocity |
 | `lag_gain` | 0 – 0.12 | distal joint phase delay (see §5) |
 | `bone_scale[8]` | ±15% | per-limb length |
+| `wrist_angle_L/R` | ±30° | hand pose, animated per style |
+| `hand_style` | `mitten` (default) / `blob-large` | difficulty fallback |
 | `stroke_width` | 3 – 6 px | line weight |
 | `mirrored` | bool | horizontal flip |
 | `stroke_rgb` / `bg_rgba` | palette | appearance (styled config only) |
@@ -285,10 +307,10 @@ throughout.
   "style_id":     9,
   "style_name":   "floss",
   "params":       { "tempo_scale": 1.12, "amp_scale": 0.94, ... },
-  "joint_angles": [14 floats, radians],
-  "joint_xy":     [[x,y] × 15, normalized to [0,1] in image space],
-  "bone_lengths": [8 floats, px],
-  "visible":      [15 bools],   // occluded-by-torso flag
+  "joint_angles": [18 floats, radians],
+  "joint_xy":     [[x,y] × 19, normalized to [0,1] in image space],
+  "bone_lengths": [12 floats, px],
+  "visible":      [19 bools],   // occluded-by-torso flag
   "appearance":   { "stroke_rgb": [17,17,17], "bg_rgba": [0,0,0,0], "stroke_width": 4 }
 }
 ```
@@ -425,7 +447,9 @@ figure scale. Diffusion models notoriously produce rubber limbs; this catches it
 
 Skeletonize the generated image, count connected components and endpoints. A correct figure
 has exactly **1 component and 5 extremities** (head, 2 hands, 2 feet). Anything else is a
-violation. Brutal, cheap, uninterpretable-by-nobody.
+violation. Brutal, cheap, uninterpretable-by-nobody. With mitten hands, extremities are real
+blobs rather than line-ends, so this is robust to skeletonization noise — and a **finger count
+per hand** (expected 3) becomes a sub-metric. Yes, we can literally count the fingers.
 
 ### 6.4 Limb Identity Error (LIE) — colour config only
 
@@ -439,7 +463,7 @@ Report all four alongside standard FID against a held-out split.
 ### The pitch line
 
 > *"AI can't draw hands" is a meme because nobody can measure it.
-> Here it's `stickdance.eval(samples)` and it returns a number.*
+> Here it's `stickdance.eval(samples)` and it returns a number — including how many fingers.*
 
 That framing is the distribution hook. It's true, it's useful, and it's funny — which is
 what actually gets a dataset shared.
