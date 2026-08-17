@@ -1,4 +1,6 @@
-# stickdance: a fully-labelled synthetic human-motion video benchmark with render-based anatomy metrics for small-scale video diffusion
+# Dancing Stick Figures: a fully-labelled synthetic motion-video benchmark with render-based anatomy metrics for small-scale video diffusion
+
+*(working title per Jin: "Dancing Stick Figures"; the dataset id stays `stickdance-128`)*
 
 **Draft v0 — skeleton with holes.** `[TODO]` = needs an experiment or a number. `[CLAIM?]` = only
 if the evidence lands. Target: arXiv tech report (6–8 pp) + HF dataset + code. Owner: Sprited.
