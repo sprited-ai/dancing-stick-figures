@@ -182,6 +182,7 @@ def pose(style: str, t: float, mp: MotionParams | None = None) -> Pose:
         p.abd[seg] = math.radians(c.sample(f"abd.{seg}", tt, mp.stepped) * mp.amp)
     p.root = (c.sample("root.x", t, mp.stepped), c.sample("root.y", t, mp.stepped) * mp.bounce, c.sample("root.z", t, mp.stepped))
     p.lean = math.radians(c.sample("lean", t, mp.stepped))
+    p.bend = math.radians(c.sample("bend", t, mp.stepped))
     p.twist = math.radians(c.sample("twist", t, mp.stepped))
     p.head_tilt = math.radians(c.sample("head_tilt", t, mp.stepped))
     p.squash = c.sample("squash", t, mp.stepped) * mp.squash_gain

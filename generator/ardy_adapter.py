@@ -19,7 +19,7 @@ CSKEL27 = ["Hips", "Spine", "Spine1", "Spine2", "Spine3", "Neck", "Head",
 IDX = {n: i for i, n in enumerate(CSKEL27)}
 
 MAP = {  # ours -> theirs
-    "pelvis": "Hips", "neck": "Neck", "head": "Head",
+    "pelvis": "Hips", "spine_lo": "Spine1", "spine_hi": "Spine3", "neck": "Neck", "head": "Head",
     "shoulder_L": "LeftArm", "elbow_L": "LeftForeArm", "wrist_L": "LeftHand", "hand_L": "LeftHandEnd",
     "shoulder_R": "RightArm", "elbow_R": "RightForeArm", "wrist_R": "RightHand", "hand_R": "RightHandEnd",
     "hip_L": "LeftUpLeg", "knee_L": "LeftLeg", "ankle_L": "LeftFoot", "toe_L": "LeftToeBase",

@@ -1,0 +1,218 @@
+{
+ "Hips": {
+  "parent": null,
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "Spine": {
+  "parent": "Hips",
+  "pos": [
+   0.0,
+   0.07099,
+   -0.04733
+  ]
+ },
+ "Spine1": {
+  "parent": "Spine",
+  "pos": [
+   0.0,
+   0.1642,
+   -0.06376
+  ]
+ },
+ "Spine2": {
+  "parent": "Spine1",
+  "pos": [
+   0.0,
+   0.2585,
+   -0.07201
+  ]
+ },
+ "Spine3": {
+  "parent": "Spine2",
+  "pos": [
+   0.0,
+   0.35315,
+   -0.07201
+  ]
+ },
+ "Neck": {
+  "parent": "Spine3",
+  "pos": [
+   0.0,
+   0.60161,
+   -0.03652
+  ]
+ },
+ "Head": {
+  "parent": "Neck",
+  "pos": [
+   0.0,
+   0.72978,
+   -0.01392
+  ]
+ },
+ "RightShoulder": {
+  "parent": "Spine3",
+  "pos": [
+   -0.03199,
+   0.52592,
+   -0.01869
+  ]
+ },
+ "RightArm": {
+  "parent": "RightShoulder",
+  "pos": [
+   -0.1909,
+   0.52592,
+   -0.01869
+  ]
+ },
+ "RightForeArm": {
+  "parent": "RightArm",
+  "pos": [
+   -0.48634,
+   0.52592,
+   -0.01869
+  ]
+ },
+ "RightHand": {
+  "parent": "RightForeArm",
+  "pos": [
+   -0.71899,
+   0.52592,
+   -0.01869
+  ]
+ },
+ "RightHandEnd": {
+  "parent": "RightHand",
+  "pos": [
+   -0.7886,
+   0.52592,
+   -0.01869
+  ]
+ },
+ "RightHandThumb1": {
+  "parent": "RightHand",
+  "pos": [
+   -0.74684,
+   0.50736,
+   0.02772
+  ]
+ },
+ "LeftShoulder": {
+  "parent": "Spine3",
+  "pos": [
+   0.03199,
+   0.52592,
+   -0.01869
+  ]
+ },
+ "LeftArm": {
+  "parent": "LeftShoulder",
+  "pos": [
+   0.1909,
+   0.52592,
+   -0.01869
+  ]
+ },
+ "LeftForeArm": {
+  "parent": "LeftArm",
+  "pos": [
+   0.48634,
+   0.52592,
+   -0.01869
+  ]
+ },
+ "LeftHand": {
+  "parent": "LeftForeArm",
+  "pos": [
+   0.71899,
+   0.52592,
+   -0.01869
+  ]
+ },
+ "LeftHandEnd": {
+  "parent": "LeftHand",
+  "pos": [
+   0.7886,
+   0.52592,
+   -0.01869
+  ]
+ },
+ "LeftHandThumb1": {
+  "parent": "LeftHand",
+  "pos": [
+   0.74684,
+   0.50736,
+   0.02772
+  ]
+ },
+ "RightUpLeg": {
+  "parent": "Hips",
+  "pos": [
+   -0.09492,
+   -0.02773,
+   0.0
+  ]
+ },
+ "RightLeg": {
+  "parent": "RightUpLeg",
+  "pos": [
+   -0.09492,
+   -0.43985,
+   0.0
+  ]
+ },
+ "RightFoot": {
+  "parent": "RightLeg",
+  "pos": [
+   -0.09492,
+   -0.89594,
+   0.0
+  ]
+ },
+ "RightToeBase": {
+  "parent": "RightFoot",
+  "pos": [
+   -0.09492,
+   -0.95441,
+   0.16066
+  ]
+ },
+ "LeftUpLeg": {
+  "parent": "Hips",
+  "pos": [
+   0.09492,
+   -0.02773,
+   0.0
+  ]
+ },
+ "LeftLeg": {
+  "parent": "LeftUpLeg",
+  "pos": [
+   0.09492,
+   -0.43985,
+   0.0
+  ]
+ },
+ "LeftFoot": {
+  "parent": "LeftLeg",
+  "pos": [
+   0.09492,
+   -0.89594,
+   0.0
+  ]
+ },
+ "LeftToeBase": {
+  "parent": "LeftFoot",
+  "pos": [
+   0.09492,
+   -0.95441,
+   0.16066
+  ]
+ }
+}

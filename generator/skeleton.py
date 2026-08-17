@@ -15,22 +15,23 @@ from dataclasses import dataclass, field
 
 # segment -> (parent_joint, child_joint)
 SEGMENTS = {
-    "torso":  ("pelvis", "neck"),
+    "torso":  ("pelvis", "spine_lo"), "torso1": ("spine_lo", "spine_hi"), "torso2": ("spine_hi", "neck"),
     "arm_L":  ("shoulder_L", "elbow_L"), "fore_L": ("elbow_L", "wrist_L"), "hand_L": ("wrist_L", "hand_L"),
     "arm_R":  ("shoulder_R", "elbow_R"), "fore_R": ("elbow_R", "wrist_R"), "hand_R": ("wrist_R", "hand_R"),
     "leg_L":  ("hip_L", "knee_L"),  "shin_L": ("knee_L", "ankle_L"),  "foot_L": ("ankle_L", "toe_L"),
     "leg_R":  ("hip_R", "knee_R"),  "shin_R": ("knee_R", "ankle_R"),  "foot_R": ("ankle_R", "toe_R"),
 }
-JOINTS = ["head", "neck", "pelvis",
+JOINTS = ["head", "neck", "spine_hi", "spine_lo", "pelvis",
           "shoulder_L", "elbow_L", "wrist_L", "hand_L",
           "shoulder_R", "elbow_R", "wrist_R", "hand_R",
           "hip_L", "knee_L", "ankle_L", "toe_L",
           "hip_R", "knee_R", "ankle_R", "toe_R"]
-LIMB_SEGS = [s for s in SEGMENTS if s != "torso"]
+TORSO_SEGS = ["torso", "torso1", "torso2"]
+LIMB_SEGS = [s for s in SEGMENTS if s not in TORSO_SEGS]
 # depth from root along the chain, for overlapping-action lag
-CHAIN_DEPTH = {"torso": 0, **{s: {"arm": 1, "leg": 1, "fore": 2, "shin": 2, "hand": 3, "foot": 3}[s.split("_")[0]]
+CHAIN_DEPTH = {"torso": 0, "torso1": 0, "torso2": 0, **{s: {"arm": 1, "leg": 1, "fore": 2, "shin": 2, "hand": 3, "foot": 3}[s.split("_")[0]]
                               for s in LIMB_SEGS}}
-CHAINS = [["torso"], ["arm_L", "fore_L", "hand_L"], ["arm_R", "fore_R", "hand_R"],
+CHAINS = [TORSO_SEGS, ["arm_L", "fore_L", "hand_L"], ["arm_R", "fore_R", "hand_R"],
           ["leg_L", "shin_L", "foot_L"], ["leg_R", "shin_R", "foot_R"]]
 
 
@@ -64,7 +65,8 @@ class Pose:
     swing: dict[str, float] = field(default_factory=dict)   # seg -> theta (rad)
     abd: dict[str, float] = field(default_factory=dict)     # seg -> phi (rad)
     root: tuple[float, float, float] = (0.0, 0.0, 0.0)      # pelvis xyz, figure-local, px
-    lean: float = 0.0        # torso forward lean (rad)
+    lean: float = 0.0        # torso forward lean at the base (rad)
+    bend: float = 0.0        # extra forward curl distributed along the spine (rad, total)
     twist: float = 0.0       # shoulder yaw vs hips (rad), +ve = left shoulder forward
     squash: float = 0.0      # torso length delta multiplier
     head_tilt: float = 0.0   # forward (rad)
@@ -87,10 +89,16 @@ def fk3d(pose: Pose, body: Body) -> dict[str, tuple[float, float, float]]:
     j: dict[str, tuple[float, float, float]] = {}
     px, py, pz = pose.root
     j["pelvis"] = (px, py, pz)
-    tl = body.torso * (1.0 - pose.squash)
-    nx, ny, nz = px + tl * math.sin(pose.lean), py + tl * math.cos(pose.lean), pz
-    j["neck"] = (nx, ny, nz)
-    ht = pose.lean + pose.head_tilt
+    # spine = 3 equal segments; direction turns by bend/3 at each, starting from lean.
+    tl = body.torso * (1.0 - pose.squash) / 3.0
+    x, y, z = px, py, pz
+    ang = pose.lean
+    for name in ("spine_lo", "spine_hi", "neck"):
+        ang += pose.bend / 3.0
+        x, y = x + tl * math.sin(ang), y + tl * math.cos(ang)
+        j[name] = (x, y, z)
+    nx, ny, nz = j["neck"]
+    ht = ang + pose.head_tilt
     j["head"] = (nx + body.neck_to_head * math.sin(ht), ny + body.neck_to_head * math.cos(ht), nz)
     # hips along z; shoulders along z rotated by twist about y
     j["hip_L"] = (px, py, pz + body.hip_w)
