@@ -134,6 +134,7 @@ def score_video(frames_thw4: np.ndarray) -> dict:
         if np.isfinite(ang).sum() < 3: continue
         # unwrap on the half-circle
         dd = np.diff(ang); dd = (dd + np.pi / 2) % np.pi - np.pi / 2
-        j = np.abs(np.diff(dd)); jerks.append(np.nanmean(j))
+        j = np.abs(np.diff(dd)); j = j[np.isfinite(j)]
+        if j.size: jerks.append(float(j.mean()))
     out["angle_jerk"] = float(np.mean(jerks)) if jerks else 1.0
     return out
