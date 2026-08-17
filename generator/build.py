@@ -4,7 +4,7 @@
 
 Per clip (deterministic from clip_id): a Body (bone_scale jitter, stroke, scale) and 1–2 Cameras.
 Per frame: colour / depth / normal / seg PNGs + the label row (§3.5 of SPARK.md).
-Split by clip: held-out prompt groups -> test; else hash -> train 90 / val 5 / test 5.
+Split by PROMPT (not seed): held-out prompt groups -> test; else hash(prompt) -> train 90 / val 5 / test 5.
 """
 from __future__ import annotations
 import argparse, hashlib, io, json, math, os, random, sys, time
@@ -91,7 +91,9 @@ def build_clip(args):
     rng = random.Random(_h(clip_id))
     body = sample_body(rng)
     cams = sample_cameras(rng)
-    hh = _h(clip_id) % 100
+    # split by PROMPT (all seeds + cameras of one prompt share a split) so val/test = held-out prompts
+    # within seen groups; the two `*` groups are held-out concepts. Never split by seed.
+    hh = _h(group, stem.rsplit("_s", 1)[0]) % 100
     split = "test" if group in held else ("train" if hh < 90 else "val" if hh < 95 else "test")
     rows = []
     for ci, cam in enumerate(cams):
