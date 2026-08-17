@@ -359,6 +359,12 @@ conditioning signal, and as the regression target for the pose oracle in §6.
 
 **128×128 only for v1** (Jin). Renderer is resolution-agnostic; 256 later is free.
 
+**Motion source: ARDY only** (Jin, after seeing keyed vs ARDY side by side — the keyed loops
+read as puppets next to ARDY's output, and ARDY brings text labels for free). The hand-keyed
+library stays in the repo for the Space slider and for feeding keyframes *into* ARDY later,
+but it is not in the dataset. Everything the "keyed" config was for — class labels, held-out
+classes — moves to the prompt: `prompt_group` is the class, and a few groups are test-only.
+
 Per frame, four aligned images + one label row:
 
 | channel | format | notes |
@@ -368,18 +374,22 @@ Per frame, four aligned images + one label row:
 | `normal` | RGB PNG | camera-space, `n*0.5+0.5` |
 | `seg` | uint8 PNG | bone id 0–27 (cskel index + 1) |
 
-| config | motion source | frames | labels |
-|---|---|---|---|
-| `keyed` | 12 hand-keyed styles × params × camera | 32k | style_id, phase, exact params |
-| `ardy` | ~100 ARDY prompts × seeds × camera | 32k | text prompt |
+| what | count |
+|---|---|
+| prompts | ~150, in ~6 groups (locomotion / dance / gesture / sport / idle / transitions) |
+| seeds per prompt | 3 |
+| clip length | 6 s @ 20 fps = 120 frames |
+| cameras per clip | 1–2 (sampled per clip, fixed within the clip) |
+| **frames** | **≈ 64k** |
 
-Both share the schema in §3.5 (cskel27, metres, camera). Frames are grouped into clips
-(`clip_id`, `frame_idx`) so the same shards serve image, video, and interpolation tasks.
+Schema in §3.5 (cskel27, metres, camera). Frames are grouped into clips (`clip_id`,
+`frame_idx`) so the same shards serve image, video, and interpolation tasks.
 
 - **Camera**: canonical views (0°, ±45°, ±90°, ±135°, 180°) 70% + uniform yaw 30%; pitch −5°…15°.
 - **Background**: transparent only. Compositing over white/black is one line in the loader.
 - **Normals**: camera space. **mono**: not shipped in v1 (one renderer flag; note on card).
-- **Split**: by clip, 90/5/5. Held-out keyed styles (moonwalk, helicopter_kick) test-only.
+- **Split**: by clip, 90/5/5. Two prompt groups held out entirely (test-only) for a
+  compositional probe.
 - **Scale**: v1 ≈ 64k frames ≈ 300 MB. v1.1 4× if v1 lands.
 
 ### 3.7 Format
