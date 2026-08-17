@@ -23,3 +23,11 @@ Read 2026-08-17. What transfers to us, what doesn't.
 
 ## Doesn't transfer
 RLHF, refiner cascade, distillation, infra (HSDP/Ulysses/MLAC), 1080p.
+
+## Jin's 2025-07 review (blog.sprited.ai/studying-seedance-1-paper) — points to carry
+- Hypothesis: temporal blocks don't see text tokens → macro-motion repeats / "yanks" at low-energy boundaries.
+  **Testable here (E13):** temporal cross-attn on/off, measure periodicity + angle_jerk over 6 s clips.
+- Image data in video training was new to him then → answered by the T=1 warm-up + frame mixing in a1.
+- Caption lessons (dynamic: motions/subjects/scene changes/camera; static: appearance/aesthetics/style) = our template.
+- Multi-shot `[SHOT n] … [CUT]` prompting → v1.1: ARDY online prompting for A-then-B clips + motion_segments.
+- Cite the blog in the report as Sprited research-line continuity (2025 review → 2026 dataset).
