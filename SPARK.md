@@ -112,10 +112,37 @@ pipeline exists, swapping the motion source is a single interface — `pose(t) -
 and you can drop AMASS-derived or model-generated motion behind it later for a
 `stickdance-natural` variant, with the licensing question answered separately at that time.
 
-> ⚠️ I couldn't confidently place "NVIDIA ARDY." I know NVIDIA's Cosmos and GR00T lines, and
-> the academic MDM (Motion Diffusion Model), but not ARDY specifically. If you meant something
-> concrete, tell me and I'll evaluate it properly — but §2.1–2.3 hold regardless of which
-> motion generator sits at the top of that pipeline.
+### 2.5 ARDY, evaluated properly
+
+**ARDY** = *Autoregressive Diffusion with hYbrid representation for Interactive Human Motion
+Generation*, NVIDIA (SIGGRAPH 2026). Text → streaming full-body motion, 326M params, 4-step
+diffusion at ~33 ms/step. Facts that matter for us:
+
+| | |
+|---|---|
+| output | 27-joint "Core" skeleton, 20 fps, up to 8 s. World-space joint positions + local/global rotations + foot contacts. |
+| batch | `scripts/generate.py` — headless, text prompt → `.npz`, `--num_samples`. |
+| code | Apache-2.0 |
+| checkpoints | NVIDIA Open Model License — *"NVIDIA claims no ownership rights in outputs."* Outputs are ours to license. |
+| training data | Bones Rigplay 1 (630 h mocap w/ text) — **not** AMASS. |
+| requirements | Ubuntu 22.04, RTX 4090+, driver ≥ 575, PyTorch ≥ 2.4 — **`gin` meets every line.** |
+
+So the §2.2 licensing blocker **does not apply to ARDY.** Unlike AMASS/Mixamo/commercial video
+outputs, ARDY-generated motion can go into a CC0 dataset cleanly. That's a real correction.
+
+What still holds: §2.1 (no oracle over the *motion* manifold — but note the *anatomy* oracle in
+§6 still works, since we render) and §2.3 (time). So the decision becomes:
+
+- **Week 1: hand-authored loops.** Small, legible, cyclic, named classes, zero infra.
+- **Week 2: ARDY behind the same `pose(t)` seam.** `.npz` → 27→15 joint mapping → our renderer
+  → `stickdance-natural`. Free text labels come with it. Same renderer, same oracle, same card
+  format — the only thing that changes is the motion source, which is exactly what the seam
+  was for.
+
+That's a better story than either alone: *"v1 is hand-keyed, v2 swaps in an NVIDIA foundation
+model for motion, and the anatomy oracle scores both."*
+
+Sources: [ARDY paper](https://arxiv.org/abs/2607.08741) · [nv-tlabs/ardy](https://github.com/nv-tlabs/ardy) · [HF: nvidia/ARDY-Core-RP-20FPS-Horizon40](https://huggingface.co/nvidia/ARDY-Core-RP-20FPS-Horizon40) · [NVIDIA Open Model License](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/)
 
 ### Why stick figures over emojis
 
@@ -142,6 +169,39 @@ just the better dataset.
 - Figure occupies ~100px of the 128px height, centered, with jitterable framing.
 - Nearest-neighbour / box downsample from a 4× supersampled vector render → crisp edges,
   controlled aliasing, no mushy anti-aliasing that a small model will waste capacity learning.
+
+### 3.1b Colour coding — every body part has a fixed colour (default config)
+
+Jin's call, and it's the right one. Each of the 8 limb segments gets a fixed, distinct colour;
+head + torso stay ink-dark. Warm = left, cool = right, proximal darker than distal:
+
+| segment | L | R |
+|---|---|---|
+| upper arm | red `#E84030` | blue `#286EE6` |
+| forearm | orange `#FF9628` | cyan `#50C8F0` |
+| thigh | magenta `#C832A0` | green `#1E965A` |
+| shin | pink `#FF78C8` | lime `#78DC5A` |
+| torso / head | ink `#282828` | |
+
+Why this is more than cosmetic:
+
+1. **Kills mirror ambiguity.** A black stick figure and its reflection are indistinguishable,
+   so image ↔ label is many-to-one. With colour it's one-to-one. This matters for the pose
+   oracle *and* for the diffusion model — the training target is no longer secretly bimodal.
+2. **The oracle gets simpler and stronger.** Colour segmentation → per-limb masks → PCA axis →
+   joints. Nearly deterministic; the CNN regressor becomes a cross-check rather than the
+   instrument. And a new failure mode becomes measurable: *"left-arm colour appearing on the
+   right side"* — call it **Limb Identity Error (LIE)**. Generators confuse left/right constantly;
+   nobody can measure it on real data. Here it's a pixel count.
+3. **Matches the OpenPose / ControlNet skeleton convention.** Per-limb-coloured skeletons are
+   already the lingua franca of pose conditioning. `stickdance` samples are drop-in condition
+   images for downstream character generators — the dataset gets a second life as a control
+   signal.
+4. **Occlusion legibility for free.** Halo separates depth; colour separates identity. `floss`
+   at 128px goes from "readable" to "obvious." Verified: `scratch/color_probe.py`.
+
+`mono` (ink-only) stays as a secondary config for the "harder, ambiguous" variant — useful
+precisely *because* it's bimodal — but colour is the default and the one on the hero grid.
 
 ### 3.2 Skeleton
 
@@ -240,9 +300,12 @@ conditioning signal, and as the regression target for the pose oracle in §6.
 
 | config | contents | purpose |
 |---|---|---|
-| `mono-frames` | 65,536 frames · black stroke · transparent bg | clean research config |
-| `styled-frames` | 65,536 frames · palette variation | appearance/pose disentanglement |
-| `clips-32` | 4,096 clips × 32 frames = 131,072 | video-gen, frame interp, next-frame |
+| `color-frames` | 65,536 frames · fixed limb palette (§3.1b) · transparent bg | **default**; hero grid, DDPM v0, oracle |
+| `mono-frames` | 65,536 frames · ink stroke only | the mirror-ambiguous variant; harder |
+| `clips-32` | 4,096 clips × 32 frames = 131,072 · colour | video-gen, frame interp, next-frame |
+
+(`styled-frames` — random palettes per figure — dropped from week 1. With a fixed semantic
+palette it's a different, less useful axis. Revisit as `stickdance-styled` if there's demand.)
 
 Splits: `train` 90% / `val` 5% / `test` 5%, **split by clip and by figure, never by frame** —
 otherwise near-duplicate frames leak across the boundary and every metric lies to you.
@@ -364,7 +427,14 @@ Skeletonize the generated image, count connected components and endpoints. A cor
 has exactly **1 component and 5 extremities** (head, 2 hands, 2 feet). Anything else is a
 violation. Brutal, cheap, uninterpretable-by-nobody.
 
-Report all three alongside standard FID against a held-out split.
+### 6.4 Limb Identity Error (LIE) — colour config only
+
+Per-limb colour masks → is the red/orange chain attached at the left shoulder and the
+blue/cyan chain at the right? Is each chain's proximal colour actually proximal? Left/right
+confusion and limb-swaps are among the most common generative failures and, on real data,
+completely unmeasurable. Here: pixel counting.
+
+Report all four alongside standard FID against a held-out split.
 
 ### The pitch line
 
@@ -464,7 +534,7 @@ Proposed:
 - Dataset: **`sprited/stickdance-128`**
 - Model: **`sprited/stickdance-ddpm-v0`**
 - Local repo: `dancing-stick-figure` (as-is)
-- Benchmark metrics: `SRE`, `BLD`, `TVR`
+- Benchmark metrics: `SRE`, `BLD`, `TVR`, `LIE`
 
 The `-128` suffix does real work — it signals the canvas, matches the existing model's
 resolution, and leaves room for `stickdance-256` and `stickdance-natural` later without
@@ -474,14 +544,13 @@ renaming anything.
 
 ## 12. Open questions for Jin
 
-1. **"NVIDIA ARDY"** — what did you mean? Doesn't change §2's conclusion but I'd like to
-   evaluate the actual thing rather than a guess.
-2. **GPU** — what are you training on? Decides whether day 5 starts at 64×64 or goes straight
-   to 128, and whether v1 conditioning fits in the week.
+1. ~~ARDY~~ — resolved, see §2.5. Week-2 motion source.
+2. ~~GPU~~ — `gin`: RTX PRO 6000 Blackwell, 96 GB, Ubuntu 22.04, torch 2.8+cu128. Skip the
+   64×64 prototype; go straight to 128. v1 conditioning fits in the week. ARDY runs there too.
 3. **Scale** — 262k frames is my proposal. Generation is nearly free, so the real constraint
    is your upload bandwidth and how much you want to eyeball for quality. Bigger or smaller?
-4. **Mono vs styled priority** — if the week compresses, `styled-frames` is the config I'd cut
-   first. Object?
+4. ~~Mono vs styled~~ — resolved: colour is default (§3.1b), `styled-frames` cut, `mono` kept
+   as the hard variant.
 5. **Ship cadence** — dataset on day 4 as a hard gate, or would you rather hold everything
    and ship dataset + model together on day 7? I strongly favour day 4; shipping early is
    what makes the week un-loseable.
