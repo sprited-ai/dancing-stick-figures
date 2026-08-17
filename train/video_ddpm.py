@@ -12,11 +12,13 @@ from __future__ import annotations
 import argparse, copy, json, math, os, random, time
 import numpy as np
 import torch, torch.nn as nn, torch.nn.functional as F
+from torch.utils.checkpoint import checkpoint
 
 # ----------------------------------------------------------------- data
 class VideoWindows(torch.utils.data.Dataset):
-    def __init__(self, cache, frames=16, split="train", stride=1, drop_flags=("levitation",)):
+    def __init__(self, cache, frames=16, split="train", stride=1, drop_flags=("levitation",), size=128):
         self.frames = np.load(os.path.join(cache, "frames.npy"), mmap_mode="r")
+        self.size = size
         clips = json.load(open(os.path.join(cache, "clips.json")))
         self.clips = [c for c in clips.values() if c["split"] == split and c["n"] >= frames * stride
                       and not any(f in (c["qa"] or "") for f in drop_flags)]
@@ -32,6 +34,13 @@ class VideoWindows(torch.utils.data.Dataset):
         span = self.T * self.stride
         s = c["start"] + random.randint(0, c["n"] - span)
         x = np.asarray(self.frames[s:s + span:self.stride]).astype(np.float32) / 255.0   # [T,H,W,4]
+        if self.size != x.shape[1]:   # area downsample (premultiply first so colour doesn't bleed from bg)
+            f = x.shape[1] // self.size
+            x = np.concatenate([x[..., :3] * x[..., 3:4], x[..., 3:4]], -1)
+            x = x.reshape(x.shape[0], self.size, f, self.size, f, 4).mean((2, 4))
+            a = x[..., 3:4]
+            x = torch.from_numpy(x).permute(3, 0, 1, 2) * 2 - 1
+            return x, self.groups.index(c["group"])
         a = x[..., 3:4]
         x = np.concatenate([x[..., :3] * a, a], -1)          # premultiply
         x = torch.from_numpy(x).permute(3, 0, 1, 2) * 2 - 1  # [4,T,H,W]
@@ -121,22 +130,25 @@ class UNet3D(nn.Module):
         self.out = nn.Sequential(nn.GroupNorm(32, c), nn.SiLU(), nn.Conv3d(c, in_ch, 3, padding=1))
         nn.init.zeros_(self.out[-1].weight); nn.init.zeros_(self.out[-1].bias)
 
+    grad_ckpt = False
+
+    def _run(self, blocks, h, temb):
+        h = blocks[0](h, temb)
+        for b in blocks[1:]: h = b(h)
+        return h
+
     def forward(self, x, t, y=None):
         temb = self.temb(timestep_embedding(t, self.ch))
         if self.cls is not None: temb = temb + self.cls(y)
+        ck = (lambda f, *a: checkpoint(f, *a, use_reentrant=False)) if (self.grad_ckpt and self.training) else (lambda f, *a: f(*a))
         h = self.inp(x); hs = [h]
         for blocks in self.down:
-            if isinstance(blocks[0], ResBlock):
-                h = blocks[0](h, temb)
-                for b in blocks[1:]: h = b(h)
-            else:
-                h = blocks[0](h)
+            h = ck(self._run, blocks, h, temb) if isinstance(blocks[0], ResBlock) else blocks[0](h)
             hs.append(h)
         for b in self.mid: h = b(h, temb) if isinstance(b, ResBlock) else b(h)
         for blocks in self.up:
             if isinstance(blocks[0], ResBlock):
-                h = blocks[0](torch.cat([h, hs.pop()], 1), temb)
-                for b in blocks[1:]: h = b(h)
+                h = ck(self._run, blocks, torch.cat([h, hs.pop()], 1), temb)
             else:
                 for b in blocks: h = b(h)
         return self.out(h)
@@ -163,9 +175,8 @@ def sample(model, shape, ac, device, steps=50, y=None, cfg=0.0, null_y=None):
             if cfg > 0 and y is not None:
                 vu = model(x, tt, null_y); v = vu + cfg * (v - vu)
         v = v.float()
-        x0 = a.sqrt() * x - (1 - a).sqrt() * v
-        eps = (1 - a).sqrt() * x + a.sqrt() * v
-        x0 = x0.clamp(-1, 1)
+        x0 = (a.sqrt() * x - (1 - a).sqrt() * v).clamp(-1, 1)
+        eps = (x - a.sqrt() * x0) / (1 - a).sqrt().clamp_min(1e-8)   # recomputed from the clamped x0
         x = an.sqrt() * x0 + (1 - an).sqrt() * eps
     return x
 
@@ -188,6 +199,32 @@ def to_gif(x, path, fps=10):
 
 
 # ----------------------------------------------------------------- train
+PRESETS = {  # name: overrides. VRAM/speed numbers filled in from measured runs (see REPORT.md §5).
+    "4090-fast":   dict(size=64, frames=8, batch=16, ch=64, grad_ckpt=False, accum=1),
+    "4090-full":   dict(size=128, frames=16, batch=4, ch=64, grad_ckpt=True, accum=2),
+    "4090-mid":    dict(size=128, frames=8, batch=8, ch=64, grad_ckpt=True, accum=1),
+    "runpod-96gb": dict(size=128, frames=16, batch=8, ch=64, grad_ckpt=False, accum=1),
+}
+
+
+def worker_init(_):
+    seed = torch.utils.data.get_worker_info().seed % 2**32
+    random.seed(seed); np.random.seed(seed)
+
+
+@torch.no_grad()
+def val_loss(model, dl, ac, dev, n_batches=16):
+    model.eval(); tot = 0.0; n = 0
+    for i, (x, _) in enumerate(dl):
+        if i >= n_batches: break
+        x = x.to(dev); t = torch.randint(0, len(ac), (x.shape[0],), device=dev)
+        at = ac[t][:, None, None, None, None]; eps = torch.randn_like(x)
+        with torch.autocast("cuda", dtype=torch.bfloat16):
+            pred = model(at.sqrt() * x + (1 - at).sqrt() * eps, t, None)
+        tot += F.mse_loss(pred.float(), at.sqrt() * eps - (1 - at).sqrt() * x).item(); n += 1
+    model.train(); return tot / max(n, 1)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache", required=True); ap.add_argument("--out", required=True)
@@ -197,16 +234,27 @@ def main():
     ap.add_argument("--cond", default="none", choices=["none", "group"]); ap.add_argument("--cfg_drop", type=float, default=0.1)
     ap.add_argument("--sample_every", type=int, default=2000); ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--resume", default="")
+    ap.add_argument("--preset", default="", choices=[""] + list(PRESETS)); ap.add_argument("--size", type=int, default=128)
+    ap.add_argument("--grad_ckpt", action="store_true"); ap.add_argument("--accum", type=int, default=1)
+    ap.add_argument("--seed", type=int, default=0); ap.add_argument("--val_every", type=int, default=500)
     a = ap.parse_args()
+    if a.preset:
+        for k, v in PRESETS[a.preset].items(): setattr(a, k, v)
+    torch.manual_seed(a.seed); random.seed(a.seed); np.random.seed(a.seed)
     os.makedirs(a.out, exist_ok=True)
+    json.dump(vars(a), open(os.path.join(a.out, "args.json"), "w"), indent=1)
     dev = "cuda"
-    ds = VideoWindows(a.cache, a.frames, "train", a.stride)
-    dl = torch.utils.data.DataLoader(ds, batch_size=a.batch, shuffle=True, num_workers=a.workers, drop_last=True, pin_memory=True, persistent_workers=True)
+    ds = VideoWindows(a.cache, a.frames, "train", a.stride, size=a.size)
+    dl = torch.utils.data.DataLoader(ds, batch_size=a.batch, shuffle=True, num_workers=a.workers, drop_last=True, pin_memory=True,
+                                     persistent_workers=True, worker_init_fn=worker_init)
+    vds = VideoWindows(a.cache, a.frames, "val", a.stride, size=a.size)
+    vdl = torch.utils.data.DataLoader(vds, batch_size=a.batch, shuffle=True, num_workers=2, drop_last=True, worker_init_fn=worker_init) if len(vds) else None
     n_cls = len(ds.groups) if a.cond == "group" else 0
-    model = UNet3D(ch=a.ch, n_classes=n_cls).to(dev)
+    model = UNet3D(ch=a.ch, n_classes=n_cls, size=a.size).to(dev)
+    model.grad_ckpt = a.grad_ckpt
     ema = copy.deepcopy(model).eval().requires_grad_(False)
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
-    print(f"params {n_params:.1f}M · {len(ds.clips)} clips · frames {a.frames} · batch {a.batch} · cond {a.cond}", flush=True)
+    print(f"params {n_params:.1f}M · {len(ds.clips)} train clips / {len(vds.clips)} val · {a.size}px · frames {a.frames} · batch {a.batch}×{a.accum} · ckpt {a.grad_ckpt} · cond {a.cond}", flush=True)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.99), weight_decay=0.01)
     ac = alphas_cumprod().to(dev)
     step = 0
@@ -228,24 +276,32 @@ def main():
         eps = torch.randn_like(x)
         xt = at.sqrt() * x + (1 - at).sqrt() * eps
         v = at.sqrt() * eps - (1 - at).sqrt() * x
-        # warmup
-        for g in opt.param_groups: g["lr"] = a.lr * min(1.0, (step + 1) / 1000)
+        # warmup 1000 then cosine decay to 10 %
+        prog = max(0.0, (step - 1000) / max(1, a.steps - 1000))
+        lr = a.lr * min(1.0, (step + 1) / 1000) * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * prog)))
+        for g in opt.param_groups: g["lr"] = lr
         with torch.autocast("cuda", dtype=torch.bfloat16):
             pred = model(xt, t, y)
-        loss = F.mse_loss(pred.float(), v)
-        opt.zero_grad(set_to_none=True); loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step()
+        loss = F.mse_loss(pred.float(), v) / a.accum
+        loss.backward()
+        if (step + 1) % a.accum != 0:
+            step += 1; continue
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step(); opt.zero_grad(set_to_none=True)
+        loss = loss * a.accum
         with torch.no_grad():
             d = min(0.9995, (1 + step) / (10 + step))
             for pe, pm in zip(ema.parameters(), model.parameters()): pe.lerp_(pm, 1 - d)
         step += 1
         ema_loss = loss.item() if ema_loss is None else 0.98 * ema_loss + 0.02 * loss.item()
-        if step % 50 == 0:
-            msg = f"step {step} loss {ema_loss:.4f} {(time.time()-t0)/step:.2f}s/it {torch.cuda.max_memory_allocated()/1e9:.1f}GB"
+        if step == 10 or step % 50 == 0:
+            spi = (time.time() - t0) / step
+            msg = f"step {step} loss {ema_loss:.4f} lr {lr:.2e} {spi:.2f}s/it peak {torch.cuda.max_memory_allocated()/1e9:.1f}GB ETA {(a.steps-step)*spi/3600:.1f}h"
+            if vdl is not None and step % a.val_every == 0:
+                msg += f" val {val_loss(ema, vdl, ac, dev):.4f}"
             print(msg, flush=True); log.write(msg + "\n"); log.flush()
         if step % a.sample_every == 0 or step == a.steps:
             ys = torch.arange(8, device=dev) % n_cls if n_cls else None
-            xs = sample(ema, (8, 4, a.frames, 128, 128), ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
+            xs = sample(ema, (8, 4, a.frames, a.size, a.size), ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
                         null_y=torch.full((8,), n_cls, device=dev) if n_cls else None)
             to_gif(xs, os.path.join(a.out, f"sample_{step:06d}.gif"))
             torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups),
