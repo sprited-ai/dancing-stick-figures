@@ -261,6 +261,11 @@ def main():
     if a.resume:
         ck = torch.load(a.resume, map_location=dev); model.load_state_dict(ck["model"]); ema.load_state_dict(ck["ema"]); opt.load_state_dict(ck["opt"]); step = ck["step"]
     log = open(os.path.join(a.out, "log.txt"), "a")
+    try:
+        from torch.utils.tensorboard import SummaryWriter
+        tb = SummaryWriter(os.path.join(a.out, "tb"))
+    except Exception:
+        tb = None
     t0 = time.time(); it = iter(dl); ema_loss = None
     while step < a.steps:
         try: x, y = next(it)
@@ -299,6 +304,10 @@ def main():
             if vdl is not None and step % a.val_every == 0:
                 msg += f" val {val_loss(ema, vdl, ac, dev):.4f}"
             print(msg, flush=True); log.write(msg + "\n"); log.flush()
+            if tb:
+                tb.add_scalar("loss/train_ema", ema_loss, step); tb.add_scalar("lr", lr, step)
+                tb.add_scalar("perf/s_per_it", spi, step); tb.add_scalar("perf/peak_gb", torch.cuda.max_memory_allocated() / 1e9, step)
+                if " val " in msg: tb.add_scalar("loss/val", float(msg.split(" val ")[1]), step)
         if step % a.sample_every == 0 or step == a.steps:
             ys = torch.arange(8, device=dev) % n_cls if n_cls else None
             xs = sample(ema, (8, 4, a.frames, a.size, a.size), ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
@@ -307,6 +316,10 @@ def main():
             torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups),
                        os.path.join(a.out, "ckpt.pt"))
             print(f"  wrote sample_{step:06d}.gif", flush=True)
+            if tb:   # first frame of the sample grid as an image, whole clip as video
+                v = ((xs.clamp(-1, 1) + 1) / 2)
+                rgb = (v[:, :3] + (1 - v[:, 3:4])).clamp(0, 1)          # premult over white -> [B,3,T,H,W]
+                tb.add_video("samples", rgb.permute(0, 2, 1, 3, 4).cpu(), step, fps=10)
 
 
 if __name__ == "__main__":
