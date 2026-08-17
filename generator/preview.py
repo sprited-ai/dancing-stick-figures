@@ -12,7 +12,7 @@ OUT = "out"
 def frame(style, t, cam, body=None, mp=None, colored=True, bg=(255, 255, 255, 255)):
     body = body or Body()
     j3 = fk3d(pose(style, t, mp), body)
-    j2, depth = project(j3, cam)
+    j2, depth = project(j3, cam, body.px_per_m)
     return render(j2, depth, body, colored=colored, bg=bg)
 
 

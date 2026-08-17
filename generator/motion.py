@@ -5,7 +5,7 @@ ARDY behind this same signature.
 
 Keys are dicts of channel -> value (degrees / px). Channels:
   swing.<seg>, abd.<seg>            absolute segment angles (deg)
-  root.x root.y root.z              pelvis offset (px)
+  root.x root.y root.z              Hips offset (cm; converted to metres)
   lean twist head_tilt (deg), squash (unitless)
 Interpolation is cyclic Catmull-Rom per channel. Overlapping action: each limb segment's
 channels are sampled at t - lag * chain_depth.
@@ -180,7 +180,8 @@ def pose(style: str, t: float, mp: MotionParams | None = None) -> Pose:
         tt = t - mp.lag * CHAIN_DEPTH[seg]
         p.swing[seg] = math.radians(c.sample(f"swing.{seg}", tt, mp.stepped) * mp.amp)
         p.abd[seg] = math.radians(c.sample(f"abd.{seg}", tt, mp.stepped) * mp.amp)
-    p.root = (c.sample("root.x", t, mp.stepped), c.sample("root.y", t, mp.stepped) * mp.bounce, c.sample("root.z", t, mp.stepped))
+    p.root = (c.sample("root.x", t, mp.stepped) / 100.0, c.sample("root.y", t, mp.stepped) * mp.bounce / 100.0,
+              c.sample("root.z", t, mp.stepped) / 100.0)
     p.lean = math.radians(c.sample("lean", t, mp.stepped))
     p.bend = math.radians(c.sample("bend", t, mp.stepped))
     p.twist = math.radians(c.sample("twist", t, mp.stepped))

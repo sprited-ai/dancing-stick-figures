@@ -212,10 +212,18 @@ Why this is more than cosmetic:
 `mono` (ink-only) stays as a secondary config for the "harder, ambiguous" variant — useful
 precisely *because* it's bimodal — but colour is the default and the one on the hero grid.
 
-### 3.2 Skeleton — 3D, orthographically projected, with hands and feet
+### 3.2 Skeleton — cskel27 (ARDY-compatible), 3D, orthographically projected
 
-**The skeleton is 3D; the dataset is its orthographic projection** (Jin's call). 19 joints,
-18 segments. Limbs are parameterised by (swing θ in the sagittal plane, abduction φ out of it);
+**The canonical skeleton is NVIDIA ARDY's `cskel27`** — same 27 joint names, order, parent
+hierarchy and rest-pose proportions (`generator/cskel27_neutral.json`). Jin's call: be
+ARDY-compatible from day 1 so hand-keyed clips and foundation-model clips share **one label
+space**. Consequences: bone-length metrics are comparable across sources; the 2D→3D lifting
+target is one skeleton; and our keyed poses can go *back into* ARDY as keyframe constraints
+(week 2 — ARDY as an in-betweener over our styles). Frame is cskel's: x = left, y = up,
+z = forward, metres. Spine is 5 bones (`Spine..Neck`) so bending is real; clavicles
+(`Shoulder`) give the figure actual shoulder width; `HandThumb1` carries palm roll.
+
+**The skeleton is 3D; the dataset is its orthographic projection.** Limbs are parameterised by (swing θ in the sagittal plane, abduction φ out of it);
 torso by lean / twist / squash. A `Camera(yaw, pitch)` projects to 128px and returns per-joint
 depth. Consequences:
 
