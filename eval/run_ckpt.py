@@ -68,6 +68,8 @@ def evaluate(run, cache, n=64, dev="cuda", real_cache=None, seeds=(0, 1, 2)):
     else:
         model = UNet3D(ch=a.get("ch", 64), n_classes=n_cls, size=S).to(dev)
     model.load_state_dict(ck["ema"]); model.eval()
+    if is_dit:
+        for b in model.blocks: b.t1_skip = bool(a.get("t1_skip", True))
     ac = alphas_cumprod().to(dev)
     fl = real_floor(cache, T, S, n, dev)
     m = {"step": int(step), "n": int(n), "seeds": list(seeds), "floor": {k: v for k, v in fl.items() if not k.startswith("_")}}

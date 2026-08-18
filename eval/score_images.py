@@ -21,7 +21,10 @@ def load(ckpt, dev):
         m = VideoDiT(size=S, frames=a.get("frames", 1), patch=a.get("patch", 4), dim=a.get("dim", 384), depth=a.get("depth", 12), heads=a.get("heads", 6), n_classes=n_cls)
     else:
         m = UNet3D(ch=a.get("ch", 64), n_classes=n_cls, size=S)
-    m.load_state_dict(ck["ema"]); return m.to(dev).eval(), ck, a, S
+    m.load_state_dict(ck["ema"])
+    if ck.get("arch") == "dit_fm":
+        for b in m.blocks: b.t1_skip = bool(a.get("t1_skip", True))
+    return m.to(dev).eval(), ck, a, S
 
 
 @torch.no_grad()

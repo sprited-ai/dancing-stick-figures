@@ -48,6 +48,8 @@ class Block(nn.Module):
         self.ada = nn.Sequential(nn.SiLU(), nn.Linear(dim, 6 * dim))
         nn.init.zeros_(self.ada[-1].weight); nn.init.zeros_(self.ada[-1].bias)
 
+    t1_skip = True                             # ib64 (trained before the skip existed) carries args["t1_skip"]=False; loaders honour it
+
     def forward(self, x, c):                   # x [B, T, N, D], c [B, D]
         B, T, N, D = x.shape
         s1, sc1, g1, s2, sc2, g2 = self.ada(c).chunk(6, -1)
@@ -55,7 +57,7 @@ class Block(nn.Module):
             h = x.reshape(B * T, N, D); rep = lambda z: z.repeat_interleave(T, 0)
         else:
             h = x.permute(0, 2, 1, 3).reshape(B * N, T, D); rep = lambda z: z.repeat_interleave(N, 0)
-        if not (self.axis == "temporal" and T == 1):            # image mode: nothing to attend across (gate stays 0 -> identity when video-initialised)
+        if not (self.axis == "temporal" and T == 1 and self.t1_skip):   # image mode: nothing to attend across (gate stays 0 -> identity when video-initialised)
             h = h + rep(g1).unsqueeze(1) * self.attn(modulate(self.n1(h), rep(s1), rep(sc1)))
         h = h + rep(g2).unsqueeze(1) * self.mlp(modulate(self.n2(h), rep(s2), rep(sc2)))
         if self.axis == "spatial":
@@ -176,6 +178,7 @@ def main():
     vds = VideoWindows(a.cache, a.frames, "val", a.stride, size=a.size)
     vdl = torch.utils.data.DataLoader(vds, batch_size=a.batch, shuffle=True, num_workers=2, drop_last=True, worker_init_fn=worker_init) if len(vds) else None
     n_cls = len(ds.groups) if a.cond == "group" else 0
+    a.t1_skip = True                                          # recorded in ckpt args; see Block.t1_skip
     model = VideoDiT(size=a.size, frames=a.frames, patch=a.patch, dim=a.dim, depth=a.depth, heads=a.heads, n_classes=n_cls).to(dev)
     model.grad_ckpt = a.grad_ckpt
     ema = copy.deepcopy(model).eval().requires_grad_(False)
