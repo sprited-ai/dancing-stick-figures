@@ -29,7 +29,35 @@ Video UNet needed 22k steps for a similar level → image-first is the right sta
 
 **Hashnode** — noted, you said nvm; the draft can come from this file when you want it.
 
-## Morning checklist
+## Morning 2026-08-18 07:30 — results
+All overnight runs completed without a crash (gin: ia64/ib64 30k, ia64L 100k, ib64L 50k; RunPod A100: ia128 20k, ib128 40k, pod
+auto-terminated 03:46, ~5.5 h ≈ $7.6). Grids: `out/img_final_sheet.png`, per-run `out/img/<run>/`. Scores `out/scores/`.
+
+Oracle on 512 EMA samples (50 sampler steps) — generated vs **real val frames at the same resolution** (the "floor"):
+
+| run | arch | res | steps | tvr | lie | cpe | clean-skeleton frac |
+|---|---|---|---|---|---|---|---|
+| ia64 | UNet | 64 | 30k | .159 (.142) | .113 (.106) | .041 (.039) | .42 (.40) |
+| ib64 | DiT p4 | 64 | 30k | .176 (.143) | .122 (.108) | .040 (.040) | .38 (.37) |
+| **ia64L** | UNet min-SNR | 64 | 96k | **.134 (.136)** | .116 (.103) | .039 (.040) | **.43 (.40)** |
+| ib64L | DiT p2 | 64 | 50k | .164 (.139) | .114 (.106) | .043 (.039) | .40 (.37) |
+| ia128 | UNet min-SNR | 128 | 20k | .226 (.203) | .073 (.047) | .020 (.019) | .22 (.23) |
+| ib128 | DiT p4 | 128 | 40k | .251 (.209) | .065 (.048) | .020 (.020) | .23 (.21) |
+
+Reading: every model is within a few points of the real-data floor on all three regressor-free metrics; the long UNet is *at* the
+floor. The floor itself is nonzero because of self-occlusion (and rises at 128² where the oracle resolves more components).
+So the "we have a good stick-figure image diffusion model" claim holds for both architectures at both resolutions.
+Caveat (unchanged): the oracle can't see proportion/geometry errors — the pose-regressor SRE (E3) is what would.
+Visually: UNet strokes are cleaner; DiT patch-2 fixed the arm fragmentation of patch-4; 128² samples are crisp.
+
+Note: ib64 was trained before the T=1 temporal-attn skip; its ckpt args carry `t1_skip=False` and loaders honour it.
+
+## Now running (video phase, gin)
+* a64 — video UNet 64² 8f from scratch, resumed 24k → 85k.
+* **a64i** — same model, **--init from ia64L** (image model), 0 → 61k = same video-step budget. This is the Seedance-stage-2 controlled test.
+* then b64 (video DiT, sampler OOM fixed).
+
+## Morning checklist (remaining)
 1. `out/`: build 30k grids ia64 vs ib64 + evolution strips; oracle image metrics on 512 samples each (script TODO: `eval/score_images.py`).
 2. Look at ia64L/ib64L mid-run grids; ia128/ib128 from `pod_results/img128/`.
 3. Decide: which image model seeds the video model → `--init` experiment vs from-scratch (a64).
