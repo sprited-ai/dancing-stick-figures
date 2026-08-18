@@ -111,13 +111,14 @@ class Attn(nn.Module):
 
 
 class UNet3D(nn.Module):
-    def __init__(self, ch=64, mult=(1, 2, 4, 4), attn_res=(32, 16), tattn_res=(64, 32, 16), n_res=2, in_ch=4, n_classes=0, size=128):
+    def __init__(self, ch=64, mult=(1, 2, 4, 4), attn_res=(32, 16), tattn_res=(64, 32, 16), n_res=2, in_ch=4, n_classes=0, size=128, cond_ch=0):
         super().__init__()
+        self.cond_ch = cond_ch                       # autoregressive / I2V conditioning: clean past frames (in_ch) + binary mask (1)
         temb = ch * 4
         self.temb = nn.Sequential(nn.Linear(ch, temb), nn.SiLU(), nn.Linear(temb, temb))
         self.ch = ch
         self.cls = nn.Embedding(n_classes + 1, temb) if n_classes else None   # last = null class
-        self.inp = nn.Conv3d(in_ch, ch, 3, padding=1)
+        self.inp = nn.Conv3d(in_ch + cond_ch, ch, 3, padding=1)
         self.down = nn.ModuleList(); chans = [ch]; c = ch; res = size
         for i, m in enumerate(mult):
             for _ in range(n_res):
@@ -147,7 +148,10 @@ class UNet3D(nn.Module):
         for b in blocks[1:]: h = b(h)
         return h
 
-    def forward(self, x, t, y=None):
+    def forward(self, x, t, y=None, cond=None):
+        if self.cond_ch:
+            if cond is None: cond = torch.zeros(x.shape[0], self.cond_ch, *x.shape[2:], device=x.device, dtype=x.dtype)
+            x = torch.cat([x, cond.to(x.dtype)], 1)
         temb = self.temb(timestep_embedding(t, self.ch))
         if self.cls is not None: temb = temb + self.cls(y)
         ck = (lambda f, *a: checkpoint(f, *a, use_reentrant=False)) if (self.grad_ckpt and self.training) else (lambda f, *a: f(*a))
@@ -173,7 +177,33 @@ def alphas_cumprod(T=1000, s=0.008):
 
 
 @torch.no_grad()
-def sample(model, shape, ac, device, steps=50, y=None, cfg=0.0, null_y=None, noise=None):
+def ar_cond(x0, K):
+    """Conditioning tensor for chunked autoregressive diffusion: clean first K frames of the window + mask -> [B,5,T,H,W]
+    (K=0 -> all zeros = unconditional first chunk)."""
+    c = torch.zeros_like(x0); m = torch.zeros_like(x0[:, :1])
+    if K > 0: c[:, :, :K] = x0[:, :, :K]; m[:, :, :K] = 1
+    return torch.cat([c, m], 1)
+
+
+@torch.no_grad()
+def rollout(model, B, K, F, n_chunks, ac, device, steps=50, S=64, y=None, cfg=0.0, null_y=None, generator=None):
+    """Chunked autoregressive generation: chunk 1 = a full K+F window with no context; each later chunk conditions on the
+    last K generated frames and contributes F new frames. Returns [B,4,K+F+(n_chunks-1)*F,S,S]."""
+    T = K + F; frames = None
+    for c in range(n_chunks):
+        noise = torch.randn((B, 4, T, S, S), device=device, generator=generator)
+        if frames is None:
+            cond = ar_cond(noise, 0)
+        else:
+            ctx = torch.zeros((B, 4, T, S, S), device=device); ctx[:, :, :K] = frames[:, :, -K:]
+            cond = ar_cond(ctx, K)
+        x = sample(model, noise.shape, ac, device, steps=steps, y=y, cfg=cfg, null_y=null_y, noise=noise, cond=cond)
+        frames = x if frames is None else torch.cat([frames, x[:, :, K:]], 2)
+    return frames
+
+
+@torch.no_grad()
+def sample(model, shape, ac, device, steps=50, y=None, cfg=0.0, null_y=None, noise=None, cond=None):
     x = torch.randn(shape, device=device) if noise is None else noise.clone()
     ts = torch.linspace(len(ac) - 1, 0, steps + 1).long().to(device)
     for i in range(steps):
@@ -181,9 +211,9 @@ def sample(model, shape, ac, device, steps=50, y=None, cfg=0.0, null_y=None, noi
         a, an = ac[t], (ac[tn] if i < steps - 1 else torch.tensor(1.0, device=device))
         tt = torch.full((shape[0],), int(t), device=device)
         with autocast():
-            v = model(x, tt, y)
+            v = model(x, tt, y, cond)
             if cfg > 0 and y is not None:
-                vu = model(x, tt, null_y); v = vu + cfg * (v - vu)
+                vu = model(x, tt, null_y, cond); v = vu + cfg * (v - vu)
         v = v.float()
         x0 = (a.sqrt() * x - (1 - a).sqrt() * v).clamp(-1, 1)
         eps = (x - a.sqrt() * x0) / (1 - a).sqrt().clamp_min(1e-8)   # recomputed from the clamped x0
@@ -255,6 +285,10 @@ def main():
     ap.add_argument("--cond", default="none", choices=["none", "group"]); ap.add_argument("--cfg_drop", type=float, default=0.1)
     ap.add_argument("--sample_every", type=int, default=2000); ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--resume", default="")
+    ap.add_argument("--ar_ctx", type=int, default=0, help="chunked autoregressive diffusion: condition on K clean past frames (window = K + --frames); 0 = off")
+    ap.add_argument("--ctx_drop", type=float, default=0.2, help="fraction of AR training samples with no context (first-chunk mode)")
+    ap.add_argument("--ctx_noise", type=float, default=0.1, help="max noise variance mixed into context frames during training (drift robustness)")
+    ap.add_argument("--rollout", type=int, default=5, help="chunks generated for AR sample GIFs (K+F+(n-1)F frames)")
     ap.add_argument("--amp", default="bf16", choices=["bf16", "fp16", "off"], help="mixed precision: bf16 (Ampere+), fp16 + GradScaler (T4/V100/Colab), off")
     ap.add_argument("--min_snr", type=float, default=0.0, help="min-SNR-gamma loss weight for v-pred (Hang et al. 2023), e.g. 5; 0 = off")
     ap.add_argument("--lr_final", type=float, default=0.1, help="cosine decays to this fraction of --lr")
@@ -275,13 +309,14 @@ def main():
     os.makedirs(a.out, exist_ok=True)
     json.dump(vars(a), open(os.path.join(a.out, "args.json"), "w"), indent=1)
     dev = "cuda"
-    ds = VideoWindows(a.cache, a.frames, "train", a.stride, size=a.size)
+    T_win = a.frames + a.ar_ctx                                              # AR: window = K context + F new frames
+    ds = VideoWindows(a.cache, T_win, "train", a.stride, size=a.size)
     dl = torch.utils.data.DataLoader(ds, batch_size=a.batch, shuffle=True, num_workers=a.workers, drop_last=True, pin_memory=True,
                                      persistent_workers=True, worker_init_fn=worker_init)
-    vds = VideoWindows(a.cache, a.frames, "val", a.stride, size=a.size)
+    vds = VideoWindows(a.cache, T_win, "val", a.stride, size=a.size)
     vdl = torch.utils.data.DataLoader(vds, batch_size=a.batch, shuffle=True, num_workers=2, drop_last=True, worker_init_fn=worker_init) if len(vds) else None
     n_cls = len(ds.groups) if a.cond == "group" else 0
-    model = UNet3D(ch=a.ch, n_classes=n_cls, size=a.size).to(dev)
+    model = UNet3D(ch=a.ch, n_classes=n_cls, size=a.size, cond_ch=5 if a.ar_ctx > 0 else 0).to(dev)
     model.grad_ckpt = a.grad_ckpt
     if a.fast: model = model.to(memory_format=torch.channels_last_3d)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
@@ -302,7 +337,9 @@ def main():
         ck = torch.load(a.init, map_location=dev)
         for tgt, key in ((model, "model"), (ema, "ema")):
             src = ck.get(key) or ck["ema"]; own = tgt.state_dict()
-            src = {k: v for k, v in src.items() if k in own and (v.shape == own[k].shape or k.endswith("pos_t"))}
+            src = {k: v for k, v in src.items() if k in own and (v.shape == own[k].shape or k.endswith("pos_t") or k == "inp.weight")}
+            if "inp.weight" in src and src["inp.weight"].shape != own["inp.weight"].shape:     # image/video ckpt (4 ch) -> AR model (4+5 ch): extra input channels start at 0
+                w = torch.zeros_like(own["inp.weight"]); w[:, : src["inp.weight"].shape[1]] = src["inp.weight"]; src["inp.weight"] = w
             if "pos_t" in src and src["pos_t"].shape != own["pos_t"].shape:      # DiT: image pos_t [1,1,1,D] -> tile over frames
                 src["pos_t"] = src["pos_t"].expand_as(own["pos_t"]).clone()
             miss = tgt.load_state_dict(src, strict=False)
@@ -329,13 +366,21 @@ def main():
         eps = torch.randn_like(x)
         xt = at.sqrt() * x + (1 - at).sqrt() * eps
         v = at.sqrt() * eps - (1 - at).sqrt() * x
+        cond = None; lmask = None
+        if a.ar_ctx > 0:                                                            # chunked AR: clean (lightly noised) past K frames as conditioning
+            K = a.ar_ctx; has_ctx = (torch.rand(x.shape[0], device=dev) >= a.ctx_drop).float()[:, None, None, None, None]
+            s_ = torch.rand(x.shape[0], device=dev)[:, None, None, None, None] * a.ctx_noise
+            ctx = (1 - s_).sqrt() * x + s_.sqrt() * torch.randn_like(x)
+            cond = ar_cond(ctx, K) * has_ctx                                          # ctx dropped -> zeros + mask 0 (first-chunk mode)
+            lmask = torch.ones_like(x[:, :1]); lmask[:, :, :K] = 1 - has_ctx          # loss only on the new F frames when context is given
         # warmup 1000 then cosine decay to 10 %
         prog = max(0.0, (step - 1000) / max(1, a.steps - 1000))
         lr = a.lr * min(1.0, (step + 1) / 1000) * (a.lr_final + (1 - a.lr_final) * 0.5 * (1 + math.cos(math.pi * prog)))
         for g in opt.param_groups: g["lr"] = lr
         with autocast():
-            pred = model(xt, t, y)
+            pred = model(xt, t, y, cond)
         err = (pred.float() - v) ** 2
+        if lmask is not None: err = err * lmask * (lmask.numel() / lmask.sum().clamp_min(1))
         if a.min_snr > 0:                                        # v-pred min-SNR-γ: w = min(SNR,γ)/(SNR+1)
             snr_ = (at / (1 - at)).flatten()
             w = (snr_.clamp(max=a.min_snr) / (snr_ + 1))[:, None, None, None, None]
@@ -385,6 +430,10 @@ def main():
                 return torch.cat(outs, 0)
             xs = _samp(ema)
             to_gif(xs, os.path.join(a.out, f"sample_{step:06d}.gif"))
+            if a.ar_ctx > 0:                                                        # long dance: chunked rollout, 8 samples
+                gr = torch.Generator(device=dev).manual_seed(4321)
+                xr_ = rollout(ema, 8, a.ar_ctx, a.frames, a.rollout, ac, dev, steps=50, S=a.size, generator=gr).cpu()
+                to_gif(xr_, os.path.join(a.out, f"rollout_{step:06d}.gif"), fps=int(round(20 / a.stride)))
             if step <= 10000:                                                       # early: also raw weights (EMA lags)
                 model.eval(); xr = _samp(model); model.train()
                 to_gif(xr, os.path.join(a.out, f"sample_raw_{step:06d}.gif"))

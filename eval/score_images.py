@@ -20,7 +20,7 @@ def load(ckpt, dev):
     if ck.get("arch") == "dit_fm":
         m = VideoDiT(size=S, frames=a.get("frames", 1), patch=a.get("patch", 4), dim=a.get("dim", 384), depth=a.get("depth", 12), heads=a.get("heads", 6), n_classes=n_cls, cond_ch=5 if a.get("i2v_frac", 0) > 0 else 0)
     else:
-        m = UNet3D(ch=a.get("ch", 64), n_classes=n_cls, size=S)
+        m = UNet3D(ch=a.get("ch", 64), n_classes=n_cls, size=S, cond_ch=5 if a.get("ar_ctx", 0) > 0 else 0)
     m.load_state_dict(ck["ema"])
     if ck.get("arch") == "dit_fm":
         for b in m.blocks: b.t1_skip = bool(a.get("t1_skip", True))
