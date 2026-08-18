@@ -65,6 +65,23 @@ def to_figure_frame(P: np.ndarray, keep_root_xz: bool = False) -> np.ndarray:
     return Q
 
 
+def apply_bone_scale(Q: np.ndarray, bone_scale: dict) -> np.ndarray:
+    """Scale each bone vector (child - parent) by bone_scale[child] along the tree, [T,27,3] -> [T,27,3].
+    Children of a scaled bone move rigidly with it (lengths only, no rotation change). Identity if all 1.0.
+    NAMES is in parent-before-child order (ARDY bone order), so one pass suffices."""
+    if not bone_scale or all(abs(v - 1.0) < 1e-9 for v in bone_scale.values()):
+        return Q
+    from .skeleton import PARENT
+    Q = Q.copy(); off = np.zeros_like(Q)                       # accumulated offset per joint (inherited by children)
+    for n in NAMES:
+        p = PARENT.get(n)
+        if not p: continue
+        i, j = IDX[n], IDX[p]
+        s = float(bone_scale.get(n, 1.0))
+        off[:, i] = off[:, j] + (s - 1.0) * (Q[:, i] - Q[:, j])
+    return Q + off
+
+
 def frame_joints(Q: np.ndarray, t: int) -> dict:
     return {n: tuple(Q[t, IDX[n]]) for n in NAMES}
 

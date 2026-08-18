@@ -15,7 +15,7 @@ import pyarrow.parquet as pq
 from PIL import Image
 from .skeleton import Body, Camera, project, NAMES
 from .render import render_all, SIZE
-from .ardy_adapter import load, load_root, to_figure_frame, frame_joints
+from .ardy_adapter import load, load_root, to_figure_frame, frame_joints, apply_bone_scale
 
 FPS = 20
 DEPTH_RANGE = (-1.5, 1.5)          # metres toward camera, Hips-relative -> uint16
@@ -91,6 +91,7 @@ def build_clip(args):
     rng = random.Random(_h(clip_id))
     body = sample_body(rng)
     cams = sample_cameras(rng)
+    Q = apply_bone_scale(Q, body.bone_scale)     # per-clip proportions (v1 final: applied to ARDY joints, not just recorded)
     # split by PROMPT (all seeds + cameras of one prompt share a split) so val/test = held-out prompts
     # within seen groups; the two `*` groups are held-out concepts. Never split by seed.
     hh = _h(group, stem.rsplit("_s", 1)[0]) % 100
