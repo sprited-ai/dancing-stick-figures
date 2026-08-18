@@ -138,7 +138,28 @@ tvr = fraction of the 8 limb colours with #components != 1 · lie = fraction of 
 
 ### 5.2 Tracks
 - **A. Classic UNet** (46 M factorised 3D UNet, v-pred, cosine, DDIM, EMA) — "SD-era recipe".
-- **B. DiT + flow matching, pixel space** — reference recipe. `[TODO implement]`
+- **B. DiT + flow matching, pixel space** — reference recipe (33 M factorised video DiT: alternating spatial /
+  temporal blocks, adaLN-Zero, QK-norm, patch 2 at 64², rectified flow, logit-normal t, timestep shift, Euler 50).
+  Trained **Seedance-style in two stages** (Table 5.2a): T2I first, then image+video joint with I2V mixed in.
+
+**Table 5.2a — Seedance 1.0 §4.1 pre-training recipe → our implementation** (what is faithful, what is scaled down, what is dropped)
+
+| Seedance 1.0 choice | Ours (Track B) | status |
+|---|---|---|
+| Init from sufficient low-res T2I training (256 px) | 64² image DiT `ib64L` (50k steps, patch 2) → `--init` into the video model; temporal-block attention gate starts at 0 ⇒ video model ≡ per-frame image model at step 0 (verified exactly) | faithful (res scaled: 256→64) |
+| Stage 1: image+video **joint** training at the same res, 3–12 s @ 12 fps | 64², 8 frames @ 20 fps (0.4 s) + `--img_frac 0.1` single-frame batches | faithful in kind; clip length scaled |
+| Retain a small T2I fraction during video pre-training | `--img_frac 0.1` | faithful |
+| **I2V 20 %**: channel-concat clean/zero-padded frames + binary frame mask, tasks mixed by controlling conditional inputs | `--i2v_frac 0.2`: input = [noisy x_t ‖ clean first frame or zeros ‖ mask] (4+4+1 ch), sample grid rows 3–4 conditioned on val first frames | faithful |
+| Flow matching, velocity prediction, logit-normal timesteps | same | faithful |
+| Resolution/duration-aware timestep shift (more noise for larger/longer) | shift 1 for images, **2** for 8 f, 3 planned for 16 f / 128² | faithful (values ours) |
+| Decoupled spatial / temporal blocks; MM-RoPE; window attention | decoupled spatial / temporal blocks; learned pos_s / pos_t (pos_t tiled from the image ckpt); full attention (64² is small) | partial |
+| Stage 2: raise resolution (640 px); Stage 3: raise fps (24) | planned: 128² (`--init` from 64² video), then 16 f | planned |
+| Text via MMDiT with dense captions | unconditional / group-conditional now; text-cond = v1.1 (captions from labels §3.3) | not yet |
+| VAE latent space (4×16×16, C=48) | pixel space (RGBA) | dropped on purpose (pixel-space keeps the MNIST-of-video promise) |
+| Data curation, RLHF, refiner, distillation, infra | — | out of scope |
+
+Controlled comparison run (D-2, 2026-08-18): `b64i` (init from `ib64L`) vs `b64` (same recipe from scratch), 61k steps each,
+batch 8×2, on one A100; UNet analogue `a64i` vs `a64` on gin. Result → §5.3.
 - **C. Latent (own f4 4-ch VAE + DiT)** `[optional; TODO]` — VAE reconstruction floor measured
   with SRE/LIE.
 Conditioning: unconditional → group (CFG) → text (frozen text encoder) `[TODO]`; held-out
