@@ -246,6 +246,7 @@ def main():
     ap.add_argument("--cond", default="none", choices=["none", "group"]); ap.add_argument("--cfg_drop", type=float, default=0.1)
     ap.add_argument("--sample_every", type=int, default=2000); ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--resume", default="")
+    ap.add_argument("--init", default="", help="warm-start weights (model+ema) from an image/other checkpoint; step/opt fresh (Seedance stage 2)")
     ap.add_argument("--preset", default="", choices=[""] + list(PRESETS)); ap.add_argument("--size", type=int, default=128)
     ap.add_argument("--grad_ckpt", action="store_true"); ap.add_argument("--accum", type=int, default=1)
     ap.add_argument("--seed", type=int, default=0); ap.add_argument("--val_every", type=int, default=500)
@@ -283,6 +284,15 @@ def main():
     step = 0
     if a.resume:
         ck = torch.load(a.resume, map_location=dev); model.load_state_dict(ck["model"]); ema.load_state_dict(ck["ema"]); opt.load_state_dict(ck["opt"]); step = ck["step"]
+    elif a.init:
+        ck = torch.load(a.init, map_location=dev)
+        for tgt, key in ((model, "model"), (ema, "ema")):
+            src = ck.get(key) or ck["ema"]; own = tgt.state_dict()
+            src = {k: v for k, v in src.items() if k in own and (v.shape == own[k].shape or k.endswith("pos_t"))}
+            if "pos_t" in src and src["pos_t"].shape != own["pos_t"].shape:      # DiT: image pos_t [1,1,1,D] -> tile over frames
+                src["pos_t"] = src["pos_t"].expand_as(own["pos_t"]).clone()
+            miss = tgt.load_state_dict(src, strict=False)
+            print(f"init {key} from {a.init} step {ck.get('step')}: {len(src)} tensors, missing {len(miss.missing_keys)}, unexpected {len(miss.unexpected_keys)}", flush=True)
     log = open(os.path.join(a.out, "log.txt"), "a")
     try:
         from torch.utils.tensorboard import SummaryWriter
