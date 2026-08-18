@@ -67,8 +67,17 @@ class ResBlock(nn.Module):
     def forward(self, x, temb):
         h = self.c1(F.silu(self.n1(x)))
         h = h + self.t(F.silu(temb))[:, :, None, None, None]
-        h = self.c2(F.silu(self.n2(h)))
+        h = conv3d_t1(self.c2, F.silu(self.n2(h)))
         return self.skip(x) + h
+
+
+def conv3d_t1(conv, x):
+    """3x3x3 conv; when T == 1 (image mode) only the centre time-slice of the kernel touches non-padding,
+    so use it alone (identical result, 3x fewer FLOPs). Off-centre slices stay untouched (zero-init) ->
+    an image checkpoint later loads into the video model as 'same image every frame'."""
+    if x.shape[2] == 1 and conv.kernel_size[0] == 3:
+        return F.conv3d(x, conv.weight[:, :, 1:2], conv.bias, padding=(0, 1, 1))
+    return conv(x)
 
 
 class Attn(nn.Module):
@@ -81,6 +90,7 @@ class Attn(nn.Module):
 
     def forward(self, x):
         B, C, T, H, W = x.shape
+        if self.axis == "temporal" and T == 1: return x     # image mode: nothing to attend across; keep layer at init
         h = self.n(x)
         if self.axis == "spatial":
             h = h.permute(0, 2, 3, 4, 1).reshape(B * T, H * W, C)
@@ -141,7 +151,7 @@ class UNet3D(nn.Module):
         temb = self.temb(timestep_embedding(t, self.ch))
         if self.cls is not None: temb = temb + self.cls(y)
         ck = (lambda f, *a: checkpoint(f, *a, use_reentrant=False)) if (self.grad_ckpt and self.training) else (lambda f, *a: f(*a))
-        h = self.inp(x); hs = [h]
+        h = conv3d_t1(self.inp, x); hs = [h]
         for blocks in self.down:
             h = ck(self._run, blocks, h, temb) if isinstance(blocks[0], ResBlock) else blocks[0](h)
             hs.append(h)
@@ -151,7 +161,7 @@ class UNet3D(nn.Module):
                 h = ck(self._run, blocks, torch.cat([h, hs.pop()], 1), temb)
             else:
                 for b in blocks: h = b(h)
-        return self.out(h)
+        return conv3d_t1(self.out[2], F.silu(self.out[0](h)))
 
 
 # ----------------------------------------------------------------- diffusion (v-pred, cosine)
