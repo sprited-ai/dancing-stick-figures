@@ -10,7 +10,7 @@ a checkpoint at every step and a scorer that tells you whether your dancers have
 ## The route (Colab T4: ~1 h · RTX 4090: ~20 min)
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sprited-ai/dancing-stick-figures/blob/main/notebooks/dancing_stick_figures_colab.ipynb)
-— the same five steps below, with pictures and plain-language explanations (written so a curious 11-year-old can follow).
+— the same five steps below, with pictures and plain-language explanations (written so a curious 11-year-old can follow). The notebook ships **with outputs from a real run**, so you can read the answer sheet before pressing anything.
 
 | step | command | what you get |
 |---|---|---|
