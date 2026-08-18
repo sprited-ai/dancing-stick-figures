@@ -9,3 +9,5 @@ viewer/public/clips/
 runs_a0/
 runs_a1/
 paper/refs/*.pdf
+pod_results/
+runs_b64/
