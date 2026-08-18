@@ -25,6 +25,15 @@ Finished image models on gin: runs/ia64, ib64 (30k), ia64L (100k, min-SNR), ib64
 3. Learned pose regressor (SRE) → geometry-aware oracle; anomaly config (rendered malformations, multi-label). Then adversarial aux-loss ablation (Jin's GAN point) judged by independent metrics.
 4. REPORT.md v0 fill (§3, §4.2 table, §5.3), SPARK.md cleanup, arXiv decision.
 5. ARDY web demo at ardy.sprited.ai (Jin delegating to another agent; see notes in chat 2026-08-18).
+6. Teaching pack (Jin 08-18): repo README quickstart verified on a fresh pod; `mini` config (64², ~1 GB); **Colab notebook in ELI11 tone**
+   (elementary/middle-school friendly): ① visualise data ② train image model ③ train video model warm-started from a released
+   checkpoint ④ oracle scoring; baseline ckpts on HF `sprited/dancing-stick-figures-baselines`.
+7. **Diversity wishlist (v0.2+, Jin 08-18 — grow if the data feels samey):** more prompts (143 → 500+, incl. two-part
+   "A then B" motions); wider body variation (bone_scale beyond ±8 %, head size, limb thickness, child/adult proportions);
+   more cameras per clip and a perspective-camera option (currently orthographic only), camera roll, moving camera;
+   longer clips / variable length, 30 fps variant; multiple figures per frame (interaction, occlusion between people);
+   colour-palette / background variants as separate configs (keep the canonical palette for the oracle); optional props
+   (chair, ball) as distractors; more seeds only where prompt diversity is exhausted (seed collapse check first).
 
 ## Gotchas
 `pgrep -f`/`pkill -f` over ssh matches your own shell — use `[p]attern`. Watchdog `running()` must match `--out runs/x` at end of cmdline. `@torch.no_grad()` must sit directly above `euler_sample`. Don't stack >2 GPU jobs on gin. `~/dev/monet-machi/PAUSE` exists at Jin's request — ask before removing.
