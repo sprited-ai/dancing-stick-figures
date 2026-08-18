@@ -276,7 +276,7 @@ def main():
         tb = SummaryWriter(os.path.join(a.out, "tb"))
     except Exception:
         tb = None
-    t0 = time.time(); it = iter(dl); ema_loss = None
+    t0 = time.time(); step0 = step; it = iter(dl); ema_loss = None
     while step < a.steps:
         try: x, y = next(it)
         except StopIteration: it = iter(dl); x, y = next(it)
@@ -318,7 +318,7 @@ def main():
         step += 1
         ema_loss = loss.item() if ema_loss is None else 0.98 * ema_loss + 0.02 * loss.item()
         if step == 10 or step % 50 == 0:
-            spi = (time.time() - t0) / step
+            spi = (time.time() - t0) / max(1, step - step0)
             msg = f"step {step} loss {ema_loss:.4f} fg {fg_loss:.4f} lowsnr {lb:.4f} highsnr {hb:.4f} lr {lr:.2e} {spi:.2f}s/it peak {torch.cuda.max_memory_allocated()/1e9:.1f}GB ETA {(a.steps-step)*spi/3600:.1f}h"
             if vdl is not None and step % a.val_every == 0:
                 msg += f" val {val_loss(ema, vdl, ac, dev):.4f}"
