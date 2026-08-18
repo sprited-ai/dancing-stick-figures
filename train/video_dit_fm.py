@@ -73,11 +73,12 @@ def timestep_embedding(t, dim, max_period=10000):
 
 
 class VideoDiT(nn.Module):
-    def __init__(self, size=128, frames=16, patch=4, in_ch=4, dim=384, depth=12, heads=6, n_classes=0):
+    def __init__(self, size=128, frames=16, patch=4, in_ch=4, dim=384, depth=12, heads=6, n_classes=0, cond_ch=0):
         super().__init__()
         self.p, self.T, self.S, self.C, self.dim = patch, frames, size, in_ch, dim
+        self.cond_ch = cond_ch                                     # I2V (Seedance §2.2): concat clean/zero frames + binary mask -> in_ch+in_ch+1
         self.N = (size // patch) ** 2
-        self.embed = nn.Linear(in_ch * patch * patch, dim)
+        self.embed = nn.Linear((in_ch + cond_ch) * patch * patch, dim)
         self.pos_s = nn.Parameter(torch.zeros(1, 1, self.N, dim)); self.pos_t = nn.Parameter(torch.zeros(1, frames, 1, dim))
         nn.init.normal_(self.pos_s, std=0.02); nn.init.normal_(self.pos_t, std=0.02)
         self.temb = nn.Sequential(nn.Linear(256, dim), nn.SiLU(), nn.Linear(dim, dim))
@@ -100,7 +101,10 @@ class VideoDiT(nn.Module):
         x = x.reshape(B, T, h, w, self.C, p, p).permute(0, 4, 1, 2, 5, 3, 6)
         return x.reshape(B, self.C, T, h * p, w * p)
 
-    def forward(self, x, t, y=None):
+    def forward(self, x, t, y=None, cond=None):
+        if self.cond_ch:
+            if cond is None: cond = torch.zeros(x.shape[0], self.cond_ch, *x.shape[2:], device=x.device, dtype=x.dtype)
+            x = torch.cat([x, cond.to(x.dtype)], 1)
         h = self.embed(self.patchify(x)) + self.pos_s + self.pos_t[:, : x.shape[2]]
         c = self.temb(timestep_embedding(t, 256))
         if self.cls is not None: c = c + self.cls(y)
@@ -127,8 +131,15 @@ def mixed_noise(shape, device, corr, generator=None):
     return e
 
 
+def i2v_cond(x0, first=1):
+    """Seedance-style conditioning tensor from clean clip x0 [B,4,T,H,W]: clean first `first` frames + zeros, and a binary
+    frame mask -> [B,5,T,H,W]. For unconditional / T2V samples use zeros (mask 0)."""
+    c = torch.zeros_like(x0); m = torch.zeros_like(x0[:, :1]); c[:, :, :first] = x0[:, :, :first]; m[:, :, :first] = 1
+    return torch.cat([c, m], 1)
+
+
 @torch.no_grad()
-def euler_sample(model, shape, device, steps=50, y=None, cfg=0.0, null_y=None, noise=None, shift=1.0):
+def euler_sample(model, shape, device, steps=50, y=None, cfg=0.0, null_y=None, noise=None, shift=1.0, cond=None):
     x = torch.randn(shape, device=device) if noise is None else noise.clone()
     ts = torch.linspace(1.0, 0.0, steps + 1, device=device)
     ts = shift * ts / (1 + (shift - 1) * ts)
@@ -136,9 +147,9 @@ def euler_sample(model, shape, device, steps=50, y=None, cfg=0.0, null_y=None, n
         t, tn = ts[i], ts[i + 1]
         tt = torch.full((shape[0],), float(t), device=device)
         with torch.autocast("cuda", dtype=torch.bfloat16):
-            v = model(x, tt, y)
+            v = model(x, tt, y, cond)
             if cfg > 0 and y is not None:
-                vu = model(x, tt, null_y); v = vu + cfg * (v - vu)
+                vu = model(x, tt, null_y, cond); v = vu + cfg * (v - vu)
         x = x + (tn - t) * v.float()          # dx/dt = v = ε − x0 ; integrate t: 1 → 0
     return x.clamp(-1, 1)
 
@@ -162,6 +173,7 @@ def main():
     ap.add_argument("--compile", action="store_true", help="torch.compile per block (regional); test on sm_120 first")
     ap.add_argument("--shift", type=float, default=1.0, help="timestep shift (>1 = more noise; try 3 at 128/16f)")
     ap.add_argument("--img_frac", type=float, default=0.0, help="fraction of batches that are single frames (T=1 image warm-up mix)")
+    ap.add_argument("--i2v_frac", type=float, default=0.0, help="fraction of video batches conditioned on the clean first frame (Seedance I2V, channel-concat + mask); enables cond channels")
     ap.add_argument("--noise_corr", type=float, default=0.0, help="PYoCo mixed noise: eps = sqrt(1-b)*shared + sqrt(b)*per-frame; 0 = iid")
     a = ap.parse_args()
     if a.preset:
@@ -179,7 +191,7 @@ def main():
     vdl = torch.utils.data.DataLoader(vds, batch_size=a.batch, shuffle=True, num_workers=2, drop_last=True, worker_init_fn=worker_init) if len(vds) else None
     n_cls = len(ds.groups) if a.cond == "group" else 0
     a.t1_skip = True                                          # recorded in ckpt args; see Block.t1_skip
-    model = VideoDiT(size=a.size, frames=a.frames, patch=a.patch, dim=a.dim, depth=a.depth, heads=a.heads, n_classes=n_cls).to(dev)
+    model = VideoDiT(size=a.size, frames=a.frames, patch=a.patch, dim=a.dim, depth=a.depth, heads=a.heads, n_classes=n_cls, cond_ch=5 if a.i2v_frac > 0 else 0).to(dev)
     model.grad_ckpt = a.grad_ckpt
     ema = copy.deepcopy(model).eval().requires_grad_(False)
     if a.compile:   # compile forward only -> module identity / state_dict keys unchanged
@@ -195,7 +207,9 @@ def main():
         ck = torch.load(a.init, map_location=dev)
         for tgt, key in ((model, "model"), (ema, "ema")):
             src = ck.get(key) or ck["ema"]; own = tgt.state_dict()
-            src = {k: v for k, v in src.items() if k in own and (v.shape == own[k].shape or k.endswith("pos_t"))}
+            src = {k: v for k, v in src.items() if k in own and (v.shape == own[k].shape or k.endswith("pos_t") or k == "embed.weight")}
+            if "embed.weight" in src and src["embed.weight"].shape != own["embed.weight"].shape:   # image ckpt (4 ch) -> I2V model (4+5 ch): patch flattens (C,p,p) with C outermost
+                w = torch.zeros_like(own["embed.weight"]); w[:, : src["embed.weight"].shape[1]] = src["embed.weight"]; src["embed.weight"] = w
             if "pos_t" in src and src["pos_t"].shape != own["pos_t"].shape:      # DiT: image pos_t [1,1,1,D] -> tile over frames
                 src["pos_t"] = src["pos_t"].expand_as(own["pos_t"]).clone()
             miss = tgt.load_state_dict(src, strict=False)
@@ -229,6 +243,9 @@ def main():
             y = torch.where(drop, torch.full_like(y, n_cls), y)
         else:
             y = None
+        cond = None
+        if a.i2v_frac > 0:
+            cond = i2v_cond(x) if (x.shape[2] > 1 and random.random() < a.i2v_frac) else torch.zeros(x.shape[0], 5, *x.shape[2:], device=dev)
         t = sample_t(x.shape[0], dev, a.shift); tt = t[:, None, None, None, None]
         eps = torch.randn_like(x)
         if a.noise_corr > 0 and x.shape[2] > 1:      # PYoCo mixed noise (valid: still Gaussian, forward process unchanged)
@@ -239,7 +256,7 @@ def main():
         lr = a.lr * min(1.0, (step + 1) / 1000) * (a.lr_final + (1 - a.lr_final) * 0.5 * (1 + math.cos(math.pi * prog)))
         for g in opt.param_groups: g["lr"] = lr
         with torch.autocast("cuda", dtype=torch.bfloat16):
-            pred = model(xt, t, y)
+            pred = model(xt, t, y, cond)
         err = (pred.float() - (eps - x)) ** 2
         loss = err.mean() / a.accum
         with torch.no_grad():                                   # diagnostics only
@@ -277,6 +294,10 @@ def main():
             ys = torch.arange(NS, device=dev) % n_cls if n_cls else None
             g = torch.Generator(device=dev).manual_seed(1234)
             noise = mixed_noise((NS, 4, a.frames, a.size, a.size), dev, a.noise_corr, g)
+            scond = None
+            if a.i2v_frac > 0 and a.frames > 1 and vds is not None:                  # rows 0-1: T2V, rows 2-3: I2V from fixed val first frames
+                vx = torch.stack([vds[int(i)][0] for i in np.random.RandomState(7).permutation(len(vds))[:NS // 2]]).to(dev)
+                scond = torch.cat([torch.zeros(NS - NS // 2, 5, *vx.shape[2:], device=dev), i2v_cond(vx)], 0)
             for name, m_ in (("", ema), ("raw_", model)):
                 if name and step > 10000: continue
                 m_.eval()
@@ -284,7 +305,8 @@ def main():
                 for i in range(0, NS, CH):
                     yy = ys[i:i + CH] if ys is not None else None
                     outs.append(euler_sample(m_, noise[i:i + CH].shape, dev, steps=50, y=yy, cfg=2.0 if n_cls else 0.0,
-                                             null_y=torch.full((CH,), n_cls, device=dev) if n_cls else None, noise=noise[i:i + CH], shift=a.shift).cpu())
+                                             null_y=torch.full((CH,), n_cls, device=dev) if n_cls else None, noise=noise[i:i + CH], shift=a.shift,
+                                             cond=scond[i:i + CH] if scond is not None else None).cpu())
                 xs = torch.cat(outs, 0)
                 m_.train() if m_ is model else None
                 to_gif(xs, os.path.join(a.out, f"sample_{name}{step:06d}.gif"))

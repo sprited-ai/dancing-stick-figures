@@ -18,7 +18,7 @@ def load(ckpt, dev):
     ck = torch.load(ckpt, map_location=dev, weights_only=False); a = ck["args"]; S = a.get("size", 128)
     n_cls = len(ck.get("groups", [])) if a.get("cond") == "group" else 0
     if ck.get("arch") == "dit_fm":
-        m = VideoDiT(size=S, frames=a.get("frames", 1), patch=a.get("patch", 4), dim=a.get("dim", 384), depth=a.get("depth", 12), heads=a.get("heads", 6), n_classes=n_cls)
+        m = VideoDiT(size=S, frames=a.get("frames", 1), patch=a.get("patch", 4), dim=a.get("dim", 384), depth=a.get("depth", 12), heads=a.get("heads", 6), n_classes=n_cls, cond_ch=5 if a.get("i2v_frac", 0) > 0 else 0)
     else:
         m = UNet3D(ch=a.get("ch", 64), n_classes=n_cls, size=S)
     m.load_state_dict(ck["ema"])

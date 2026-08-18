@@ -64,7 +64,7 @@ def evaluate(run, cache, n=64, dev="cuda", real_cache=None, seeds=(0, 1, 2)):
     T, S = a.get("frames", 16), a.get("size", 128)
     is_dit = ck.get("arch") == "dit_fm"
     if is_dit:
-        model = VideoDiT(size=S, frames=T, patch=a.get("patch", 4), dim=a.get("dim", 384), depth=a.get("depth", 12), heads=a.get("heads", 6), n_classes=n_cls).to(dev)
+        model = VideoDiT(size=S, frames=T, patch=a.get("patch", 4), dim=a.get("dim", 384), depth=a.get("depth", 12), heads=a.get("heads", 6), n_classes=n_cls, cond_ch=5 if a.get("i2v_frac", 0) > 0 else 0).to(dev)
     else:
         model = UNet3D(ch=a.get("ch", 64), n_classes=n_cls, size=S).to(dev)
     model.load_state_dict(ck["ema"]); model.eval()
