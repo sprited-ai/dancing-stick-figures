@@ -10,6 +10,7 @@ import argparse, json, os, time
 import numpy as np
 import torch
 from train.video_ddpm import UNet3D, VideoWindows, alphas_cumprod, sample
+from train.video_dit_fm import VideoDiT, euler_sample, mixed_noise
 from eval.oracle import score_video
 from eval.fvd import fvd, rgba_premult_to_rgb
 
@@ -60,10 +61,14 @@ def evaluate(run, cache, n=64, dev="cuda", real_cache=None, seeds=(0, 1, 2)):
     ck = torch.load(os.path.join(run, "ckpt.pt"), map_location=dev)
     a = ck["args"]; step = ck["step"]
     n_cls = len(ck.get("groups", [])) if a.get("cond") == "group" else 0
-    model = UNet3D(ch=a.get("ch", 64), n_classes=n_cls, size=a.get("size", 128)).to(dev)
+    T, S = a.get("frames", 16), a.get("size", 128)
+    is_dit = ck.get("arch") == "dit_fm"
+    if is_dit:
+        model = VideoDiT(size=S, frames=T, patch=a.get("patch", 4), dim=a.get("dim", 384), depth=a.get("depth", 12), heads=a.get("heads", 6), n_classes=n_cls).to(dev)
+    else:
+        model = UNet3D(ch=a.get("ch", 64), n_classes=n_cls, size=S).to(dev)
     model.load_state_dict(ck["ema"]); model.eval()
     ac = alphas_cumprod().to(dev)
-    T, S = a.get("frames", 16), a.get("size", 128)
     fl = real_floor(cache, T, S, n, dev)
     m = {"step": int(step), "n": int(n), "seeds": list(seeds), "floor": {k: v for k, v in fl.items() if not k.startswith("_")}}
     per_seed = []
@@ -72,10 +77,15 @@ def evaluate(run, cache, n=64, dev="cuda", real_cache=None, seeds=(0, 1, 2)):
         outs = []
         for i in range(0, n, 8):
             ys = (torch.arange(8, device=dev) % n_cls) if n_cls else None
-            noise = torch.randn((8, 4, T, S, S), device=dev, generator=g)
             with torch.no_grad():
-                xs = sample(model, noise.shape, ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
-                            null_y=torch.full((8,), n_cls, device=dev) if n_cls else None, noise=noise)
+                if is_dit:
+                    noise = mixed_noise((8, 4, T, S, S), dev, a.get("noise_corr", 0.0), g)
+                    xs = euler_sample(model, noise.shape, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
+                                      null_y=torch.full((8,), n_cls, device=dev) if n_cls else None, noise=noise, shift=a.get("shift", 1.0))
+                else:
+                    noise = torch.randn((8, 4, T, S, S), device=dev, generator=g)
+                    xs = sample(model, noise.shape, ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
+                                null_y=torch.full((8,), n_cls, device=dev) if n_cls else None, noise=noise)
             outs.append(xs)
         xs = torch.cat(outs, 0)[:n]
         rgba, prem = to_uint8_rgba(xs)

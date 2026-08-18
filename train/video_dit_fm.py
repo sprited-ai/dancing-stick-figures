@@ -116,6 +116,14 @@ def sample_t(B, device, shift=1.0):
 
 
 @torch.no_grad()
+def mixed_noise(shape, device, corr, generator=None):
+    e = torch.randn(shape, device=device, generator=generator)
+    if corr > 0 and shape[2] > 1:
+        s = torch.randn(shape[:2] + (1,) + shape[3:], device=device, generator=generator).expand(shape)
+        e = math.sqrt(1 - corr) * s + math.sqrt(corr) * e
+    return e
+
+
 def euler_sample(model, shape, device, steps=50, y=None, cfg=0.0, null_y=None, noise=None, shift=1.0):
     x = torch.randn(shape, device=device) if noise is None else noise.clone()
     ts = torch.linspace(1.0, 0.0, steps + 1, device=device)
@@ -146,6 +154,7 @@ def main():
     ap.add_argument("--seed", type=int, default=0); ap.add_argument("--val_every", type=int, default=500)
     ap.add_argument("--shift", type=float, default=1.0, help="timestep shift (>1 = more noise; try 3 at 128/16f)")
     ap.add_argument("--img_frac", type=float, default=0.0, help="fraction of batches that are single frames (T=1 image warm-up mix)")
+    ap.add_argument("--noise_corr", type=float, default=0.0, help="PYoCo mixed noise: eps = sqrt(1-b)*shared + sqrt(b)*per-frame; 0 = iid")
     a = ap.parse_args()
     if a.preset:
         for k, v in PRESETS[a.preset].items():
@@ -199,6 +208,9 @@ def main():
             y = None
         t = sample_t(x.shape[0], dev, a.shift); tt = t[:, None, None, None, None]
         eps = torch.randn_like(x)
+        if a.noise_corr > 0 and x.shape[2] > 1:      # PYoCo mixed noise (valid: still Gaussian, forward process unchanged)
+            shared = torch.randn_like(x[:, :, :1]).expand_as(x)
+            eps = math.sqrt(1 - a.noise_corr) * shared + math.sqrt(a.noise_corr) * eps
         xt = (1 - tt) * x + tt * eps
         prog = max(0.0, (step - 1000) / max(1, a.steps - 1000))
         lr = a.lr * min(1.0, (step + 1) / 1000) * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * prog)))
@@ -238,7 +250,7 @@ def main():
             NS = 16
             ys = torch.arange(NS, device=dev) % n_cls if n_cls else None
             g = torch.Generator(device=dev).manual_seed(1234)
-            noise = torch.randn((NS, 4, a.frames, a.size, a.size), device=dev, generator=g)
+            noise = mixed_noise((NS, 4, a.frames, a.size, a.size), dev, a.noise_corr, g)
             for name, m_ in (("", ema), ("raw_", model)):
                 if name and step > 10000: continue
                 m_.eval()
