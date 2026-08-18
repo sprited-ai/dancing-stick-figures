@@ -1,63 +1,30 @@
-# STATUS — night of 2026-08-17 → 18 (written 22:40 PDT by Claudia)
+# STATUS — 2026-08-18 12:00 PDT (Claudia) — v0.1 pushed (private)
 
-## What is running
-| where | run | what | steps | ETA |
-|---|---|---|---|---|
-| gin | ia64 | UNet 64² **image** (T=1), b128 | 30k | ~00:20 |
-| gin | ib64 | DiT-FM 64² image, p4, b128 | 30k | ~00:20 |
-| gin (queued) | ia64L | UNet 64² image, **min-SNR-γ=5**, LR→2 % | 100k | ~09:00–10:00 |
-| gin (queued) | ib64L | DiT-FM 64² image, **patch 2**, LR→2 % | 50k | ~09:00–10:00 |
-| gin (queued after) | a64 → b64 | video 64² 8f: resume UNet from 24k, then DiT fresh (sampler OOM fixed) | 85k | afternoon |
-| RunPod A100-80GB `bs03yg22p0vrnf` ($1.39/h) | ia128 + ib128 | same image recipe at **128²** (UNet min-SNR / DiT p4), b128 | 40k each | ~09:00; auto-collect + terminate (`scripts/pod_collect_img128.sh`, results → `pod_results/img128/`) |
+## Released (private, awaiting Jin's public flip)
+https://huggingface.co/datasets/sprited/dancing-stick-figures — 275 files / 5.2 GB: `frames/` (514,800 rows) + `motion/` (1,430 clips)
++ card `hf/README.md` (same as repo). Verified `load_dataset` roundtrip from gin (user `sprited`). Staging: gin `~/dev/stickdance/hf_stage`.
+Re-upload after edits: `hf upload sprited/dancing-stick-figures hf_stage . --repo-type dataset` (or single file `hf_stage/README.md README.md`).
 
-Watchdogs restart crashed runs ≤3×: gin `~/dev/stickdance/watchdog_img.sh` (log `/tmp/watchdog.log`), pod `/root/stickdance/pod_watchdog_img128.sh` (`/root/watchdog.log`).
-Samples: `runs/<r>/sample_XXXXXX.png` (64 fixed-noise EMA samples; `sample_raw_` = non-EMA, ≤10k). TB: `gin:6006`.
+## Data (final for v0.1)
+gin `~/dev/stickdance/data/v1_final` (parquet, meta version 0.1.0), `data/v1_final/motion`, cache `data/v1_final_cache` (frames.npy + clips.json, 4,290 clip-windows).
+ARDY npz: `~/dev/ardy/outputs/v1` 1,430/1,430. bone_scale is now applied to joints (was only recorded before).
+Older `data/v1*` / `v1_cache` (1,320 clips) still used by running trainers — do not delete until they finish.
 
-## Early evidence (see out/img64_early.png)
-UNet image at 2k steps (10 min) = clean colour-coded stick figures; DiT at 4k = formed but arms fragmented (patch-4 blockiness → ib64L uses patch 2).
-Video UNet needed 22k steps for a similar level → image-first is the right stage 1.
+## Running (all unattended; watchdogs restart ≤3×; collectors pull + auto-terminate pods)
+| where | runs | purpose | results land in |
+|---|---|---|---|
+| gin (`watchdog_img.sh`, /tmp/watchdog.log) | a64 (video UNet 64² scratch, →85k), a64i (same, --init from ia64L, →61k) | image-init vs scratch (UNet) | gin runs/a64, runs/a64i |
+| RunPod A100 c7b7aplyx0v6ey $1.39/h | b64i (DiT stage-2 from ib64L), b64 (scratch), patch 2, shift 2, img .1, i2v .2, →61k | Seedance §4.1 recipe, init vs scratch (DiT) | `pod_results/dit2/` via `scripts/pod_collect_dit2.sh` (mac, 20 h cap) |
+| RunPod 4090 k203e8o9tfm37c $0.74/h | ic64 (UNet), id64 (DiT p2) class-conditional 64² image, →30k | "give the category, generate" | `pod_results/imgcond/` via `scripts/pod_collect_imgcond.sh` (8 h cap) |
+Check pods: `python3 scripts/runpod.py list`; terminate manually if a collector dies: `python3 scripts/runpod.py terminate <id>`.
+Finished image models on gin: runs/ia64, ib64 (30k), ia64L (100k, min-SNR), ib64L (50k, p2); 128²: pod_results/img128 (ia128 20k, ib128 40k). Scores: paper/results/score_*.json.
 
-## Fixed tonight
-* `euler_sample` had no `@torch.no_grad()` → 77 GB at sampling. This killed b64 (twice) and every RunPod ablation on 4090. Fixed.
-* UNet/DiT T=1 fast paths (skip temporal attn, centre-slice 3×3×3 convs) — exact, 5× faster; also avoids CUDA grid-limit crash at patch 2.
-* `--init` (warm-start video model from image ckpt; UNet exactly = image model per frame), `--min_snr`, `--lr_final`.
+## v0.1 → v0.2 backlog (in order)
+1. Replace card video GIF with a64 final ckpt; add video table (a64 vs a64i vs b64 vs b64i: loss/val/oracle temporal/FVD) — `eval/run_ckpt.py`.
+2. Templated dense captions from labels (`caption`, `caption_static`; Seedance dynamic/static) → new `frames` columns; more prompts (143 → 500+, ARDY overnight).
+3. Learned pose regressor (SRE) → geometry-aware oracle; anomaly config (rendered malformations, multi-label). Then adversarial aux-loss ablation (Jin's GAN point) judged by independent metrics.
+4. REPORT.md v0 fill (§3, §4.2 table, §5.3), SPARK.md cleanup, arXiv decision.
+5. ARDY web demo at ardy.sprited.ai (Jin delegating to another agent; see notes in chat 2026-08-18).
 
-## Answers to Jin's questions (asked 22:00)
-**"Do we simply provide the category and ask it to generate?"** — Currently no: all runs are **unconditional** (`--cond none`): pure noise → stick figure, no label. `--cond group` exists (6 prompt groups + CFG, null class) but isn't used tonight; text (CLIP/T5) conditioning is not implemented yet. For the *image* milestone unconditional is the honest baseline; class/text conditioning is the next step (and needed for the "text-to-motion" story of the paper).
-
-**"How are we fighting disconnected / extra limbs?"** — Today: *measured, not yet directly fought.* The oracle (tvr = topology violation rate, lie = limb-existence error, cpe) counts them; what reduces them in practice is (1) more steps + EMA + LR annealed low (the long runs), (2) finer tokens for the DiT (patch 2), (3) min-SNR weighting (better use of mid-noise steps where structure is decided), (4) later: CFG with group/text conditioning usually sharpens structure. The *direct* lever is a structural auxiliary loss / pose-regressor SRE (backlog E3/E15) — that's the research item for the paper, and the oracle gives us the metric to prove it works. Anything else (rejection-sampling with the oracle) hides the problem rather than fixing the model.
-
-**Hashnode** — noted, you said nvm; the draft can come from this file when you want it.
-
-## Morning 2026-08-18 07:30 — results
-All overnight runs completed without a crash (gin: ia64/ib64 30k, ia64L 100k, ib64L 50k; RunPod A100: ia128 20k, ib128 40k, pod
-auto-terminated 03:46, ~5.5 h ≈ $7.6). Grids: `out/img_final_sheet.png`, per-run `out/img/<run>/`. Scores `out/scores/`.
-
-Oracle on 512 EMA samples (50 sampler steps) — generated vs **real val frames at the same resolution** (the "floor"):
-
-| run | arch | res | steps | tvr | lie | cpe | clean-skeleton frac |
-|---|---|---|---|---|---|---|---|
-| ia64 | UNet | 64 | 30k | .159 (.142) | .113 (.106) | .041 (.039) | .42 (.40) |
-| ib64 | DiT p4 | 64 | 30k | .176 (.143) | .122 (.108) | .040 (.040) | .38 (.37) |
-| **ia64L** | UNet min-SNR | 64 | 96k | **.134 (.136)** | .116 (.103) | .039 (.040) | **.43 (.40)** |
-| ib64L | DiT p2 | 64 | 50k | .164 (.139) | .114 (.106) | .043 (.039) | .40 (.37) |
-| ia128 | UNet min-SNR | 128 | 20k | .226 (.203) | .073 (.047) | .020 (.019) | .22 (.23) |
-| ib128 | DiT p4 | 128 | 40k | .251 (.209) | .065 (.048) | .020 (.020) | .23 (.21) |
-
-Reading: every model is within a few points of the real-data floor on all three regressor-free metrics; the long UNet is *at* the
-floor. The floor itself is nonzero because of self-occlusion (and rises at 128² where the oracle resolves more components).
-So the "we have a good stick-figure image diffusion model" claim holds for both architectures at both resolutions.
-Caveat (unchanged): the oracle can't see proportion/geometry errors — the pose-regressor SRE (E3) is what would.
-Visually: UNet strokes are cleaner; DiT patch-2 fixed the arm fragmentation of patch-4; 128² samples are crisp.
-
-Note: ib64 was trained before the T=1 temporal-attn skip; its ckpt args carry `t1_skip=False` and loaders honour it.
-
-## Now running (video phase, gin)
-* a64 — video UNet 64² 8f from scratch, resumed 24k → 85k.
-* **a64i** — same model, **--init from ia64L** (image model), 0 → 61k = same video-step budget. This is the Seedance-stage-2 controlled test.
-* then b64 (video DiT, sampler OOM fixed).
-
-## Morning checklist (remaining)
-1. `out/`: build 30k grids ia64 vs ib64 + evolution strips; oracle image metrics on 512 samples each (script TODO: `eval/score_images.py`).
-2. Look at ia64L/ib64L mid-run grids; ia128/ib128 from `pod_results/img128/`.
-3. Decide: which image model seeds the video model → `--init` experiment vs from-scratch (a64).
+## Gotchas
+`pgrep -f`/`pkill -f` over ssh matches your own shell — use `[p]attern`. Watchdog `running()` must match `--out runs/x` at end of cmdline. `@torch.no_grad()` must sit directly above `euler_sample`. Don't stack >2 GPU jobs on gin. `~/dev/monet-machi/PAUSE` exists at Jin's request — ask before removing.
