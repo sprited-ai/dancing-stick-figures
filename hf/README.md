@@ -18,6 +18,115 @@ tags:
 - toy-dataset
 size_categories:
 - 100K<n<1M
+dataset_info:
+- config_name: frames
+  features:
+  - name: sample_id
+    dtype: string
+  - name: clip_id
+    dtype: string
+  - name: frame_idx
+    dtype: int32
+  - name: n_frames
+    dtype: int32
+  - name: fps
+    dtype: int32
+  - name: split
+    dtype: string
+  - name: group
+    dtype: string
+  - name: held_out
+    dtype: bool
+  - name: text
+    dtype: string
+  - name: seed
+    dtype: int32
+  - name: qa_flags
+    dtype: string
+  - name: cam_yaw
+    dtype: float32
+  - name: cam_pitch
+    dtype: float32
+  - name: cam_center_x
+    dtype: float32
+  - name: cam_center_y
+    dtype: float32
+  - name: px_per_m
+    dtype: float32
+  - name: stroke
+    dtype: float32
+  - name: bone_scale
+    dtype: string
+  - name: joint_xyz
+    dtype: binary
+  - name: joint_xy
+    dtype: binary
+  - name: joint_depth
+    dtype: binary
+  - name: joint_visible
+    dtype: binary
+  - name: root_pos
+    dtype: binary
+  - name: root_vel
+    dtype: binary
+  - name: root_heading
+    dtype: binary
+  - name: color
+    dtype: image
+  - name: depth
+    dtype: image
+  - name: normal
+    dtype: image
+  - name: seg
+    dtype: image
+  splits:
+  - name: train
+    num_examples: 363600
+  - name: validation
+    num_examples: 18000
+  - name: test
+    num_examples: 133200
+- config_name: motion
+  features:
+  - name: clip_id
+    dtype: string
+  - name: group
+    dtype: string
+  - name: held_out
+    dtype: bool
+  - name: split
+    dtype: string
+  - name: text
+    dtype: string
+  - name: seed
+    dtype: int32
+  - name: fps
+    dtype: int32
+  - name: n_frames
+    dtype: int32
+  - name: frame0_basis
+    dtype: binary
+  - name: posed_joints
+    dtype: binary
+  - name: local_rot_mats
+    dtype: binary
+  - name: global_rot_mats
+    dtype: binary
+  - name: root_positions
+    dtype: binary
+  - name: smooth_root_pos
+    dtype: binary
+  - name: global_root_heading
+    dtype: binary
+  - name: foot_contacts
+    dtype: binary
+  splits:
+  - name: train
+    num_examples: 1010
+  - name: validation
+    num_examples: 50
+  - name: test
+    num_examples: 370
 configs:
 - config_name: frames
   default: true
@@ -79,7 +188,7 @@ Rl  = np.frombuffer(mo["local_rot_mats"], np.float32).reshape(T, 27, 3, 3)  # pe
 fc  = np.frombuffer(mo["foot_contacts"],  bool).reshape(T, 4)
 ```
 
-Training a baseline (code: <https://github.com/sprited-ai/stickdance>, MIT):
+Training a baseline (code: <https://github.com/sprited-ai/dancing-stick-figures>, MIT):
 
 ```bash
 python -m train.cache --data frames --out cache            # uint8 memmap of all frames
@@ -213,7 +322,7 @@ are in the tech report and will be folded into v0.2 of this card.
 - **Data (this dataset): CC0-1.0.** Motion was generated with [NVIDIA ARDY](https://github.com/nv-tlabs/ardy) whose
   [Open Model License](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/)
   claims no ownership of outputs; the rendering, labels and skeleton conventions are ours.
-- **Code** (generator, trainers, oracle): MIT, <https://github.com/sprited-ai/stickdance>.
+- **Code** (generator, trainers, oracle): MIT, <https://github.com/sprited-ai/dancing-stick-figures>.
 
 If you use it:
 
