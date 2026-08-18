@@ -86,6 +86,69 @@ dataset_info:
     num_examples: 18000
   - name: test
     num_examples: 133200
+- config_name: mini
+  features:
+  - name: sample_id
+    dtype: string
+  - name: clip_id
+    dtype: string
+  - name: frame_idx
+    dtype: int32
+  - name: n_frames
+    dtype: int32
+  - name: fps
+    dtype: int32
+  - name: split
+    dtype: string
+  - name: group
+    dtype: string
+  - name: held_out
+    dtype: bool
+  - name: text
+    dtype: string
+  - name: seed
+    dtype: int32
+  - name: qa_flags
+    dtype: string
+  - name: cam_yaw
+    dtype: float32
+  - name: cam_pitch
+    dtype: float32
+  - name: cam_center_x
+    dtype: float32
+  - name: cam_center_y
+    dtype: float32
+  - name: px_per_m
+    dtype: float32
+  - name: stroke
+    dtype: float32
+  - name: bone_scale
+    dtype: string
+  - name: joint_xyz
+    dtype: binary
+  - name: joint_xy
+    dtype: binary
+  - name: joint_depth
+    dtype: binary
+  - name: joint_visible
+    dtype: binary
+  - name: root_pos
+    dtype: binary
+  - name: root_vel
+    dtype: binary
+  - name: root_heading
+    dtype: binary
+  - name: color
+    dtype: image
+  - name: seg
+    dtype: image
+  splits:
+  - name: train
+    num_examples: 363600
+  - name: validation
+    num_examples: 18000
+  - name: test
+    num_examples: 133200
 - config_name: motion
   features:
   - name: clip_id
@@ -145,6 +208,14 @@ configs:
     path: motion/val-*.parquet
   - split: test
     path: motion/test-*.parquet
+- config_name: mini
+  data_files:
+  - split: train
+    path: mini/train-*.parquet
+  - split: validation
+    path: mini/val-*.parquet
+  - split: test
+    path: mini/test-*.parquet
 ---
 
 # Dancing Stick Figures — v0.1
@@ -164,11 +235,19 @@ then video" curriculum used by Seedance-class systems.
 > **v0.1 = first public cut.** Data, labels and splits are final for this version; captions are the raw motion
 > prompts (templated dense captions come in v0.2); baselines are unconditional. Feedback and issues welcome.
 
+## Which config?
+
+| config | rows | size | contents |
+|---|---|---|---|
+| `frames` (default) | 514,800 frames | 4.6 GB | 128² RGBA colour + depth16 + normals + seg + all labels |
+| `mini` | 514,800 frames | 0.85 GB | **64²** RGBA colour + seg + all labels — laptops, Colab, classrooms |
+| `motion` | 1,430 clips | 0.35 GB | raw generator output: world joints, rotation matrices, foot contacts |
+
 ## Quick start
 
 ```python
 from datasets import load_dataset
-ds = load_dataset("sprited/dancing-stick-figures", "frames", split="validation")   # 128 px frames + labels
+ds = load_dataset("sprited/dancing-stick-figures", "frames", split="validation")   # 128 px frames + labels ("mini" = 64 px, 0.85 GB)
 row = ds[0]
 row["color"]            # PIL RGBA image (transparent background, colour-coded bones)
 row["text"]             # "A person does the running man dance."
