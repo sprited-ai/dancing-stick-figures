@@ -175,8 +175,8 @@ def main():
     model = VideoDiT(size=a.size, frames=a.frames, patch=a.patch, dim=a.dim, depth=a.depth, heads=a.heads, n_classes=n_cls).to(dev)
     model.grad_ckpt = a.grad_ckpt
     ema = copy.deepcopy(model).eval().requires_grad_(False)
-    if a.compile:
-        for i, b in enumerate(model.blocks): model.blocks[i] = torch.compile(b, dynamic=False)
+    if a.compile:   # compile forward only -> module identity / state_dict keys unchanged
+        for b in model.blocks: b.forward = torch.compile(b.forward, dynamic=False)
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
     print(f"DiT-FM params {n_params:.1f}M · {len(ds.clips)} train / {len(vds.clips)} val clips · {a.size}px p{a.patch} · frames {a.frames} · batch {a.batch}×{a.accum} · ckpt {a.grad_ckpt} · shift {a.shift}", flush=True)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.95), weight_decay=0.01, fused=a.fast)

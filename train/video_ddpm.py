@@ -258,10 +258,11 @@ def main():
     model.grad_ckpt = a.grad_ckpt
     if a.fast: model = model.to(memory_format=torch.channels_last_3d)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
-    if a.compile:
+    if a.compile:   # compile forward only -> state_dict keys unchanged (do not combine with --grad_ckpt)
         for blocks in list(model.down) + list(model.up):
             if isinstance(blocks[0], ResBlock):
-                for i, b in enumerate(blocks): blocks[i] = torch.compile(b, dynamic=False)
+                for b in blocks: b.forward = torch.compile(b.forward, dynamic=False)
+        for b in model.mid: b.forward = torch.compile(b.forward, dynamic=False)
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
     print(f"params {n_params:.1f}M · {len(ds.clips)} train clips / {len(vds.clips)} val · {a.size}px · frames {a.frames} · batch {a.batch}×{a.accum} · ckpt {a.grad_ckpt} · cond {a.cond}", flush=True)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.99), weight_decay=0.01, fused=a.fast)
