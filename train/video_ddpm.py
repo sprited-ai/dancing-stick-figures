@@ -180,7 +180,7 @@ def sample(model, shape, ac, device, steps=50, y=None, cfg=0.0, null_y=None, noi
         t, tn = ts[i], ts[i + 1]
         a, an = ac[t], (ac[tn] if i < steps - 1 else torch.tensor(1.0, device=device))
         tt = torch.full((shape[0],), int(t), device=device)
-        with torch.autocast("cuda", dtype=torch.bfloat16):
+        with autocast():
             v = model(x, tt, y)
             if cfg > 0 and y is not None:
                 vu = model(x, tt, null_y); v = vu + cfg * (v - vu)
@@ -233,10 +233,17 @@ def val_loss(model, dl, ac, dev, n_batches=16):
         x = x.to(dev); t = torch.randint(0, len(ac), (x.shape[0],), device=dev)
         at = ac[t][:, None, None, None, None]; eps = torch.randn_like(x)
         yy = y.to(dev) if model.cls is not None else None                       # class-conditional: use true labels
-        with torch.autocast("cuda", dtype=torch.bfloat16):
+        with autocast():
             pred = model(at.sqrt() * x + (1 - at).sqrt() * eps, t, yy)
         tot += F.mse_loss(pred.float(), at.sqrt() * eps - (1 - at).sqrt() * x).item(); n += 1
     model.train(); return tot / max(n, 1)
+
+
+AMP = {"dtype": torch.bfloat16, "on": True}
+
+
+def autocast():
+    return torch.autocast("cuda", dtype=AMP["dtype"], enabled=AMP["on"])
 
 
 def main():
@@ -248,6 +255,7 @@ def main():
     ap.add_argument("--cond", default="none", choices=["none", "group"]); ap.add_argument("--cfg_drop", type=float, default=0.1)
     ap.add_argument("--sample_every", type=int, default=2000); ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--resume", default="")
+    ap.add_argument("--amp", default="bf16", choices=["bf16", "fp16", "off"], help="mixed precision: bf16 (Ampere+), fp16 + GradScaler (T4/V100/Colab), off")
     ap.add_argument("--min_snr", type=float, default=0.0, help="min-SNR-gamma loss weight for v-pred (Hang et al. 2023), e.g. 5; 0 = off")
     ap.add_argument("--lr_final", type=float, default=0.1, help="cosine decays to this fraction of --lr")
     ap.add_argument("--init", default="", help="warm-start weights (model+ema) from an image/other checkpoint; step/opt fresh (Seedance stage 2)")
@@ -257,6 +265,8 @@ def main():
     ap.add_argument("--fast", action="store_true", help="cudnn.benchmark, tf32-high, channels_last_3d (UNet), fused AdamW, foreach EMA")
     ap.add_argument("--compile", action="store_true", help="torch.compile per block (regional); test on sm_120 first")
     a = ap.parse_args()
+    AMP["dtype"] = torch.float16 if a.amp == "fp16" else torch.bfloat16; AMP["on"] = a.amp != "off"
+    scaler = torch.amp.GradScaler("cuda", enabled=(a.amp == "fp16"))
     if a.preset:
         for k, v in PRESETS[a.preset].items(): setattr(a, k, v)
     torch.manual_seed(a.seed); random.seed(a.seed); np.random.seed(a.seed)
@@ -323,7 +333,7 @@ def main():
         prog = max(0.0, (step - 1000) / max(1, a.steps - 1000))
         lr = a.lr * min(1.0, (step + 1) / 1000) * (a.lr_final + (1 - a.lr_final) * 0.5 * (1 + math.cos(math.pi * prog)))
         for g in opt.param_groups: g["lr"] = lr
-        with torch.autocast("cuda", dtype=torch.bfloat16):
+        with autocast():
             pred = model(xt, t, y)
         err = (pred.float() - v) ** 2
         if a.min_snr > 0:                                        # v-pred min-SNR-γ: w = min(SNR,γ)/(SNR+1)
@@ -337,10 +347,10 @@ def main():
             fg_loss = float((err * fgm).sum() / fgm.sum().clamp_min(1))
             snr = (at / (1 - at)).flatten(); lb = float(err.flatten(1).mean(1)[snr < 0.1].mean()) if (snr < 0.1).any() else float("nan")
             hb = float(err.flatten(1).mean(1)[snr > 10].mean()) if (snr > 10).any() else float("nan")
-        loss.backward()
+        scaler.scale(loss).backward()
         if (step + 1) % a.accum != 0:
             step += 1; continue
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step(); opt.zero_grad(set_to_none=True)
+        scaler.unscale_(opt); torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); scaler.step(opt); scaler.update(); opt.zero_grad(set_to_none=True)
         loss = loss * a.accum
         with torch.no_grad():
             d = min(0.999 if step < 5000 else 0.9995, (1 + step) / (10 + step))   # EMA warmup: shorter horizon early
