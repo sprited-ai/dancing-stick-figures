@@ -124,6 +124,7 @@ def mixed_noise(shape, device, corr, generator=None):
     return e
 
 
+@torch.no_grad()
 def euler_sample(model, shape, device, steps=50, y=None, cfg=0.0, null_y=None, noise=None, shift=1.0):
     x = torch.randn(shape, device=device) if noise is None else noise.clone()
     ts = torch.linspace(1.0, 0.0, steps + 1, device=device)
@@ -176,6 +177,7 @@ def main():
     model.grad_ckpt = a.grad_ckpt
     ema = copy.deepcopy(model).eval().requires_grad_(False)
     if a.compile:   # compile forward only -> module identity / state_dict keys unchanged
+        torch._dynamo.config.cache_size_limit = 64          # train batch / sample chunk / val batch shapes
         for b in model.blocks: b.forward = torch.compile(b.forward, dynamic=False)
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
     print(f"DiT-FM params {n_params:.1f}M · {len(ds.clips)} train / {len(vds.clips)} val clips · {a.size}px p{a.patch} · frames {a.frames} · batch {a.batch}×{a.accum} · ckpt {a.grad_ckpt} · shift {a.shift}", flush=True)
@@ -255,7 +257,7 @@ def main():
                 tb.add_scalar("perf/s_per_it", spi, step); tb.add_scalar("perf/peak_gb", torch.cuda.max_memory_allocated() / 1e9, step)
                 if vl is not None: tb.add_scalar("loss/val", vl, step)
         if step % a.sample_every == 0 or step == a.steps:
-            NS, CH = 16, 8                                                          # chunks of 8 for 24 GB cards
+            NS, CH = (64, 32) if a.frames == 1 else (16, 8)                          # chunks of 8 for 24 GB cards; 64 samples for image models
             opt.zero_grad(set_to_none=True); torch.cuda.empty_cache()
             ys = torch.arange(NS, device=dev) % n_cls if n_cls else None
             g = torch.Generator(device=dev).manual_seed(1234)

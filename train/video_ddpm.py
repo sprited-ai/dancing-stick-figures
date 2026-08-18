@@ -195,6 +195,8 @@ def to_gif(x, path, fps=10):
             img = rgb + (1 - a)                       # premultiplied over white
             r, c = divmod(b, cols); canvas[r * H:(r + 1) * H, c * W:(c + 1) * W] = img
         frames.append((np.clip(canvas, 0, 1) * 255).astype(np.uint8))
+    if T == 1:                                     # image model: write a PNG grid instead of a 1-frame GIF
+        imageio.imwrite(path[:-4] + ".png", frames[0]); return
     imageio.mimsave(path, frames, duration=1000 / fps, loop=0)
 
 
@@ -261,6 +263,7 @@ def main():
     if a.compile:   # compile forward only -> state_dict keys unchanged (do not combine with --grad_ckpt)
         for blocks in list(model.down) + list(model.up):
             if isinstance(blocks[0], ResBlock):
+                torch._dynamo.config.cache_size_limit = 64          # train batch / sample chunk / val batch shapes
                 for b in blocks: b.forward = torch.compile(b.forward, dynamic=False)
         for b in model.mid: b.forward = torch.compile(b.forward, dynamic=False)
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
@@ -329,7 +332,7 @@ def main():
                 tb.add_scalar("perf/s_per_it", spi, step); tb.add_scalar("perf/peak_gb", torch.cuda.max_memory_allocated() / 1e9, step)
                 if " val " in msg: tb.add_scalar("loss/val", float(msg.split(" val ")[1]), step)
         if step % a.sample_every == 0 or step == a.steps:
-            NS, CH = 16, 8                                                          # 16 fixed-noise samples, in chunks of 8 (24 GB cards)
+            NS, CH = (64, 32) if a.frames == 1 else (16, 8)                          # 16 fixed-noise samples in chunks of 8 (24 GB cards); 64 for image models
             opt.zero_grad(set_to_none=True); torch.cuda.empty_cache()
             ys = torch.arange(NS, device=dev) % n_cls if n_cls else None
             g = torch.Generator(device=dev).manual_seed(1234)                       # FIXED noise -> comparable across steps
