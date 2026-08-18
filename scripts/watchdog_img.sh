@@ -31,7 +31,7 @@ while true; do
     if ! running ia64 && ! running ib64; then log "image phase over -> long image phase"; phase=imgL; fi
   elif [ $phase = imgL ]; then                   # long/proper image runs: UNet min-SNR-5 100k, DiT patch-2 50k
     ensure ia64L; ensure ib64L
-    if ! running ia64L && ! running ib64L; then log "long image phase over -> 128 image phase"; phase=img128; fi
+    if ! running ia64L && ! running ib64L; then log "long image phase over -> video phase (128 image runs moved to RunPod)"; phase=vid; fi
   elif [ $phase = img128 ]; then                 # same recipe at 128x128 (Jin, 2026-08-17 22:00)
     ensure ia128; ensure ib128
     if ! running ia128 && ! running ib128; then log "128 image phase over -> video phase"; phase=vid; fi
