@@ -237,10 +237,14 @@ def main():
     ap.add_argument("--preset", default="", choices=[""] + list(PRESETS)); ap.add_argument("--size", type=int, default=128)
     ap.add_argument("--grad_ckpt", action="store_true"); ap.add_argument("--accum", type=int, default=1)
     ap.add_argument("--seed", type=int, default=0); ap.add_argument("--val_every", type=int, default=500)
+    ap.add_argument("--fast", action="store_true", help="cudnn.benchmark, tf32-high, channels_last_3d (UNet), fused AdamW, foreach EMA")
+    ap.add_argument("--compile", action="store_true", help="torch.compile per block (regional); test on sm_120 first")
     a = ap.parse_args()
     if a.preset:
         for k, v in PRESETS[a.preset].items(): setattr(a, k, v)
     torch.manual_seed(a.seed); random.seed(a.seed); np.random.seed(a.seed)
+    if a.fast:
+        torch.backends.cudnn.benchmark = True; torch.set_float32_matmul_precision("high")
     os.makedirs(a.out, exist_ok=True)
     json.dump(vars(a), open(os.path.join(a.out, "args.json"), "w"), indent=1)
     dev = "cuda"
@@ -252,10 +256,15 @@ def main():
     n_cls = len(ds.groups) if a.cond == "group" else 0
     model = UNet3D(ch=a.ch, n_classes=n_cls, size=a.size).to(dev)
     model.grad_ckpt = a.grad_ckpt
+    if a.fast: model = model.to(memory_format=torch.channels_last_3d)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
+    if a.compile:
+        for blocks in list(model.down) + list(model.up):
+            if isinstance(blocks[0], ResBlock):
+                for i, b in enumerate(blocks): blocks[i] = torch.compile(b, dynamic=False)
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
     print(f"params {n_params:.1f}M · {len(ds.clips)} train clips / {len(vds.clips)} val · {a.size}px · frames {a.frames} · batch {a.batch}×{a.accum} · ckpt {a.grad_ckpt} · cond {a.cond}", flush=True)
-    opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.99), weight_decay=0.01)
+    opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.99), weight_decay=0.01, fused=a.fast)
     ac = alphas_cumprod().to(dev)
     step = 0
     if a.resume:
@@ -271,6 +280,7 @@ def main():
         try: x, y = next(it)
         except StopIteration: it = iter(dl); x, y = next(it)
         x = x.to(dev, non_blocking=True); y = y.to(dev)
+        if a.fast: x = x.contiguous(memory_format=torch.channels_last_3d)
         if n_cls:
             drop = torch.rand(y.shape[0], device=dev) < a.cfg_drop
             y = torch.where(drop, torch.full_like(y, n_cls), y)
@@ -301,7 +311,9 @@ def main():
         loss = loss * a.accum
         with torch.no_grad():
             d = min(0.999 if step < 5000 else 0.9995, (1 + step) / (10 + step))   # EMA warmup: shorter horizon early
-            for pe, pm in zip(ema.parameters(), model.parameters()): pe.lerp_(pm, 1 - d)
+            if a.fast: torch._foreach_lerp_(list(ema.parameters()), list(model.parameters()), 1 - d)
+            else:
+                for pe, pm in zip(ema.parameters(), model.parameters()): pe.lerp_(pm, 1 - d)
         step += 1
         ema_loss = loss.item() if ema_loss is None else 0.98 * ema_loss + 0.02 * loss.item()
         if step == 10 or step % 50 == 0:

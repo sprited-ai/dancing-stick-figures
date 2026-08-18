@@ -152,6 +152,8 @@ def main():
     ap.add_argument("--resume", default=""); ap.add_argument("--preset", default="", choices=[""] + list(PRESETS))
     ap.add_argument("--size", type=int, default=128); ap.add_argument("--grad_ckpt", action="store_true"); ap.add_argument("--accum", type=int, default=1)
     ap.add_argument("--seed", type=int, default=0); ap.add_argument("--val_every", type=int, default=500)
+    ap.add_argument("--fast", action="store_true", help="cudnn.benchmark, tf32-high, channels_last_3d (UNet), fused AdamW, foreach EMA")
+    ap.add_argument("--compile", action="store_true", help="torch.compile per block (regional); test on sm_120 first")
     ap.add_argument("--shift", type=float, default=1.0, help="timestep shift (>1 = more noise; try 3 at 128/16f)")
     ap.add_argument("--img_frac", type=float, default=0.0, help="fraction of batches that are single frames (T=1 image warm-up mix)")
     ap.add_argument("--noise_corr", type=float, default=0.0, help="PYoCo mixed noise: eps = sqrt(1-b)*shared + sqrt(b)*per-frame; 0 = iid")
@@ -160,6 +162,8 @@ def main():
         for k, v in PRESETS[a.preset].items():
             if k != "ch": setattr(a, k, v)
     torch.manual_seed(a.seed); random.seed(a.seed); np.random.seed(a.seed)
+    if a.fast:
+        torch.backends.cudnn.benchmark = True; torch.set_float32_matmul_precision("high")
     os.makedirs(a.out, exist_ok=True); json.dump(vars(a), open(os.path.join(a.out, "args.json"), "w"), indent=1)
     dev = "cuda"
     ds = VideoWindows(a.cache, a.frames, "train", a.stride, size=a.size)
@@ -171,9 +175,11 @@ def main():
     model = VideoDiT(size=a.size, frames=a.frames, patch=a.patch, dim=a.dim, depth=a.depth, heads=a.heads, n_classes=n_cls).to(dev)
     model.grad_ckpt = a.grad_ckpt
     ema = copy.deepcopy(model).eval().requires_grad_(False)
+    if a.compile:
+        for i, b in enumerate(model.blocks): model.blocks[i] = torch.compile(b, dynamic=False)
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
     print(f"DiT-FM params {n_params:.1f}M · {len(ds.clips)} train / {len(vds.clips)} val clips · {a.size}px p{a.patch} · frames {a.frames} · batch {a.batch}×{a.accum} · ckpt {a.grad_ckpt} · shift {a.shift}", flush=True)
-    opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.95), weight_decay=0.01)
+    opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.95), weight_decay=0.01, fused=a.fast)
     step = 0
     if a.resume:
         ck = torch.load(a.resume, map_location=dev); model.load_state_dict(ck["model"]); ema.load_state_dict(ck["ema"]); opt.load_state_dict(ck["opt"]); step = ck["step"]
@@ -232,7 +238,9 @@ def main():
         loss = loss * a.accum
         with torch.no_grad():
             d = min(0.999 if step < 5000 else 0.9995, (1 + step) / (10 + step))
-            for pe, pm in zip(ema.parameters(), model.parameters()): pe.lerp_(pm, 1 - d)
+            if a.fast: torch._foreach_lerp_(list(ema.parameters()), list(model.parameters()), 1 - d)
+            else:
+                for pe, pm in zip(ema.parameters(), model.parameters()): pe.lerp_(pm, 1 - d)
         step += 1
         ema_loss = loss.item() if ema_loss is None else 0.98 * ema_loss + 0.02 * loss.item()
         if step == 10 or step % 50 == 0:
