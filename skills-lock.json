@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "gql-api": {
+      "source": "Hashnode/gql-skill",
+      "sourceType": "github",
+      "skillPath": "skills/gql-api/SKILL.md",
+      "computedHash": "d5cac01d76078379acc4aec0d06fa76c18fa13d1838d0eb7977ad0689b4b07d5"
+    }
+  }
+}
