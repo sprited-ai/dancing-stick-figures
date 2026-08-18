@@ -19,7 +19,7 @@ a checkpoint at every step and a scorer that tells you whether your dancers have
 | **2 · cache** (~3 min) | `python -m train.cache --data data/hf/mini --out data/cache --splits train,val` | one fast uint8 file |
 | **3 · image model** (T4 ~15 min / 4090 ~4 min) | `python -m train.video_ddpm --cache data/cache --out runs/img64 --size 64 --frames 1 --batch 64 --steps 1500 --sample_every 500 --amp fp16` | `runs/img64/sample_001500.png` — 64 figures drawn from noise |
 | **4 · video model** (T4 ~35 min / 4090 ~6 min) | `python -m train.video_ddpm --cache data/cache --out runs/vid64 --size 64 --frames 8 --batch 8 --steps 1200 --sample_every 400 --amp fp16 --init runs/img64/ckpt.pt` | `runs/vid64/sample_001200.gif` — 16 short dances |
-| **5 · score** | `python -m eval.score_images --ckpt runs/img64/ckpt.pt --cache data/cache --n 128` | limb-existence / topology error vs real frames |
+| **5 · score & compare** | `python scripts/compare.py --ckpt runs/img64/ckpt.pt --cache data/cache` | your model vs our reference vs real frames (limb count / attachment / colour) |
 
 Short on time? Replace step 3 with our fully-trained image model:
 `hf download sprited/dancing-stick-figures-baselines unet_img64.pt --local-dir ckpts` and use `--init ckpts/unet_img64.pt` in step 4
