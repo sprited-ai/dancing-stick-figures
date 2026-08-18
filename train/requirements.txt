@@ -2,4 +2,7 @@ torch>=2.4
 numpy
 pyarrow
 pillow
+scipy
 imageio
+tensorboard
+huggingface_hub
