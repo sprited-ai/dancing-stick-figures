@@ -10,12 +10,13 @@ N[b64i]=0; N[b64]=0
 log(){ echo "$(date '+%m-%d %H:%M') $*" >> /root/watchdog.log; }
 running(){ pgrep -f "out runs/$1 " >/dev/null; }
 finished(){ l=$(tail -1 runs/$1/log.txt 2>/dev/null | awk '{print $2}'); [ -n "$l" ] && [ "$l" -ge 61000 ]; }
+settled(){ finished $1 || [ ${N[$1]} -ge 3 ]; }              # finished or given up (NOT merely "not running": a crash between checks must not end the run)
 ensure(){ r=$1; running $r && return; finished $r && return
   [ ${N[$r]} -ge 3 ] && { log "$r died 3x, giving up"; return; }
   N[$r]=$((N[$r]+1)); res=""; [ -f runs/$r/ckpt.pt ] && res="--resume runs/$r/ckpt.pt"
   log "$r start #${N[$r]} $res"; nohup ${CMD[$r]} $res >> runs_${r}.log 2>&1 & sleep 150; }
 while true; do
   ensure b64i; ensure b64
-  if ! running b64i && ! running b64; then log "all done"; touch /root/ALL_DONE; exit 0; fi
+  if settled b64i && settled b64; then log "all done"; touch /root/ALL_DONE; exit 0; fi
   sleep 300
 done

@@ -225,14 +225,16 @@ def worker_init(_):
 
 
 @torch.no_grad()
+@torch.no_grad()
 def val_loss(model, dl, ac, dev, n_batches=16):
     model.eval(); tot = 0.0; n = 0
-    for i, (x, _) in enumerate(dl):
+    for i, (x, y) in enumerate(dl):
         if i >= n_batches: break
         x = x.to(dev); t = torch.randint(0, len(ac), (x.shape[0],), device=dev)
         at = ac[t][:, None, None, None, None]; eps = torch.randn_like(x)
+        yy = y.to(dev) if model.cls is not None else None                       # class-conditional: use true labels
         with torch.autocast("cuda", dtype=torch.bfloat16):
-            pred = model(at.sqrt() * x + (1 - at).sqrt() * eps, t, None)
+            pred = model(at.sqrt() * x + (1 - at).sqrt() * eps, t, yy)
         tot += F.mse_loss(pred.float(), at.sqrt() * eps - (1 - at).sqrt() * x).item(); n += 1
     model.train(); return tot / max(n, 1)
 

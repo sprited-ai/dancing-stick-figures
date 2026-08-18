@@ -223,11 +223,11 @@ def main():
         if vdl is None: return None
         ema.eval(); tot = 0; n = 0
         with torch.no_grad():
-            for i, (x, _) in enumerate(vdl):
+            for i, (x, y) in enumerate(vdl):
                 if i >= 16: break
                 x = x.to(dev); t = sample_t(x.shape[0], dev, a.shift); eps = torch.randn_like(x)
-                tt = t[:, None, None, None, None]
-                with torch.autocast("cuda", dtype=torch.bfloat16): pred = ema((1 - tt) * x + tt * eps, t, None)
+                tt = t[:, None, None, None, None]; yy = y.to(dev) if n_cls else None
+                with torch.autocast("cuda", dtype=torch.bfloat16): pred = ema((1 - tt) * x + tt * eps, t, yy)
                 tot += F.mse_loss(pred.float(), eps - x).item(); n += 1
         return tot / max(n, 1)
 

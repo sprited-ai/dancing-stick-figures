@@ -18,6 +18,7 @@ log(){ echo "$(date '+%m-%d %H:%M') $*" >> /tmp/watchdog.log; }
 running(){ pgrep -f "out runs/$1 " >/dev/null; }
 laststep(){ tail -1 runs/$1/log.txt 2>/dev/null | awk '{print $2}'; }
 finished(){ l=$(laststep $1); [ -n "$l" ] && [ "$l" -ge ${DONE[$1]} ]; }
+settled(){ finished $1 || [ ${N[$1]} -ge 3 ]; }   # finished or given up
 ensure(){ r=$1                                   # start or resume $r unless finished / given up
   running $r && return; finished $r && return
   [ ${N[$r]} -ge 3 ] && { log "$r died 3x, giving up"; return; }
@@ -29,17 +30,17 @@ phase=img
 while true; do
   if [ $phase = img ]; then
     ensure ia64; ensure ib64
-    if ! running ia64 && ! running ib64; then log "image phase over -> long image phase"; phase=imgL; fi
+    if settled ia64 && settled ib64; then log "image phase over -> long image phase"; phase=imgL; fi
   elif [ $phase = imgL ]; then                   # long/proper image runs: UNet min-SNR-5 100k, DiT patch-2 50k
     ensure ia64L; ensure ib64L
-    if ! running ia64L && ! running ib64L; then log "long image phase over -> video phase (128 image runs moved to RunPod)"; phase=vid; fi
+    if settled ia64L && settled ib64L; then log "long image phase over -> video phase (128 image runs moved to RunPod)"; phase=vid; fi
   elif [ $phase = img128 ]; then                 # same recipe at 128x128 (Jin, 2026-08-17 22:00)
     ensure ia128; ensure ib128
     if ! running ia128 && ! running ib128; then log "128 image phase over -> video phase"; phase=vid; fi
   else
     ensure a64; ensure a64i                   # a64i = Seedance stage 2: video UNet warm-started from image model ia64L (61k = same video-step budget as a64 24k->85k)
-    if ! running a64 && ! running a64i && [ ! -f NO_B64_ON_GIN ]; then ensure b64; fi     # b64 fresh once both are done — skipped if pod handles it (touch NO_B64_ON_GIN)
-    if ! running a64 && ! running a64i && ! running b64; then log "all done"; exit 0; fi
+    if settled a64 && settled a64i && [ ! -f NO_B64_ON_GIN ]; then ensure b64; fi     # b64 fresh once both are done — skipped if pod handles it (touch NO_B64_ON_GIN)
+    if settled a64 && settled a64i && ( [ -f NO_B64_ON_GIN ] || settled b64 ); then log "all done"; exit 0; fi
   fi
   sleep 300
 done
