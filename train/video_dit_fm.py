@@ -55,7 +55,8 @@ class Block(nn.Module):
             h = x.reshape(B * T, N, D); rep = lambda z: z.repeat_interleave(T, 0)
         else:
             h = x.permute(0, 2, 1, 3).reshape(B * N, T, D); rep = lambda z: z.repeat_interleave(N, 0)
-        h = h + rep(g1).unsqueeze(1) * self.attn(modulate(self.n1(h), rep(s1), rep(sc1)))
+        if not (self.axis == "temporal" and T == 1):            # image mode: nothing to attend across (gate stays 0 -> identity when video-initialised)
+            h = h + rep(g1).unsqueeze(1) * self.attn(modulate(self.n1(h), rep(s1), rep(sc1)))
         h = h + rep(g2).unsqueeze(1) * self.mlp(modulate(self.n2(h), rep(s2), rep(sc2)))
         if self.axis == "spatial":
             return h.reshape(B, T, N, D)
@@ -151,6 +152,7 @@ def main():
     ap.add_argument("--cond", default="none", choices=["none", "group"]); ap.add_argument("--cfg_drop", type=float, default=0.1)
     ap.add_argument("--sample_every", type=int, default=2000); ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--resume", default=""); ap.add_argument("--preset", default="", choices=[""] + list(PRESETS))
+    ap.add_argument("--lr_final", type=float, default=0.1, help="cosine decays to this fraction of --lr")
     ap.add_argument("--init", default="", help="warm-start weights (model+ema) from an image/other checkpoint; step/opt fresh (Seedance stage 2)")
     ap.add_argument("--size", type=int, default=128); ap.add_argument("--grad_ckpt", action="store_true"); ap.add_argument("--accum", type=int, default=1)
     ap.add_argument("--seed", type=int, default=0); ap.add_argument("--val_every", type=int, default=500)
@@ -231,7 +233,7 @@ def main():
             eps = math.sqrt(1 - a.noise_corr) * shared + math.sqrt(a.noise_corr) * eps
         xt = (1 - tt) * x + tt * eps
         prog = max(0.0, (step - 1000) / max(1, a.steps - 1000))
-        lr = a.lr * min(1.0, (step + 1) / 1000) * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * prog)))
+        lr = a.lr * min(1.0, (step + 1) / 1000) * (a.lr_final + (1 - a.lr_final) * 0.5 * (1 + math.cos(math.pi * prog)))
         for g in opt.param_groups: g["lr"] = lr
         with torch.autocast("cuda", dtype=torch.bfloat16):
             pred = model(xt, t, y)

@@ -246,6 +246,8 @@ def main():
     ap.add_argument("--cond", default="none", choices=["none", "group"]); ap.add_argument("--cfg_drop", type=float, default=0.1)
     ap.add_argument("--sample_every", type=int, default=2000); ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--resume", default="")
+    ap.add_argument("--min_snr", type=float, default=0.0, help="min-SNR-gamma loss weight for v-pred (Hang et al. 2023), e.g. 5; 0 = off")
+    ap.add_argument("--lr_final", type=float, default=0.1, help="cosine decays to this fraction of --lr")
     ap.add_argument("--init", default="", help="warm-start weights (model+ema) from an image/other checkpoint; step/opt fresh (Seedance stage 2)")
     ap.add_argument("--preset", default="", choices=[""] + list(PRESETS)); ap.add_argument("--size", type=int, default=128)
     ap.add_argument("--grad_ckpt", action="store_true"); ap.add_argument("--accum", type=int, default=1)
@@ -317,12 +319,17 @@ def main():
         v = at.sqrt() * eps - (1 - at).sqrt() * x
         # warmup 1000 then cosine decay to 10 %
         prog = max(0.0, (step - 1000) / max(1, a.steps - 1000))
-        lr = a.lr * min(1.0, (step + 1) / 1000) * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * prog)))
+        lr = a.lr * min(1.0, (step + 1) / 1000) * (a.lr_final + (1 - a.lr_final) * 0.5 * (1 + math.cos(math.pi * prog)))
         for g in opt.param_groups: g["lr"] = lr
         with torch.autocast("cuda", dtype=torch.bfloat16):
             pred = model(xt, t, y)
         err = (pred.float() - v) ** 2
-        loss = err.mean() / a.accum
+        if a.min_snr > 0:                                        # v-pred min-SNR-γ: w = min(SNR,γ)/(SNR+1)
+            snr_ = (at / (1 - at)).flatten()
+            w = (snr_.clamp(max=a.min_snr) / (snr_ + 1))[:, None, None, None, None]
+            loss = (err * w).mean() / a.accum
+        else:
+            loss = err.mean() / a.accum
         with torch.no_grad():                                   # diagnostics only
             fgm = (x[:, 3:4] > -0.9).float()                    # alpha > 0.05
             fg_loss = float((err * fgm).sum() / fgm.sum().clamp_min(1))
