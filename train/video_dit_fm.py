@@ -255,21 +255,27 @@ def main():
                 tb.add_scalar("perf/s_per_it", spi, step); tb.add_scalar("perf/peak_gb", torch.cuda.max_memory_allocated() / 1e9, step)
                 if vl is not None: tb.add_scalar("loss/val", vl, step)
         if step % a.sample_every == 0 or step == a.steps:
-            NS = 16
+            NS, CH = 16, 8                                                          # chunks of 8 for 24 GB cards
+            opt.zero_grad(set_to_none=True); torch.cuda.empty_cache()
             ys = torch.arange(NS, device=dev) % n_cls if n_cls else None
             g = torch.Generator(device=dev).manual_seed(1234)
             noise = mixed_noise((NS, 4, a.frames, a.size, a.size), dev, a.noise_corr, g)
             for name, m_ in (("", ema), ("raw_", model)):
                 if name and step > 10000: continue
                 m_.eval()
-                xs = euler_sample(m_, noise.shape, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
-                                  null_y=torch.full((NS,), n_cls, device=dev) if n_cls else None, noise=noise, shift=a.shift)
+                outs = []
+                for i in range(0, NS, CH):
+                    yy = ys[i:i + CH] if ys is not None else None
+                    outs.append(euler_sample(m_, noise[i:i + CH].shape, dev, steps=50, y=yy, cfg=2.0 if n_cls else 0.0,
+                                             null_y=torch.full((CH,), n_cls, device=dev) if n_cls else None, noise=noise[i:i + CH], shift=a.shift).cpu())
+                xs = torch.cat(outs, 0)
                 m_.train() if m_ is model else None
                 to_gif(xs, os.path.join(a.out, f"sample_{name}{step:06d}.gif"))
                 if not name and tb:
                     v = ((xs.clamp(-1, 1) + 1) / 2); rgb = (v[:, :3] + (1 - v[:, 3:4])).clamp(0, 1)
                     try: tb.add_video("samples", rgb.permute(0, 2, 1, 3, 4).cpu(), step, fps=10)
                     except Exception: pass
+                torch.cuda.empty_cache()
             torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups, arch="dit_fm"),
                        os.path.join(a.out, "ckpt.pt"))
             torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), groups=ds.groups, arch="dit_fm"),

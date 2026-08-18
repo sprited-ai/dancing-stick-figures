@@ -329,19 +329,24 @@ def main():
                 tb.add_scalar("perf/s_per_it", spi, step); tb.add_scalar("perf/peak_gb", torch.cuda.max_memory_allocated() / 1e9, step)
                 if " val " in msg: tb.add_scalar("loss/val", float(msg.split(" val ")[1]), step)
         if step % a.sample_every == 0 or step == a.steps:
-            NS = 16
+            NS, CH = 16, 8                                                          # 16 fixed-noise samples, in chunks of 8 (24 GB cards)
+            opt.zero_grad(set_to_none=True); torch.cuda.empty_cache()
             ys = torch.arange(NS, device=dev) % n_cls if n_cls else None
             g = torch.Generator(device=dev).manual_seed(1234)                       # FIXED noise -> comparable across steps
             noise = torch.randn((NS, 4, a.frames, a.size, a.size), device=dev, generator=g)
-            xs = sample(ema, noise.shape, ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
-                        null_y=torch.full((NS,), n_cls, device=dev) if n_cls else None, noise=noise)
+            def _samp(m_):
+                outs = []
+                for i in range(0, NS, CH):
+                    yy = ys[i:i + CH] if ys is not None else None
+                    outs.append(sample(m_, noise[i:i + CH].shape, ac, dev, steps=50, y=yy, cfg=2.0 if n_cls else 0.0,
+                                       null_y=torch.full((CH,), n_cls, device=dev) if n_cls else None, noise=noise[i:i + CH]).cpu())
+                return torch.cat(outs, 0)
+            xs = _samp(ema)
             to_gif(xs, os.path.join(a.out, f"sample_{step:06d}.gif"))
             if step <= 10000:                                                       # early: also raw weights (EMA lags)
-                model.eval()
-                xr = sample(model, noise.shape, ac, dev, steps=50, y=ys, cfg=2.0 if n_cls else 0.0,
-                            null_y=torch.full((NS,), n_cls, device=dev) if n_cls else None, noise=noise)
-                model.train()
+                model.eval(); xr = _samp(model); model.train()
                 to_gif(xr, os.path.join(a.out, f"sample_raw_{step:06d}.gif"))
+            torch.cuda.empty_cache()
             torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups),
                        os.path.join(a.out, "ckpt.pt"))
             torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), groups=ds.groups),          # history (EMA only)
