@@ -7,7 +7,7 @@ CMD[ic64]="python -m train.video_ddpm  $COMMON --out runs/ic64 --min_snr 5"
 CMD[id64]="python -m train.video_dit_fm $COMMON --out runs/id64 --patch 2 --batch 64 --accum 2"   # 24 GB next to ic64
 N[ic64]=0; N[id64]=0
 log(){ echo "$(date '+%m-%d %H:%M') $*" >> /root/watchdog.log; }
-running(){ pgrep -f "out runs/$1 " >/dev/null; }
+running(){ pgrep -f "out runs/$1( |$)" >/dev/null; }
 finished(){ l=$(tail -1 runs/$1/log.txt 2>/dev/null | awk '{print $2}'); [ -n "$l" ] && [ "$l" -ge 30000 ]; }
 settled(){ finished $1 || [ ${N[$1]} -ge 3 ]; }              # finished or given up (NOT merely "not running": a crash between checks must not end the run)
 ensure(){ r=$1; running $r && return; finished $r && return

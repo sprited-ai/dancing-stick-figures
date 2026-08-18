@@ -7,7 +7,7 @@ CMD[ia128]="python -m train.video_ddpm  $COMMON --out runs/ia128 --min_snr 5 --s
 CMD[ib128]="python -m train.video_dit_fm $COMMON --out runs/ib128 --patch 4"
 N[ia128]=0; N[ib128]=0
 log(){ echo "$(date '+%m-%d %H:%M') $*" >> /root/watchdog.log; }
-running(){ pgrep -f "out runs/$1 " >/dev/null; }
+running(){ pgrep -f "out runs/$1( |$)" >/dev/null; }
 finished(){ l=$(tail -1 runs/$1/log.txt 2>/dev/null | awk "{print \$2}"); d=40000; [ $1 = ia128 ] && d=20000; [ -n "$l" ] && [ "$l" -ge $d ]; }
 settled(){ finished $1 || [ ${N[$1]} -ge 3 ]; }              # finished or given up (NOT merely "not running": a crash between checks must not end the run)
 ensure(){ r=$1; running $r && return; finished $r && return

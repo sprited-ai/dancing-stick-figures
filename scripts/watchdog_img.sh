@@ -15,7 +15,7 @@ CMD[b64]="python -m train.video_dit_fm $COMMON --out runs/b64 --frames 8 --batch
 DONE[ia64]=30000; DONE[ib64]=30000; DONE[ia64L]=100000; DONE[ib64L]=50000; DONE[ia128]=40000; DONE[ib128]=40000; DONE[a64]=85000; DONE[a64i]=61000; DONE[b64]=61000
 for r in ia64 ib64 ia64L ib64L ia128 ib128 a64 a64i b64; do N[$r]=0; done
 log(){ echo "$(date '+%m-%d %H:%M') $*" >> /tmp/watchdog.log; }
-running(){ pgrep -f "out runs/$1 " >/dev/null; }
+running(){ pgrep -f "out runs/$1( |$)" >/dev/null; }
 laststep(){ tail -1 runs/$1/log.txt 2>/dev/null | awk '{print $2}'; }
 finished(){ l=$(laststep $1); [ -n "$l" ] && [ "$l" -ge ${DONE[$1]} ]; }
 settled(){ finished $1 || [ ${N[$1]} -ge 3 ]; }   # finished or given up
