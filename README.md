@@ -1,46 +1,48 @@
-# Dancing Stick Figures — generator, trainers, oracle
+# Dancing Stick Figures — train your first video generation model, end to end
 
 Code behind the dataset **[sprited/dancing-stick-figures](https://huggingface.co/datasets/sprited/dancing-stick-figures)**:
-a small, fully-labelled synthetic video dataset (1,430 clips · 514,800 RGBA frames · 3D skeleton, camera and
-G-buffer per frame) for learning video diffusion on one consumer GPU — plus two reference trainers (UNet /
-DiT-flow-matching), the rule-based "oracle" that scores anatomical errors in generated frames, and the renderer
-that made the data.
+1,430 six-second clips of colour-coded stick figures dancing, 514,800 labelled frames, small enough to learn video
+diffusion on one GPU. This repo gives you **one route** from the data to a working (toy) video generation model, with
+a checkpoint at every step and a scorer that tells you whether your dancers have the right number of limbs.
 
 <p align="center"><img src="hf/figs/dataset_contact_sheet.png" width="800"></p>
 
-## Quickstart (one GPU, ~15 min to first samples)
+## The route (Colab T4: ~1 h · RTX 4090: ~20 min)
 
-```bash
-git clone https://github.com/sprited-ai/dancing-stick-figures && cd dancing-stick-figures
-pip install -r train/requirements.txt
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sprited-ai/dancing-stick-figures/blob/main/notebooks/dancing_stick_figures_colab.ipynb)
+— the same five steps below, with pictures and plain-language explanations (written so a curious 11-year-old can follow).
 
-# 1. data (5 GB parquet; frames/ + motion/)
-hf download sprited/dancing-stick-figures --repo-type dataset --local-dir data/hf
+| step | command | what you get |
+|---|---|---|
+| **0 · setup** | `git clone https://github.com/sprited-ai/dancing-stick-figures && cd dancing-stick-figures && pip install -r train/requirements.txt` | code + deps |
+| **1 · data** (0.85 GB) | `hf download sprited/dancing-stick-figures --repo-type dataset --include "mini/*" --local-dir data/hf` | 64² frames + skeleton labels |
+| **2 · cache** (~3 min) | `python -m train.cache --data data/hf/mini --out data/cache --splits train,val` | one fast uint8 file |
+| **3 · image model** (T4 ~15 min / 4090 ~4 min) | `python -m train.video_ddpm --cache data/cache --out runs/img64 --size 64 --frames 1 --batch 64 --steps 1500 --sample_every 500 --amp fp16` | `runs/img64/sample_001500.png` — 64 figures drawn from noise |
+| **4 · video model** (T4 ~35 min / 4090 ~6 min) | `python -m train.video_ddpm --cache data/cache --out runs/vid64 --size 64 --frames 8 --batch 8 --steps 1200 --sample_every 400 --amp fp16 --init runs/img64/ckpt.pt` | `runs/vid64/sample_001200.gif` — 16 short dances |
+| **5 · score** | `python -m eval.score_images --ckpt runs/img64/ckpt.pt --cache data/cache --n 128` | limb-existence / topology error vs real frames |
 
-# 2. decode the colour frames once into a uint8 memmap (≈2 min, 30 GB; add --splits train,val to skip test)
-python -m train.cache --data data/hf/frames --out data/cache
+Short on time? Replace step 3 with our fully-trained image model:
+`hf download sprited/dancing-stick-figures-baselines unet_img64.pt --local-dir ckpts` and use `--init ckpts/unet_img64.pt` in step 4
+— dancing figures within a few hundred steps. On a 24 GB card drop `--amp fp16` (bf16 default), raise `--batch 16`, add `--fast --compile`,
+and let the video model run 20k+ steps for clean motion (`--steps 60000` is our reference run).
 
-# 3a. image model, 64², unconditional (UNet, v-pred; ~7 GB, 0.3 s/it on a 4090; figures by step ~2k)
-python -m train.video_ddpm --cache data/cache --out runs/img64 --size 64 --frames 1 --batch 128 --steps 30000 --sample_every 1000 --fast --compile
+**Why this order?** A video is 8 pictures in a row. Teaching one network to draw a good *frame* first, then adding the
+"what changes between frames" part on top, is how large systems (Seedance-style) do it too — and on a small GPU it is
+roughly 2.5× faster than training video from scratch. Our `--init` makes the video model start out *exactly* as the image
+model repeated 8 times (the time-mixing layers begin at zero), so nothing is lost.
 
-# 3b. video model, 64² × 8 frames (UNet; ~13 GB, 0.36 s/it; dancing figures by ~20k steps)
-python -m train.video_ddpm --cache data/cache --out runs/vid64 --size 64 --frames 8 --batch 16 --steps 60000 --fast --compile
-#     ...or warm-start it from the image model (Seedance-style stage 2; same quality ~2.5× sooner)
-python -m train.video_ddpm --cache data/cache --out runs/vid64i --size 64 --frames 8 --batch 16 --steps 60000 --fast --compile --init runs/img64/ckpt.pt
+## Appendix — everything else in this repo
 
-# 3c. the DiT + flow-matching track (patch 2, ~23 GB at batch 128 images / 16 GB at batch 8×2 clips)
-python -m train.video_dit_fm --cache data/cache --out runs/dit_img64 --size 64 --frames 1 --batch 128 --patch 2 --steps 50000 --fast --compile
-python -m train.video_dit_fm --cache data/cache --out runs/dit_vid64 --size 64 --frames 8 --batch 8 --accum 2 --patch 2 --shift 2 --img_frac 0.1 --i2v_frac 0.2 --steps 60000 --fast --compile --init runs/dit_img64/ckpt.pt
-
-# 4. score generated frames with the oracle (limb existence / topology / colour purity vs the real-frame floor)
-python -m eval.score_images --ckpt runs/img64/ckpt.pt --cache data/cache --n 512
-python -m eval.run_ckpt --run runs/vid64 --cache data/cache --n 64      # video: temporal metrics + FVD, TensorBoard
-```
-
-Every run writes `runs/<name>/sample_XXXXXX.{png,gif}` (64 or 16 fixed-noise samples), `log.txt`, `ckpt.pt`,
-TensorBoard under `tb/`. Flags: `--grad_ckpt` (24 GB cards at 128²), `--cond group` (class-conditional on the 5 prompt
-groups + CFG), `--min_snr 5` (min-SNR-γ loss weight, UNet), `--preset 4090-fast|4090-full|4090-mid` (memory-safe presets).
-Drop `--compile` if your torch/GPU combination complains; it is only a speed-up.
+- **Second architecture, same route:** `train/video_dit_fm.py` — a DiT + flow-matching model (patch 2, logit-normal t, timestep
+  shift, image-to-video conditioning via `--i2v_frac`); e.g. `--size 64 --frames 1 --batch 128 --patch 2` then `--frames 8 --batch 8 --accum 2 --init ...`.
+- **Bigger:** the full `frames` config (128², depth, normals, segmentation; 4.6 GB): `--include "frames/*"`, then `--size 128 --grad_ckpt` (24 GB cards).
+- **Conditional:** `--cond group` trains on the 5 prompt groups with classifier-free guidance.
+- **Baselines & numbers:** `hf/README.md` (the dataset card) lists six trained image models and their oracle scores; checkpoints at
+  [sprited/dancing-stick-figures-baselines](https://huggingface.co/sprited/dancing-stick-figures-baselines).
+- **The oracle:** `eval/oracle.py` parses a rendered figure by colour and counts limbs / checks attachment / colour purity;
+  `eval/corrupt.py` validates it on synthetic corruptions; `eval/run_ckpt.py` adds temporal metrics + FVD for video checkpoints.
+- **Regenerating the data:** NVIDIA ARDY text-to-motion → `generator/build.py` (see below).
+- **Tech-report draft** in `paper/` — frozen; the dataset card is the reference document.
 
 ## Layout
 
@@ -70,9 +72,9 @@ Everything is deterministic from `clip_id` (body, cameras, split).
 
 ## Status
 
-v0.1 (2026-08-18): dataset public; image baselines at 64²/128²; video baselines training. See `STATUS.md` for the live
-state and `paper/REPORT.md` for the report skeleton. Roadmap: templated dense captions, more prompts, learned pose
-regressor / anomaly detector, Colab notebook, baseline checkpoints on HF.
+v0.1 (2026-08-18): dataset public, route above verified on a fresh machine, image baselines at 64²/128², video baselines
+finishing. `STATUS.md` = live state. Roadmap (v0.2): video checkpoints + numbers, templated dense captions, more prompts,
+a learned pose regressor / anomaly detector.
 
 ## License
 

@@ -232,6 +232,11 @@ in a few hours on a 24 GB card, structured enough that you can **measure** what 
 detached leg? wrong colour?) instead of eyeballing it. It is also a clean playground for the "image model first,
 then video" curriculum used by Seedance-class systems.
 
+> **Start here →** [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sprited-ai/dancing-stick-figures/blob/main/notebooks/dancing_stick_figures_colab.ipynb)
+> **one route, end to end, ~1 h on a free T4:** look at the data → train a 64² image model → warm-start a video model from
+> it → watch the GIF → let the "oracle" count the limbs. Same five commands in the
+> [code repo README](https://github.com/sprited-ai/dancing-stick-figures#the-route-colab-t4-1-h--rtx-4090-20-min).
+>
 > **v0.1 = first public cut.** Data, labels and splits are final for this version; captions are the raw motion
 > prompts (templated dense captions come in v0.2); baselines are unconditional. Feedback and issues welcome.
 
