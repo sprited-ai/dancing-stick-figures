@@ -9,10 +9,11 @@ CMD[ia64L]="python -m train.video_ddpm  $COMMON --out runs/ia64L --frames 1 --ba
 CMD[ib64L]="python -m train.video_dit_fm $COMMON --out runs/ib64L --frames 1 --batch 128 --steps 50000 --sample_every 2000 --patch 2 --lr_final 0.02"
 CMD[ia128]="python -m train.video_ddpm  --cache data/v1_cache --size 128 --fast --compile --val_every 500 --out runs/ia128 --frames 1 --batch 128 --steps 40000 --sample_every 2000 --min_snr 5 --lr_final 0.02"
 CMD[ib128]="python -m train.video_dit_fm --cache data/v1_cache --size 128 --fast --compile --val_every 500 --out runs/ib128 --frames 1 --batch 128 --steps 40000 --sample_every 2000 --patch 4 --lr_final 0.02"
+CMD[a64i]="python -m train.video_ddpm  $COMMON --out runs/a64i --frames 8 --batch 16 --steps 61000 --sample_every 2000 --init runs/ia64L/ckpt.pt"
 CMD[a64]="python -m train.video_ddpm  $COMMON --out runs/a64 --frames 8 --batch 16 --steps 85000 --sample_every 2000"
 CMD[b64]="python -m train.video_dit_fm $COMMON --out runs/b64 --frames 8 --batch 16 --steps 85000 --sample_every 2000 --shift 1.0 --img_frac 0.2"
-DONE[ia64]=30000; DONE[ib64]=30000; DONE[ia64L]=100000; DONE[ib64L]=50000; DONE[ia128]=40000; DONE[ib128]=40000; DONE[a64]=85000; DONE[b64]=85000
-for r in ia64 ib64 ia64L ib64L ia128 ib128 a64 b64; do N[$r]=0; done
+DONE[ia64]=30000; DONE[ib64]=30000; DONE[ia64L]=100000; DONE[ib64L]=50000; DONE[ia128]=40000; DONE[ib128]=40000; DONE[a64]=85000; DONE[a64i]=61000; DONE[b64]=85000
+for r in ia64 ib64 ia64L ib64L ia128 ib128 a64 a64i b64; do N[$r]=0; done
 log(){ echo "$(date '+%m-%d %H:%M') $*" >> /tmp/watchdog.log; }
 running(){ pgrep -f "out runs/$1 " >/dev/null; }
 laststep(){ tail -1 runs/$1/log.txt 2>/dev/null | awk '{print $2}'; }
@@ -36,9 +37,9 @@ while true; do
     ensure ia128; ensure ib128
     if ! running ia128 && ! running ib128; then log "128 image phase over -> video phase"; phase=vid; fi
   else
-    ensure a64
-    if ! running a64; then ensure b64; fi     # b64 fresh once a64 is done (or gave up)
-    if ! running a64 && ! running b64; then log "all done"; exit 0; fi
+    ensure a64; ensure a64i                   # a64i = Seedance stage 2: video UNet warm-started from image model ia64L (61k = same video-step budget as a64 24k->85k)
+    if ! running a64 && ! running a64i; then ensure b64; fi     # b64 fresh once both are done (or gave up)
+    if ! running a64 && ! running a64i && ! running b64; then log "all done"; exit 0; fi
   fi
   sleep 300
 done
