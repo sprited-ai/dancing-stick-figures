@@ -1,9 +1,22 @@
-# STATUS — 2026-08-18 12:00 PDT (Claudia) — v0.1 pushed (private)
+# STATUS — 2026-08-18 22:30 PDT (Claudia) — v0.1 shipped: dataset + baselines + route + notebook
 
-## Released (private, awaiting Jin's public flip)
-https://huggingface.co/datasets/sprited/dancing-stick-figures — 275 files / 5.2 GB: `frames/` (514,800 rows) + `motion/` (1,430 clips)
-+ card `hf/README.md` (same as repo). Verified `load_dataset` roundtrip from gin (user `sprited`). Staging: gin `~/dev/stickdance/hf_stage`.
-Re-upload after edits: `hf upload sprited/dancing-stick-figures hf_stage . --repo-type dataset` (or single file `hf_stage/README.md README.md`).
+## Public
+- Dataset https://huggingface.co/datasets/sprited/dancing-stick-figures (public; configs frames 4.6 GB / mini 0.85 GB / motion 0.35 GB; viewer live)
+- Baselines https://huggingface.co/sprited/dancing-stick-figures-baselines — image 64²/128² (UNet, DiT, cond), video 8f (scratch 85k, image-init 61k),
+  **autoregressive `unet_ar64.pt`** (5 s rollouts), DiT video interim; README has the oracle/FVD tables.
+- Code https://github.com/sprited-ai/dancing-stick-figures — route-first README, `scripts/rollout.py`, `scripts/compare.py`, notebook with outputs (answer sheet).
+- Colab notebook: verified on a real T4 2026-08-18 evening (data/cache/image/AR-video all within stated times); 4 T4-only bugs fixed
+  (batch 4×2 for the AR cell, grep error surfacing, line-buffered grep, fp16 auto on non-bf16 GPUs). **One more clean end-to-end T4 run
+  with the fixed code is still owed** (last two cells were slow under the old bf16 path).
+- Blog draft parked in blog/ (Jin: skip for now). Paper: Jin said yes → draft next (paper/REPORT.md skeleton + §5.2 mapping table exist).
+
+## Results (v0.1)
+- Image 64²: UNet 100k at oracle floor (tvr .134/.136 real, lie .116/.103); DiT p2 slightly worse; 128² both ~floor+0.02.
+- Video 8f: scratch 85k vs image-init 61k — image-init reaches same loss ~2.5× sooner, ends equal (FVD 199 vs 213; real-real ~115).
+- AR 5 s: per-frame anatomy within ~0.02 of real; temporal jitter/jerk ~1.2–1.4× real (seams). paper/results/*.json.
+
+## Spend
+RunPod today ≈ $75 (A100 ×2 sessions, 4090 ×2, H100 5.5 h). Jin topped up; no pods running now.
 
 ## Data (final for v0.1)
 gin `~/dev/stickdance/data/v1_final` (parquet, meta version 0.1.0), `data/v1_final/motion`, cache `data/v1_final_cache` (frames.npy + clips.json, 4,290 clip-windows).
