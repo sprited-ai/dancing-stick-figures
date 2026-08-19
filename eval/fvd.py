@@ -39,6 +39,8 @@ def features(videos: np.ndarray, device="cuda", bs=16) -> np.ndarray:
         x = torch.from_numpy(videos[i:i + bs]).to(device).float()          # [B,T,H,W,3]
         x = x.permute(0, 4, 1, 2, 3)                                        # [B,3,T,H,W]
         B, C, T, H, W = x.shape
+        if T < 16:                                                          # I3D needs >=16 frames: repeat each frame (same for real & fake)
+            rep = -(-16 // T); x = x.repeat_interleave(rep, dim=2)[:, :, :16]; T = 16
         x = F.interpolate(x.reshape(B, C * T, H, W), size=(224, 224), mode="bilinear", align_corners=False).reshape(B, C, T, 224, 224)
         x = x / 127.5 - 1.0
         f = m(x, rescale=False, resize=False, return_features=True)

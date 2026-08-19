@@ -376,14 +376,15 @@ that is v0.2 work (a learned pose regressor).
 
 <p align="center"><img src="figs/img64_128_final_grids.png" width="1000"></p>
 
-**Video (64², 8 frames, unconditional):** a 46 M factorised 3D UNet (v-prediction, DDIM-50, EMA) trained from scratch
-at batch 16 (13 GB, 0.36 s/it on an RTX 4090-class GPU) produces temporally coherent dancing figures by ~20k steps;
-warm-starting it from the image model reaches the same training loss ~2.5× sooner. Sample at 40k steps:
+**Video (64², unconditional, UNet 46 M).** Two 8-frame models (from scratch, 85k steps; warm-started from the image model, 61k) and one
+**autoregressive** model (`--ar_ctx 8`: 8 context + 8 new frames per chunk, 10 fps, rolls out to any length; 60k steps). Oracle vs
+real clips of the same length: per-frame anatomy within ~0.03 of real, temporal jitter 1.2–1.3× real, FVD ~80–100 above the
+real-vs-real floor. Full table, checkpoints and GIFs: [sprited/dancing-stick-figures-baselines](https://huggingface.co/sprited/dancing-stick-figures-baselines).
+Warm-starting from the image model reaches the same loss ~2.5× sooner but converges to the same quality. 5.6-second rollout:
 
-<p align="center"><img src="figs/video_unet64_step40k.gif" width="512"></p>
+<p align="center"><img src="https://huggingface.co/sprited/dancing-stick-figures-baselines/resolve/main/unet_ar64_rollout.gif" width="512"></p>
 
-Full training curves, the DiT video track (Seedance-style two-stage recipe), FVD and the class-conditional variants
-are in the tech report and will be folded into v0.2 of this card.
+DiT-track (Seedance-style two-stage, interim) and class-conditional checkpoints are in the same model repo.
 
 ## Intended use / limitations
 
