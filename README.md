@@ -18,7 +18,7 @@ a checkpoint at every step and a scorer that tells you whether your dancers have
 | **1 · data** (0.85 GB) | `hf download sprited/dancing-stick-figures --repo-type dataset --include "mini/*" --local-dir data/hf` | 64² frames + skeleton labels |
 | **2 · cache** (~3 min) | `python -m train.cache --data data/hf/mini --out data/cache --splits train,val` | one fast uint8 file |
 | **3 · image model** (T4 ~15 min / 4090 ~4 min) | `python -m train.video_ddpm --cache data/cache --out runs/img64 --size 64 --frames 1 --batch 64 --steps 1500 --sample_every 500 --amp fp16` | `runs/img64/sample_001500.png` — 64 figures drawn from noise |
-| **4 · video model** (T4 ~35 min / 4090 ~6 min) | `python -m train.video_ddpm --cache data/cache --out runs/vid64 --size 64 --frames 8 --ar_ctx 8 --stride 2 --batch 8 --steps 1200 --sample_every 400 --amp fp16 --init runs/img64/ckpt.pt` | `runs/vid64/rollout_001200.gif` — 8 dances of 5.6 s, generated chunk by chunk (autoregressive diffusion) |
+| **4 · video model** (T4 ~35 min / 4090 ~6 min) | `python -m train.video_ddpm --cache data/cache --out runs/vid64 --size 64 --frames 8 --ar_ctx 8 --stride 2 --batch 4 --accum 2 --steps 1200 --sample_every 400 --amp fp16 --init runs/img64/ckpt.pt` | `runs/vid64/rollout_001200.gif` — 8 dances of 5.6 s, generated chunk by chunk (autoregressive diffusion) |
 | **5 · score & compare** | `python scripts/compare.py --ckpt runs/img64/ckpt.pt --cache data/cache` | your model vs our reference vs real frames (limb count / attachment / colour) |
 
 Short on time? Replace step 3 with our fully-trained image model:
