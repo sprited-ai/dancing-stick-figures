@@ -269,7 +269,7 @@ def val_loss(model, dl, ac, dev, n_batches=16):
     model.train(); return tot / max(n, 1)
 
 
-AMP = {"dtype": torch.bfloat16, "on": True}
+AMP = {"dtype": torch.bfloat16 if (torch.cuda.is_available() and torch.cuda.is_bf16_supported()) else torch.float16, "on": True}   # T4/V100: fp16
 
 
 def autocast():
