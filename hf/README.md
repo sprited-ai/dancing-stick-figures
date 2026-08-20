@@ -21,6 +21,16 @@ size_categories:
 dataset_info:
 - config_name: frames
   features:
+  - name: color
+    dtype: image
+  - name: text
+    dtype: string
+  - name: depth
+    dtype: image
+  - name: normal
+    dtype: image
+  - name: seg
+    dtype: image
   - name: sample_id
     dtype: string
   - name: clip_id
@@ -37,8 +47,6 @@ dataset_info:
     dtype: string
   - name: held_out
     dtype: bool
-  - name: text
-    dtype: string
   - name: seed
     dtype: int32
   - name: qa_flags
@@ -71,14 +79,6 @@ dataset_info:
     dtype: binary
   - name: root_heading
     dtype: binary
-  - name: color
-    dtype: image
-  - name: depth
-    dtype: image
-  - name: normal
-    dtype: image
-  - name: seg
-    dtype: image
   splits:
   - name: train
     num_examples: 363600
@@ -88,6 +88,12 @@ dataset_info:
     num_examples: 133200
 - config_name: mini
   features:
+  - name: color
+    dtype: image
+  - name: text
+    dtype: string
+  - name: seg
+    dtype: image
   - name: sample_id
     dtype: string
   - name: clip_id
@@ -104,8 +110,6 @@ dataset_info:
     dtype: string
   - name: held_out
     dtype: bool
-  - name: text
-    dtype: string
   - name: seed
     dtype: int32
   - name: qa_flags
@@ -138,10 +142,6 @@ dataset_info:
     dtype: binary
   - name: root_heading
     dtype: binary
-  - name: color
-    dtype: image
-  - name: seg
-    dtype: image
   splits:
   - name: train
     num_examples: 363600
@@ -151,15 +151,15 @@ dataset_info:
     num_examples: 133200
 - config_name: motion
   features:
-  - name: clip_id
+  - name: text
     dtype: string
   - name: group
+    dtype: string
+  - name: clip_id
     dtype: string
   - name: held_out
     dtype: bool
   - name: split
-    dtype: string
-  - name: text
     dtype: string
   - name: seed
     dtype: int32
