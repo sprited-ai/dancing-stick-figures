@@ -237,6 +237,8 @@ then video" curriculum used by Seedance-class systems.
 > it → watch the GIF → let the "oracle" count the limbs. Same five commands in the
 > [code repo README](https://github.com/sprited-ai/dancing-stick-figures#the-route-colab-t4-1-h--rtx-4090-20-min).
 >
+> **Sibling dataset:** [sprited/dancing-chibi-figures](https://huggingface.co/datasets/sprited/dancing-chibi-figures) — the same motions and cameras rendered as a volumetric chibi character (paired by `clip_id`).
+>
 > **v0.1 = first public cut.** Data, labels and splits are final for this version; captions are the raw motion
 > prompts (templated dense captions come in v0.2); baselines are unconditional. Feedback and issues welcome.
 

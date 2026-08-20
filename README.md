@@ -7,6 +7,8 @@ a checkpoint at every step and a scorer that tells you whether your dancers have
 
 <p align="center"><img src="hf/figs/dataset_contact_sheet.png" width="800"></p>
 
+> **Sibling dataset:** the same 1,430 motion clips rendered as a volumetric chibi character with depth/normals/segmentation and motion-grounded captions — [sprited/dancing-chibi-figures](https://huggingface.co/datasets/sprited/dancing-chibi-figures) ([code](https://github.com/sprited-ai/dancing-chibi-figures)). Same `clip_id`s and cameras: every frame here has a paired chibi frame.
+
 ## The route (Colab T4: ~1 h · RTX 4090: ~20 min)
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sprited-ai/dancing-stick-figures/blob/main/notebooks/dancing_stick_figures_colab.ipynb)
