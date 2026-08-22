@@ -65,7 +65,12 @@ def stats(feats):
 
 def fvd(real: np.ndarray, fake: np.ndarray, device="cuda") -> float:
     fr, ff = features(real, device), features(fake, device)
-    return frechet(*stats(fr), *stats(ff))
+    return fvd_from_features(fr, ff)
+
+
+def fvd_from_features(real_features: np.ndarray, fake_features: np.ndarray) -> float:
+    """FVD from cached embeddings, so a reference set is embedded only once."""
+    return frechet(*stats(real_features), *stats(fake_features))
 
 
 def rgba_premult_to_rgb(x: np.ndarray) -> np.ndarray:

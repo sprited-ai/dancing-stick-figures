@@ -1,0 +1,7 @@
+{"kind":"deck","id":"pr/1tcsam","name":"Deck"}
+{"kind":"layout","layoutId":"2556c365-5b16-45aa-a5ec-12cffc50f16f","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"e259701c-cc6d-46c2-b916-63a0b82ffd32","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/myn8e3","slide":1,"title":"DANCING STICK FIGURES","textShapes":1}
+{"kind":"textbox","id":"sh/tc7ihgn6","slide":1,"name":"cover-title","text":"DANCING STICK FIGURES","textPreview":"DANCING STICK FIGURES","textChars":21,"textLines":1,"bbox":[70,54,1460,105]}
+{"kind":"image","id":"im/rutgfy5s","slide":1,"name":"","alt":"Color-coded stick figures emerging from diffusion noise into a dance sequence","bbox":[0,0,1600,840]}
+{"kind":"notes","id":"nt/myn8e3","slide":1,"text":"[Sources]\n- AI-generated base illustration created earlier in this Codex task from the project's dataset contact sheet as a visual reference.\n- Title text added as an editable PowerPoint element; no further image generation was used.\n[/Sources]"}

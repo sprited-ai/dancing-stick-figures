@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "declared_before_training_results": true,
+  "declared_at": "2026-08-21",
+  "purpose": "Test whether a frozen causal video codec plus block-autoregressive latent rectified flow provides a runnable, bounded-context next step after the pixel-space full-clip baseline. This is not a SOTA claim.",
+  "task": {
+    "resolution": 64,
+    "fps": 20,
+    "generated_video_frames": 100,
+    "duration_seconds": 5,
+    "condition": "text prompt",
+    "split": "prompt-disjoint test"
+  },
+  "frozen_model": {
+    "codec_selection_protocol": "configs/codec_selection_f8t2_vs_f4t4.json",
+    "codec_checkpoint_and_latent_stats": "record exact SHA256 after visual codec gate",
+    "backbone": "factorised spatial/temporal DiT with signed local temporal RoPE",
+    "parameters_approx_millions": 39.8,
+    "history_seconds": 1,
+    "target_video_frames_per_block": 4,
+    "teacher_forcing": "clean ground-truth history during training; generated history during rollout",
+    "variable_history": true,
+    "rectified_flow": true,
+    "text_encoder": "frozen google-t5/t5-small",
+    "primary_sampling_steps_per_block": 10,
+    "secondary_sampling_steps_per_block": 20,
+    "cfg": 2.0,
+    "training_seed": 0,
+    "planned_optimizer_steps": 10000
+  },
+  "milestones": [0, 10, 50, 100, 250, 500, 1000, 2000, 5000, 10000],
+  "validation": {
+    "every_steps": 250,
+    "fixed_timestep_and_noise_seed": 20260822,
+    "losses": ["first_block_flow_mse", "teacher_forced_continuation_flow_mse"],
+    "claim_limit": "Denoising losses are optimization diagnostics, not perceptual video quality metrics."
+  },
+  "final_evaluation": {
+    "generated_samples": 64,
+    "explicit_paired_noise_seeds": true,
+    "real_reference": "same split, one camera (c0) per distinct source motion, 100 frames at 20 fps",
+    "sampler_steps": [10, 20],
+    "metrics": [
+      "TVR",
+      "LIE",
+      "CPE",
+      "foreground occupancy",
+      "centroid motion and acceleration",
+      "angular motion and jerk",
+      "part visibility and relative motion",
+      "true-block-boundary versus within-block transitions",
+      "time-binned drift",
+      "repetition",
+      "prompt-to-noise sensitivity ratio",
+      "seconds per video frame",
+      "peak allocated VRAM"
+    ],
+    "qualitative_panels": [
+      "fixed prompt and explicit noise seed",
+      "same noise with different prompts",
+      "same prompt with different noise",
+      "prompt switch after two seconds"
+    ],
+    "claim_limits": [
+      "Prompt sensitivity is not semantic prompt correctness.",
+      "Palette centroids are visible part proxies, not anatomical joint estimates.",
+      "Real-reference metrics are distributional reference values, not paired ground truth for each generated motion.",
+      "A single training seed is feasibility evidence, not an architecture ranking."
+    ]
+  },
+  "hard_correctness_gates": {
+    "checkpoint_codec_and_stats_sha256_match": true,
+    "output_shape": [4, 100, 64, 64],
+    "finite_outputs": true,
+    "immutable_generated_prefix": true,
+    "true_boundary_schedule_every_video_frames": 4,
+    "no_all_background_or_all_foreground_collapse": true
+  },
+  "extension_rule": "Do not choose an endpoint from visual preference alone. Preserve 10k as the declared run. Extend with the same protocol only if the final-quarter fixed continuation validation remains materially improving and milestone videos remain non-collapsed; report the extension separately."
+}

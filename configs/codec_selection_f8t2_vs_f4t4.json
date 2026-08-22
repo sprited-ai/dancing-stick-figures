@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "declared_before_f8t2_final_results": true,
+  "baseline": "f4t4d32 step 42500, sliding 20 video frames / commit 4",
+  "candidate": "f8t2d32 mirrored decoder, step 40000, sliding 20 video frames / commit 4",
+  "common_protocol": {
+    "short_validation_windows": 600,
+    "long_validation_clips": 24,
+    "long_frames_per_clip": 120,
+    "fps": 20,
+    "posterior": "mean",
+    "window_video_frames": 20,
+    "commit_video_frames": 4
+  },
+  "candidate_hard_gates": {
+    "short_rgba_l1_max": 0.0025,
+    "short_rgb_edge_l1_max": 0.025,
+    "short_alpha_iou_min": 0.95,
+    "long_sliding_rgba_l1_max": 0.0025,
+    "long_sliding_seam_to_within_ratio_max": 1.1,
+    "causal_prefix_max_abs_max": 0.00001,
+    "sliding_runtime_ratio_vs_baseline_max": 2.0
+  },
+  "selection_rule": "Select f8t2d32 only if every quantitative gate passes and matched GIF inspection shows no systematic missing limbs, colour loss, temporal phase jumps, or boundary flicker. Otherwise retain f4t4d32. Passing favors f8t2 because it halves M6 token count at the same one-second history while doubling latent temporal resolution."
+}

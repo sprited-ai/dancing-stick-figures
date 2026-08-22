@@ -1,0 +1,77 @@
+{
+  "version": 2,
+  "declared_before_training_results": true,
+  "declared_at": "2026-08-21",
+  "purpose": "Test a frozen causal reference-geometry video codec plus a block-autoregressive latent rectified-flow transformer. M6 v2 replaces the earlier factorised proposal before training with full spatiotemporal attention and 3D RoPE, matching the public Wan/CogVideoX denoiser family more closely while retaining an immutable clean-history prefix.",
+  "task": {
+    "resolution": 64,
+    "fps": 20,
+    "generated_video_frames": 100,
+    "duration_seconds": 5,
+    "condition": "text prompt",
+    "split": "prompt-disjoint test"
+  },
+  "frozen_model": {
+    "codec_selection_protocol": "configs/codec_selection_f8t4d16_reference.json",
+    "codec_checkpoint_and_latent_stats": "record exact SHA256 after visual codec gate",
+    "backbone": "full spatiotemporal DiT with signed local temporal and spatial 3D RoPE",
+    "attention_mode": "full",
+    "reference_difference": "Wan/CogVideoX-style flattened video-token attention, augmented with a block-AR immutable-prefix mask; this is not a scaled reproduction",
+    "parameters_approx_millions": 39.8,
+    "history_seconds": 1,
+    "target_video_frames_per_block": 4,
+    "teacher_forcing": "clean ground-truth history during training; generated history during rollout",
+    "variable_history": true,
+    "rectified_flow": true,
+    "text_encoder": "frozen google-t5/t5-small",
+    "primary_sampling_steps_per_block": 10,
+    "secondary_sampling_steps_per_block": 20,
+    "cfg": 2.0,
+    "training_seed": 0,
+    "planned_optimizer_steps": 10000
+  },
+  "milestones": [0, 10, 50, 100, 250, 500, 1000, 2000, 5000, 10000],
+  "validation": {
+    "every_steps": 250,
+    "fixed_timestep_and_noise_seed": 20260822,
+    "losses": ["first_block_flow_mse", "teacher_forced_continuation_flow_mse"],
+    "claim_limit": "Denoising losses are optimization diagnostics, not perceptual video quality metrics."
+  },
+  "final_evaluation": {
+    "generated_samples": 64,
+    "explicit_paired_noise_seeds": true,
+    "paired_noise_policy": "materialize one complete latent-noise tensor per seed; R0 consumes it jointly and M6 consumes the identical tensor in temporal block slices",
+    "common_virtual_boundary_video_frames": 4,
+    "real_reference": "same split, one camera (c0) per distinct source motion, 100 frames at 20 fps",
+    "sampler_steps": [10, 20],
+    "metrics": [
+      "TVR", "LIE", "CPE", "foreground occupancy",
+      "centroid motion and acceleration", "angular motion and jerk",
+      "part visibility and relative motion",
+      "true-block-boundary versus within-block transitions", "time-binned drift",
+      "repetition", "prompt-to-noise sensitivity ratio",
+      "seconds per video frame", "peak allocated VRAM"
+    ],
+    "qualitative_panels": [
+      "fixed prompt and explicit noise seed", "same noise with different prompts",
+      "same prompt with different noise", "prompt switch after two seconds"
+    ],
+    "claim_limits": [
+      "Prompt sensitivity is not semantic prompt correctness.",
+      "Palette centroids are visible part proxies, not anatomical joint estimates.",
+      "Real-reference metrics are distributional reference values, not paired ground truth for each generated motion.",
+      "A single training seed is feasibility evidence, not an architecture ranking."
+    ]
+  },
+  "hard_correctness_gates": {
+    "checkpoint_codec_and_stats_sha256_match": true,
+    "output_shape": [4, 100, 64, 64],
+    "finite_outputs": true,
+    "immutable_generated_prefix": true,
+    "history_queries_cannot_read_target_tokens": true,
+    "target_tokens_reach_all_visible_spatiotemporal_tokens_in_one_attention_layer": true,
+    "true_boundary_schedule_every_video_frames": 4,
+    "no_all_background_or_all_foreground_collapse": true
+  },
+  "extension_rule": "Preserve 10k as the declared run. Extend with the same checkpoint-bound protocol only if the final-quarter fixed continuation validation remains materially improving and milestone videos remain non-collapsed; report the extension separately."
+}

@@ -8,7 +8,9 @@
 - Colab notebook: verified on a real T4 2026-08-18 evening (data/cache/image/AR-video all within stated times); 4 T4-only bugs fixed
   (batch 4×2 for the AR cell, grep error surfacing, line-buffered grep, fp16 auto on non-bf16 GPUs). **One more clean end-to-end T4 run
   with the fixed code is still owed** (last two cells were slow under the old bf16 path).
-- Blog draft parked in blog/ (Jin: skip for now). Paper: Jin said yes → draft next (paper/REPORT.md skeleton + §5.2 mapping table exist).
+- Blog draft parked in blog/ (Jin: skip for now). Paper: full v0.1 tech report now exists as Markdown
+  (`paper/REPORT.md`), editable LaTeX (`paper/paper.tex`), and a visually verified 6-page PDF
+  (`output/pdf/dancing-stick-figures-tech-report.pdf`). Public submission has not started.
 
 ## Results (v0.1)
 - Image 64²: UNet 100k at oracle floor (tvr .134/.136 real, lie .116/.103); DiT p2 slightly worse; 128² both ~floor+0.02.
@@ -36,7 +38,8 @@ Finished image models on gin: runs/ia64, ib64 (30k), ia64L (100k, min-SNR), ib64
 1. Replace card video GIF with a64 final ckpt; add video table (a64 vs a64i vs b64 vs b64i: loss/val/oracle temporal/FVD) — `eval/run_ckpt.py`.
 2. Templated dense captions from labels (`caption`, `caption_static`; Seedance dynamic/static) → new `frames` columns; more prompts (143 → 500+, ARDY overnight).
 3. Learned pose regressor (SRE) → geometry-aware oracle; anomaly config (rendered malformations, multi-label). Then adversarial aux-loss ablation (Jin's GAN point) judged by independent metrics.
-4. REPORT.md v0 fill (§3, §4.2 table, §5.3), SPARK.md cleanup, arXiv decision.
+4. Review the 6-page paper draft, settle the author line, record one clean post-fix T4 notebook run, then make the
+   arXiv decision. SPARK.md cleanup remains separate.
 5. ARDY web demo at ardy.sprited.ai (Jin delegating to another agent; see notes in chat 2026-08-18).
 6. Teaching pack (Jin 08-18): repo README quickstart verified on a fresh pod; `mini` config (64², ~1 GB); **Colab notebook in ELI11 tone**
    (elementary/middle-school friendly): ① visualise data ② train image model ③ train video model warm-started from a released

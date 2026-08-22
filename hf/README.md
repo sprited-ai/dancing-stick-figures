@@ -355,8 +355,10 @@ Because every bone has its own colour, a rendered frame can be *parsed*: count c
 touch their parent, measure colour purity. We call this rule-based checker the **oracle v0** and use it to score
 generated frames:
 
-- **lie** — limb-existence error: fraction of frames whose count of a limb segment is wrong (missing / extra arm)
-- **tvr** — topology violation rate: a limb segment not attached where it should be (detached / fragmented)
+- **tvr** — topology violation rate: fraction of the eight limb colours whose visible mask has a connected-component
+  count other than one (missing, detached/fragmented, or duplicated colour regions)
+- **lie** — limb-identity/adjacency error: fraction of the eight expected torso→proximal or proximal→distal colour
+  adjacencies that are absent (a full left/right chain swap preserves this graph and is not detected by v0)
 - **cpe** — colour purity error: fraction of foreground pixels with an undefined colour
 - **clean** — fraction of frames with lie = tvr = 0
 

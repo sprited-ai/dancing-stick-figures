@@ -9,7 +9,15 @@ cover: https://huggingface.co/sprited/dancing-stick-figures-baselines/resolve/ma
 
 *Every one of these dancers was drawn from pure noise by a model that trained for a few hours on one GPU. And for every frame in the training data, we know exactly where each arm and leg really is — so a small program can grade the model instead of a human squinting at GIFs.*
 
-Last week Sprited was a company that shipped sprite tools. This week we shipped a dataset, six baseline models, a Colab notebook and a code repo — the first step in becoming a company that does the model work itself. This post is the build log: what we made, the one route we recommend, the two things that surprised us, and what is still broken.
+This post is also a note to my future self about why I made this.
+
+I could have kept using video models as finished products. But the part I wanted to understand was hidden behind their scale: how motion becomes data, how noise becomes a frame, how separate frames learn to belong to the same moment, and how you tell whether a generated body is actually correct. On real video, every one of those questions quickly turns into terabytes of data, expensive training, and evaluation by eye.
+
+I wanted a world small enough to hold the whole thing in my head and run it end to end — from a sentence, to a moving skeleton, to rendered frames, to noise, and back to motion. The stick figure is not just a shortcut. Its simplicity makes the important parts visible. Colour-coded limbs make failures countable. Tiny frames make experiments possible on one ordinary GPU. And a beginner can watch the same model first learn what a body looks like, then learn how that body changes through time.
+
+For Sprited, this was a line in the sand. We do not only want to build around models made by other people. We want to learn how models are made, build the data and measurements ourselves, and leave behind things another curious person can inspect, rerun, question, and improve. Last week Sprited was a company that shipped sprite tools. This week we shipped a dataset, six baseline models, a Colab notebook and a code repo — our first step toward doing the model work ourselves.
+
+What follows is the build log: what we made, the one route we recommend, the two things that surprised us, and what is still broken.
 
 ## The problem: you can't *learn* video diffusion on real data
 

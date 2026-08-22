@@ -122,18 +122,27 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default="data/v1"); ap.add_argument("--n", type=int, default=300)
     ap.add_argument("--out", default="out/oracle_validation.md"); ap.add_argument("--sheet", default="out/_oracle_corruptions.png")
+    ap.add_argument("--json", default="", help="optional machine-readable means and bootstrap intervals")
     a = ap.parse_args()
     rows = rows_from_parquet(a.data, a.n)
     conds = ["real", "swap_LR_partial", "swap_LR_full", "stretch_bone", "delete_hand", "extra_arm"]
     acc = {c: {k: [] for k in ("tvr", "lie", "cpe", "fg")} for c in conds}
+    pixel_mae = {c: [] for c in conds}
     stored = {k: [] for k in ("tvr", "lie", "cpe", "fg")}
     sheet = None
     for i, r in enumerate(rows):
         j3 = joints_of(r); body, cam = body_cam(r)
         imgs = corruptions(j3, body, cam)
+        clean = imgs["real"].astype(np.float32)
+        clean_a = clean[..., 3:4] / 255.0
+        clean_rgb = clean[..., :3] * clean_a + 255.0 * (1.0 - clean_a)
         for c in conds:
             m = score_frame(imgs[c])
             for k in acc[c]: acc[c][k].append(m[k])
+            image = imgs[c].astype(np.float32)
+            alpha = image[..., 3:4] / 255.0
+            rgb = image[..., :3] * alpha + 255.0 * (1.0 - alpha)
+            pixel_mae[c].append(float(np.mean(np.abs(rgb - clean_rgb)) / 255.0))
         m = score_frame(np.asarray(Image.open(io.BytesIO(r["color"]["bytes"])).convert("RGBA")))
         for k in stored: stored[k].append(m[k])
         if i < 6:
@@ -152,6 +161,25 @@ def main():
         bg = np.full_like(sheet, 255); al = sheet[..., 3:4] / 255.0
         comp = (sheet[..., :3] * al + 255 * (1 - al)).astype(np.uint8)
         Image.fromarray(comp).resize((comp.shape[1] * 2, comp.shape[0] * 2), Image.NEAREST).save(a.sheet)
+    if a.json:
+        rng = np.random.default_rng(0)
+        def summary(values):
+            x = np.asarray(values, dtype=np.float64)
+            means = np.mean(x[rng.integers(0, len(x), size=(2000, len(x)))], axis=1)
+            lo, hi = np.quantile(means, [0.025, 0.975])
+            return {"mean": float(np.mean(x)), "ci95": [float(lo), float(hi)]}
+        payload = {
+            "n": len(rows),
+            "seed": 0,
+            "conditions": {
+                c: {**{k: summary(acc[c][k]) for k in acc[c]}, "pixel_mae": summary(pixel_mae[c])}
+                for c in conds
+            },
+            "stored": {k: summary(stored[k]) for k in stored},
+        }
+        os.makedirs(os.path.dirname(a.json) or ".", exist_ok=True)
+        with open(a.json, "w") as f:
+            json.dump(payload, f, indent=2)
 
 
 if __name__ == "__main__":

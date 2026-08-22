@@ -1,0 +1,31 @@
+{
+  "colored_k1_v1": {
+    "description": "Canonical 64px colored stick-figure cache used by the K1 T2I and video runs.",
+    "files": {
+      "frames.npy": {
+        "sha256": "a28530313efda6f96d58a1ad5491274aa1dd4f50f0362839ce15a245fa1bfe1f",
+        "size": 8434483328
+      },
+      "clips.json": {
+        "sha256": "f2377d847630e41808ddf1646bbd2cb0fb4c9a6b74e153ff8dfa6d29b2ea5061",
+        "size": 722011
+      },
+      "meta.json": {
+        "sha256": "7f010588cfd22a0bd5253cadae36b8b5f75f6876b81838326b456a8e32566db7",
+        "size": 45
+      }
+    },
+    "array": {
+      "shape": [514800, 64, 64, 4],
+      "dtype": "uint8"
+    },
+    "clips": {
+      "count": 4290,
+      "splits": {
+        "test": 1110,
+        "train": 3030,
+        "val": 150
+      }
+    }
+  }
+}

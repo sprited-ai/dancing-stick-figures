@@ -1,0 +1,21 @@
+{"kind":"deck","id":"pr/247du9","name":"Deck"}
+{"kind":"layout","layoutId":"e07751ef-4fba-4318-940c-62b4b58ed10a","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"c2df6d2f-8254-4315-bf97-2829fffc670f","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/dlk5pd","slide":1,"title":"AN OPEN DATASET FOR LEARNING VIDEO DIFFUSION","textShapes":12}
+{"kind":"textbox","id":"sh/6hwjeh87","slide":1,"name":"eyebrow","text":"AN OPEN DATASET FOR LEARNING VIDEO DIFFUSION","textPreview":"AN OPEN DATASET FOR LEARNING VIDEO DIFFUSION","textChars":44,"textLines":1,"bbox":[72,42,880,34]}
+{"kind":"textbox","id":"sh/tk72pw7i","slide":1,"name":"title","text":"DANCING STICK FIGURES","textPreview":"DANCING STICK FIGURES","textChars":21,"textLines":1,"bbox":[68,80,1464,104]}
+{"kind":"textbox","id":"sh/8jy1grqd","slide":1,"name":"subtitle","text":"From noise to motion — four real checkpoints from the same model","textPreview":"From noise to motion — four real checkpoints from the same model","textChars":64,"textLines":1,"bbox":[72,178,1200,48]}
+{"kind":"textbox","id":"sh/u5gji183","slide":1,"name":"step-1","text":"1,000","textPreview":"1,000","textChars":5,"textLines":1,"bbox":[72,712,304,38]}
+{"kind":"textbox","id":"sh/h872tw7u","slide":1,"name":"step-label-1","text":"TRAINING STEP","textPreview":"TRAINING STEP","textChars":13,"textLines":1,"bbox":[72,752,304,28]}
+{"kind":"textbox","id":"sh/bal0f29k","slide":1,"name":"step-2","text":"2,000","textPreview":"2,000","textChars":5,"textLines":1,"bbox":[456,712,304,38]}
+{"kind":"textbox","id":"sh/a9cj6x8z","slide":1,"name":"step-label-2","text":"TRAINING STEP","textPreview":"TRAINING STEP","textChars":13,"textLines":1,"bbox":[456,752,304,28]}
+{"kind":"textbox","id":"sh/547694jm","slide":1,"name":"step-3","text":"3,000","textPreview":"3,000","textChars":5,"textLines":1,"bbox":[840,712,304,38]}
+{"kind":"textbox","id":"sh/y1wnepkb","slide":1,"name":"step-label-3","text":"TRAINING STEP","textPreview":"TRAINING STEP","textChars":13,"textLines":1,"bbox":[840,752,304,28]}
+{"kind":"textbox","id":"sh/s7ypkzid","slide":1,"name":"step-4","text":"4,000","textPreview":"4,000","textChars":5,"textLines":1,"bbox":[1224,712,304,38]}
+{"kind":"textbox","id":"sh/ts76d4jy","slide":1,"name":"step-label-4","text":"TRAINING STEP","textPreview":"TRAINING STEP","textChars":13,"textLines":1,"bbox":[1224,752,304,28]}
+{"kind":"textbox","id":"sh/65gni907","slide":1,"name":"source-note","text":"ACTUAL CHECKPOINT SAMPLES · NO GENERATED COVER ART","textPreview":"ACTUAL CHECKPOINT SAMPLES · NO GENERATED COVER ART","textChars":50,"textLines":1,"bbox":[72,802,760,24]}
+{"kind":"image","id":"im/up4jm50z","slide":1,"name":"","alt":"Actual model samples at training step 1,000","bbox":[72,252,304,440]}
+{"kind":"image","id":"im/hsfihkzq","slide":1,"name":"","alt":"Actual model samples at training step 2,000","bbox":[456,252,304,440]}
+{"kind":"image","id":"im/zy9sbe10","slide":1,"name":"","alt":"Actual model samples at training step 3,000","bbox":[840,252,304,440]}
+{"kind":"image","id":"im/0zitkjil","slide":1,"name":"","alt":"Actual model samples at training step 4,000","bbox":[1224,252,304,440]}
+{"kind":"notes","id":"nt/dlk5pd","slide":1,"text":"[Sources]\n- /Users/jin/dev/dancing-stick-figure/paper/figs/img64_early_1k-4k.png — project-owned training checkpoint samples; cropped without generative modification.\n[/Sources]"}

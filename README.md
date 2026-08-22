@@ -50,7 +50,7 @@ model repeated 8 times (the time-mixing layers begin at zero), so nothing is los
 - **The oracle:** `eval/oracle.py` parses a rendered figure by colour and counts limbs / checks attachment / colour purity;
   `eval/corrupt.py` validates it on synthetic corruptions; `eval/run_ckpt.py` adds temporal metrics + FVD for video checkpoints.
 - **Regenerating the data:** NVIDIA ARDY text-to-motion → `generator/build.py` (see below).
-- **Tech-report draft** in `paper/` — frozen; the dataset card is the reference document.
+- **Tech-report draft** in `paper/` — v0.1 results are filled; the dataset card remains the schema reference.
 
 ## Layout
 

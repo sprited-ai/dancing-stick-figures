@@ -1,0 +1,8 @@
+A person walks forward.
+A person runs forward.
+A person sits down on a chair.
+A person stands up from a chair.
+A person stands still and breathes.
+A person jumps up and down.
+A person waves hello with the left hand.
+A person turns around 180 degrees.

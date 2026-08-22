@@ -1,0 +1,8 @@
+A person dances the cha cha.
+A person does a ballet pirouette.
+A person waves hello with the left hand.
+A person waves hello with the right hand.
+A person runs forward.
+A person walks backwards.
+A person does a roundhouse kick.
+A person jumps up and down with arms raised.

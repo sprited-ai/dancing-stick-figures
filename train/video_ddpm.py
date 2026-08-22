@@ -16,35 +16,43 @@ from torch.utils.checkpoint import checkpoint
 
 # ----------------------------------------------------------------- data
 class VideoWindows(torch.utils.data.Dataset):
-    def __init__(self, cache, frames=16, split="train", stride=1, drop_flags=("levitation",), size=128):
+    def __init__(self, cache, frames=16, split="train", stride=1, drop_flags=("levitation",), size=128,
+                 deterministic=False, repeats=4, return_text=False):
         self.frames = np.load(os.path.join(cache, "frames.npy"), mmap_mode="r")
         self.size = size
         clips = json.load(open(os.path.join(cache, "clips.json")))
-        self.clips = [c for c in clips.values() if c["split"] == split and c["n"] >= frames * stride
-                      and not any(f in (c["qa"] or "") for f in drop_flags)]
+        self.span = (frames - 1) * stride + 1
+        self.clips = [{"clip_id": clip_id, **c} for clip_id, c in clips.items()
+                      if c["split"] == split and c["n"] >= self.span
+                      and not any(f in (c.get("qa") or "") for f in drop_flags)]
         self.groups = sorted({c["group"] for c in clips.values()})
-        self.T, self.stride = frames, stride
+        self.T, self.stride, self.deterministic, self.repeats = frames, stride, deterministic, repeats
+        self.return_text = return_text
         # epoch = every clip a few times
-        self.items = [c for c in self.clips for _ in range(4)]
+        self.items = [(c, repeat) for c in self.clips for repeat in range(repeats)]
 
     def __len__(self): return len(self.items)
 
     def __getitem__(self, i):
-        c = self.items[i]
-        span = self.T * self.stride
-        s = c["start"] + random.randint(0, c["n"] - span)
-        x = np.asarray(self.frames[s:s + span:self.stride]).astype(np.float32) / 255.0   # [T,H,W,4]
+        c, repeat = self.items[i]
+        max_offset = c["n"] - self.span
+        if self.deterministic:
+            offset = 0 if self.repeats == 1 else round(repeat * max_offset / (self.repeats - 1))
+        else:
+            offset = random.randint(0, max_offset)
+        s = c["start"] + offset
+        x = np.asarray(self.frames[s:s + self.span:self.stride]).astype(np.float32) / 255.0   # [T,H,W,4]
         if self.size != x.shape[1]:   # area downsample (premultiply first so colour doesn't bleed from bg)
             f = x.shape[1] // self.size
             x = np.concatenate([x[..., :3] * x[..., 3:4], x[..., 3:4]], -1)
             x = x.reshape(x.shape[0], self.size, f, self.size, f, 4).mean((2, 4))
             a = x[..., 3:4]
             x = torch.from_numpy(x).permute(3, 0, 1, 2) * 2 - 1
-            return x, self.groups.index(c["group"])
+            return x, c["text"] if self.return_text else self.groups.index(c["group"])
         a = x[..., 3:4]
         x = np.concatenate([x[..., :3] * a, a], -1)          # premultiply
         x = torch.from_numpy(x).permute(3, 0, 1, 2) * 2 - 1  # [4,T,H,W]
-        return x, self.groups.index(c["group"])
+        return x, c["text"] if self.return_text else self.groups.index(c["group"])
 
 
 # ----------------------------------------------------------------- model
@@ -111,13 +119,15 @@ class Attn(nn.Module):
 
 
 class UNet3D(nn.Module):
-    def __init__(self, ch=64, mult=(1, 2, 4, 4), attn_res=(32, 16), tattn_res=(64, 32, 16), n_res=2, in_ch=4, n_classes=0, size=128, cond_ch=0):
+    def __init__(self, ch=64, mult=(1, 2, 4, 4), attn_res=(32, 16), tattn_res=(64, 32, 16), n_res=2, in_ch=4, n_classes=0, size=128, cond_ch=0,
+                 text_dim=0):
         super().__init__()
         self.cond_ch = cond_ch                       # autoregressive / I2V conditioning: clean past frames (in_ch) + binary mask (1)
         temb = ch * 4
         self.temb = nn.Sequential(nn.Linear(ch, temb), nn.SiLU(), nn.Linear(temb, temb))
         self.ch = ch
         self.cls = nn.Embedding(n_classes + 1, temb) if n_classes else None   # last = null class
+        self.text_proj = nn.Linear(text_dim, temb) if text_dim else None
         self.inp = nn.Conv3d(in_ch + cond_ch, ch, 3, padding=1)
         self.down = nn.ModuleList(); chans = [ch]; c = ch; res = size
         for i, m in enumerate(mult):
@@ -148,12 +158,17 @@ class UNet3D(nn.Module):
         for b in blocks[1:]: h = b(h)
         return h
 
-    def forward(self, x, t, y=None, cond=None):
+    def forward(self, x, t, y=None, cond=None, text=None, text_mask=None):
         if self.cond_ch:
             if cond is None: cond = torch.zeros(x.shape[0], self.cond_ch, *x.shape[2:], device=x.device, dtype=x.dtype)
             x = torch.cat([x, cond.to(x.dtype)], 1)
         temb = self.temb(timestep_embedding(t, self.ch))
         if self.cls is not None: temb = temb + self.cls(y)
+        if self.text_proj is not None:
+            if text is None: raise ValueError("text-conditioned UNet3D requires text embeddings")
+            weights = text_mask.to(text.dtype).unsqueeze(-1) if text_mask is not None else torch.ones_like(text[..., :1])
+            pooled = (text * weights).sum(1) / weights.sum(1).clamp_min(1)
+            temb = temb + self.text_proj(pooled.to(temb.dtype))
         ck = (lambda f, *a: checkpoint(f, *a, use_reentrant=False)) if (self.grad_ckpt and self.training) else (lambda f, *a: f(*a))
         h = conv3d_t1(self.inp, x); hs = [h]
         for blocks in self.down:
@@ -255,18 +270,86 @@ def worker_init(_):
 
 
 @torch.no_grad()
-@torch.no_grad()
-def val_loss(model, dl, ac, dev, n_batches=16):
-    model.eval(); tot = 0.0; n = 0
+def val_losses(model, dl, ac, dev, ar_ctx=0, ctx_noise=0.0, n_batches=16, seed=0):
+    """Deterministic validation for unconditional and AR-continuation paths.
+
+    ``first_chunk`` denoises the complete window with no context.  For AR
+    models, ``continuation`` receives a deterministically corrupted ground-
+    truth prefix and scores only the newly generated frames.
+    """
+    was_training = model.training
+    model.eval(); totals = {"first_chunk": 0.0}; n = 0
+    if ar_ctx > 0:
+        totals["continuation"] = 0.0
+    generator = torch.Generator(device=dev).manual_seed(seed)
     for i, (x, y) in enumerate(dl):
         if i >= n_batches: break
-        x = x.to(dev); t = torch.randint(0, len(ac), (x.shape[0],), device=dev)
-        at = ac[t][:, None, None, None, None]; eps = torch.randn_like(x)
+        x = x.to(dev)
+        t = torch.randint(0, len(ac), (x.shape[0],), device=dev, generator=generator)
+        at = ac[t][:, None, None, None, None]
+        eps = torch.randn(x.shape, device=dev, dtype=x.dtype, generator=generator)
         yy = y.to(dev) if model.cls is not None else None                       # class-conditional: use true labels
         with autocast():
-            pred = model(at.sqrt() * x + (1 - at).sqrt() * eps, t, yy)
-        tot += F.mse_loss(pred.float(), at.sqrt() * eps - (1 - at).sqrt() * x).item(); n += 1
-    model.train(); return tot / max(n, 1)
+            xt = at.sqrt() * x + (1 - at).sqrt() * eps
+            target = at.sqrt() * eps - (1 - at).sqrt() * x
+            pred = model(xt, t, yy, None)
+        totals["first_chunk"] += F.mse_loss(pred.float(), target).item()
+        if ar_ctx > 0:
+            if ar_ctx >= x.shape[2]:
+                raise ValueError(f"ar_ctx={ar_ctx} must be smaller than validation window T={x.shape[2]}")
+            strength = torch.rand((x.shape[0], 1, 1, 1, 1), device=dev, generator=generator) * ctx_noise
+            ctx_eps = torch.randn(x.shape, device=dev, dtype=x.dtype, generator=generator)
+            ctx = (1 - strength).sqrt() * x + strength.sqrt() * ctx_eps
+            cond = ar_cond(ctx, ar_ctx)
+            with autocast():
+                pred_cont = model(xt, t, yy, cond)
+            totals["continuation"] += F.mse_loss(pred_cont[:, :, ar_ctx:].float(), target[:, :, ar_ctx:]).item()
+        n += 1
+    model.train(was_training)
+    return {key: value / max(n, 1) for key, value in totals.items()}
+
+
+@torch.no_grad()
+def val_loss(model, dl, ac, dev, n_batches=16, seed=0):
+    """Backward-compatible unconditional/first-chunk validation scalar."""
+    return val_losses(model, dl, ac, dev, n_batches=n_batches, seed=seed)["first_chunk"]
+
+
+def adapt_warm_start_state(src, own, image_source=False):
+    """Adapt a checkpoint state dict to a model without temporal leakage.
+
+    A T=1 image run only trains the centre slice of 3-frame temporal kernels.
+    The input convolution is not zero-initialised, so its untouched outer
+    slices must be cleared before the weights are activated on video.
+    """
+    src = {k: v.clone() for k, v in src.items()
+           if k in own and (v.shape == own[k].shape or k.endswith("pos_t") or k == "inp.weight")}
+    if "inp.weight" in src and src["inp.weight"].shape != own["inp.weight"].shape:
+        w = torch.zeros_like(own["inp.weight"])
+        w[:, : src["inp.weight"].shape[1]] = src["inp.weight"]
+        src["inp.weight"] = w
+    if image_source and "inp.weight" in src and src["inp.weight"].shape[2] == 3:
+        src["inp.weight"][:, :, 0].zero_()
+        src["inp.weight"][:, :, 2].zero_()
+    if "pos_t" in src and src["pos_t"].shape != own["pos_t"].shape:
+        src["pos_t"] = src["pos_t"].expand_as(own["pos_t"]).clone()
+    return src
+
+
+@torch.no_grad()
+def initialize_video_input(model, image_channels=4):
+    """Give scratch AR models the same structural zero-init as warm starts.
+
+    Only the centre spatial kernel over image channels starts random. Temporal
+    outer slices and newly introduced context channels start inactive in both
+    conditions, isolating learned image weights as the experimental variable.
+    """
+    weight = model.inp.weight
+    if weight.shape[2] == 3:
+        weight[:, :, 0].zero_()
+        weight[:, :, 2].zero_()
+    if model.cond_ch:
+        weight[:, image_channels:].zero_()
 
 
 AMP = {"dtype": torch.bfloat16 if (torch.cuda.is_available() and torch.cuda.is_bf16_supported()) else torch.float16, "on": True}   # T4/V100: fp16
@@ -313,10 +396,13 @@ def main():
     ds = VideoWindows(a.cache, T_win, "train", a.stride, size=a.size)
     dl = torch.utils.data.DataLoader(ds, batch_size=a.batch, shuffle=True, num_workers=a.workers, drop_last=True, pin_memory=True,
                                      persistent_workers=True, worker_init_fn=worker_init)
-    vds = VideoWindows(a.cache, T_win, "val", a.stride, size=a.size)
-    vdl = torch.utils.data.DataLoader(vds, batch_size=a.batch, shuffle=True, num_workers=2, drop_last=True, worker_init_fn=worker_init) if len(vds) else None
+    vds = VideoWindows(a.cache, T_win, "val", a.stride, size=a.size, deterministic=True)
+    vdl = torch.utils.data.DataLoader(vds, batch_size=a.batch, shuffle=False, num_workers=2, drop_last=True,
+                                      worker_init_fn=worker_init) if len(vds) else None
     n_cls = len(ds.groups) if a.cond == "group" else 0
     model = UNet3D(ch=a.ch, n_classes=n_cls, size=a.size, cond_ch=5 if a.ar_ctx > 0 else 0).to(dev)
+    if a.ar_ctx > 0:
+        initialize_video_input(model)
     model.grad_ckpt = a.grad_ckpt
     if a.fast: model = model.to(memory_format=torch.channels_last_3d)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
@@ -335,15 +421,12 @@ def main():
         ck = torch.load(a.resume, map_location=dev); model.load_state_dict(ck["model"]); ema.load_state_dict(ck["ema"]); opt.load_state_dict(ck["opt"]); step = ck["step"]
     elif a.init:
         ck = torch.load(a.init, map_location=dev)
+        image_source = ck.get("args", {}).get("frames", 1) == 1
         for tgt, key in ((model, "model"), (ema, "ema")):
             src = ck.get(key) or ck["ema"]; own = tgt.state_dict()
-            src = {k: v for k, v in src.items() if k in own and (v.shape == own[k].shape or k.endswith("pos_t") or k == "inp.weight")}
-            if "inp.weight" in src and src["inp.weight"].shape != own["inp.weight"].shape:     # image/video ckpt (4 ch) -> AR model (4+5 ch): extra input channels start at 0
-                w = torch.zeros_like(own["inp.weight"]); w[:, : src["inp.weight"].shape[1]] = src["inp.weight"]; src["inp.weight"] = w
-            if "pos_t" in src and src["pos_t"].shape != own["pos_t"].shape:      # DiT: image pos_t [1,1,1,D] -> tile over frames
-                src["pos_t"] = src["pos_t"].expand_as(own["pos_t"]).clone()
+            src = adapt_warm_start_state(src, own, image_source=image_source)
             miss = tgt.load_state_dict(src, strict=False)
-            print(f"init {key} from {a.init} step {ck.get('step')}: {len(src)} tensors, missing {len(miss.missing_keys)}, unexpected {len(miss.unexpected_keys)}", flush=True)
+            print(f"init {key} from {a.init} step {ck.get('step')}: {len(src)} tensors, missing {len(miss.missing_keys)}, unexpected {len(miss.unexpected_keys)}, image_source {image_source}", flush=True)
     log = open(os.path.join(a.out, "log.txt"), "a")
     try:
         from torch.utils.tensorboard import SummaryWriter
@@ -407,29 +490,46 @@ def main():
         if step == 10 or step % 50 == 0:
             spi = (time.time() - t0) / max(1, step - step0)
             msg = f"step {step} loss {ema_loss:.4f} fg {fg_loss:.4f} lowsnr {lb:.4f} highsnr {hb:.4f} lr {lr:.2e} {spi:.2f}s/it peak {torch.cuda.max_memory_allocated()/1e9:.1f}GB ETA {(a.steps-step)*spi/3600:.1f}h"
+            validation = None
             if vdl is not None and step % a.val_every == 0:
-                msg += f" val {val_loss(ema, vdl, ac, dev):.4f}"
+                validation = val_losses(ema, vdl, ac, dev, ar_ctx=a.ar_ctx, ctx_noise=a.ctx_noise)
+                msg += f" val_first {validation['first_chunk']:.4f}"
+                if "continuation" in validation:
+                    msg += f" val_cont {validation['continuation']:.4f}"
             print(msg, flush=True); log.write(msg + "\n"); log.flush()
             if tb:
                 tb.add_scalar("loss/train_ema", ema_loss, step); tb.add_scalar("lr", lr, step)
                 tb.add_scalar("loss/fg", fg_loss, step); tb.add_scalar("loss/low_snr", lb, step); tb.add_scalar("loss/high_snr", hb, step)
                 tb.add_scalar("perf/s_per_it", spi, step); tb.add_scalar("perf/peak_gb", torch.cuda.max_memory_allocated() / 1e9, step)
-                if " val " in msg: tb.add_scalar("loss/val", float(msg.split(" val ")[1]), step)
+                if validation is not None:
+                    tb.add_scalar("loss/val_first_chunk", validation["first_chunk"], step)
+                    if "continuation" in validation:
+                        tb.add_scalar("loss/val_continuation", validation["continuation"], step)
         if step % a.sample_every == 0 or step == a.steps:
             NS, CH = (64, 32) if a.frames == 1 else (16, 8)                          # 16 fixed-noise samples in chunks of 8 (24 GB cards); 64 for image models
             opt.zero_grad(set_to_none=True); torch.cuda.empty_cache()
             ys = torch.arange(NS, device=dev) % n_cls if n_cls else None
-            g = torch.Generator(device=dev).manual_seed(1234)                       # FIXED noise -> comparable across steps
-            noise = torch.randn((NS, 4, a.frames, a.size, a.size), device=dev, generator=g)
             def _samp(m_):
                 outs = []
+                g = torch.Generator(device=dev).manual_seed(1234)                   # FIXED noise -> comparable across steps/models
                 for i in range(0, NS, CH):
                     yy = ys[i:i + CH] if ys is not None else None
-                    outs.append(sample(m_, noise[i:i + CH].shape, ac, dev, steps=50, y=yy, cfg=2.0 if n_cls else 0.0,
-                                       null_y=torch.full((CH,), n_cls, device=dev) if n_cls else None, noise=noise[i:i + CH]).cpu())
+                    B_ = min(CH, NS - i)
+                    null = torch.full((B_,), n_cls, device=dev) if n_cls else None
+                    if a.ar_ctx > 0:
+                        # The actual unconditional first chunk is K+F frames,
+                        # not the F-frame continuation target used in training.
+                        out = rollout(m_, B_, a.ar_ctx, a.frames, 1, ac, dev, steps=50, S=a.size,
+                                      y=yy, cfg=2.0 if n_cls else 0.0, null_y=null, generator=g)
+                    else:
+                        noise = torch.randn((B_, 4, a.frames, a.size, a.size), device=dev, generator=g)
+                        out = sample(m_, noise.shape, ac, dev, steps=50, y=yy, cfg=2.0 if n_cls else 0.0,
+                                     null_y=null, noise=noise)
+                    outs.append(out.cpu())
                 return torch.cat(outs, 0)
             xs = _samp(ema)
-            to_gif(xs, os.path.join(a.out, f"sample_{step:06d}.gif"))
+            sample_name = f"first_chunk_{step:06d}.gif" if a.ar_ctx > 0 else f"sample_{step:06d}.gif"
+            to_gif(xs, os.path.join(a.out, sample_name))
             if a.ar_ctx > 0:                                                        # long dance: chunked rollout, 8 samples
                 gr = torch.Generator(device=dev).manual_seed(4321)
                 xr_ = rollout(ema, 8, a.ar_ctx, a.frames, a.rollout, ac, dev, steps=50, S=a.size, generator=gr).cpu()
@@ -442,7 +542,7 @@ def main():
                        os.path.join(a.out, "ckpt.pt"))
             torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), groups=ds.groups),          # history (EMA only)
                        os.path.join(a.out, f"ckpt_{step:06d}.pt"))
-            print(f"  wrote sample_{step:06d}.gif", flush=True)
+            print(f"  wrote {sample_name}", flush=True)
             if tb:   # first frame of the sample grid as an image, whole clip as video
                 v = ((xs.clamp(-1, 1) + 1) / 2)
                 rgb = (v[:, :3] + (1 - v[:, 3:4])).clamp(0, 1)          # premult over white -> [B,3,T,H,W]

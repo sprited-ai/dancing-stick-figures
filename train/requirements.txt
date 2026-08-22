@@ -6,3 +6,5 @@ scipy
 imageio
 tensorboard
 huggingface_hub
+transformers==4.46.3
+sentencepiece

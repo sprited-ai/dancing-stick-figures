@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "declared_before_f8t4d16_results": true,
+  "declared_at": "2026-08-21",
+  "question": "Does the public Wan/CogVideoX-style f8t4d16 compression geometry remain reconstruction-safe for 64px premultiplied RGBA stick-figure video?",
+  "scope_note": "This copies the public compression geometry, causal convolution principle, and 16-channel latent width—not the full proprietary-scale training recipe or parameter count. The DSF codec retains its small auditable ResNet and alpha-aware output/loss.",
+  "primary_sources": [
+    {
+      "system": "CogVideoX",
+      "url": "https://arxiv.org/abs/2408.06072",
+      "evidence": "3D causal VAE with 4x temporal and 8x8 spatial compression; official config uses z_channels=16."
+    },
+    {
+      "system": "Wan2.1",
+      "url": "https://arxiv.org/abs/2503.20314",
+      "code": "https://github.com/Wan-Video/Wan2.1/blob/main/wan/modules/vae.py",
+      "evidence": "Causal 3D VAE; official wrapper defaults to z_dim=16 and encodes the first frame followed by four-frame temporal chunks."
+    }
+  ],
+  "baseline": "corrected f8t2d32 step 40000",
+  "candidate": "DSF causal ResNet f8t4d16, base32, two blocks/stage, posterior mean, KL disabled",
+  "compression": {
+    "baseline_spatiotemporal_grid_reduction": 128,
+    "candidate_spatiotemporal_grid_reduction": 256,
+    "baseline_rgba_scalar_reduction": 16,
+    "candidate_rgba_scalar_reduction": 64,
+    "candidate_m6_tokens_for_one_second_history_plus_four_frame_target": 384,
+    "baseline_m6_tokens_for_one_second_history_plus_four_frame_target": 768
+  },
+  "pilot": {
+    "steps": 10000,
+    "continue_to_convergence_if": [
+      "no missing-limb, colour, all-background, or all-foreground collapse in fixed validation GIFs",
+      "fixed validation objective is still improving over the final pilot quarter",
+      "checkpoint integrity passes"
+    ],
+    "matched_target_steps_after_pass": 40000
+  },
+  "common_final_protocol": {
+    "short_validation_windows": 600,
+    "short_frames": 20,
+    "long_validation_clips": 24,
+    "long_frames": 120,
+    "fps": 20,
+    "posterior": "mean",
+    "sliding_window_video_frames": 20,
+    "sliding_commit_video_frames": 4
+  },
+  "candidate_hard_gates": {
+    "short_rgba_l1_max": 0.0025,
+    "short_rgb_edge_l1_max": 0.025,
+    "short_alpha_iou_min": 0.95,
+    "long_sliding_rgba_l1_max": 0.0025,
+    "long_sliding_seam_to_within_ratio_max": 1.1,
+    "causal_prefix_max_abs_max": 0.00001,
+    "sliding_runtime_ratio_vs_baseline_max": 2.0
+  },
+  "selection_rule": "Select f8t4d16 for M6 only if all absolute gates pass and matched long GIFs show no systematic missing limbs, colour loss, temporal phase jumps, or boundary flicker. Otherwise retain f8t2d32. Efficiency alone cannot override reconstruction failure."
+}

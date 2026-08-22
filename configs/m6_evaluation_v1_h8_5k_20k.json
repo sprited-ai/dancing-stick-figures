@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "declared_before_evaluation_results": true,
+  "declared_at_training_step": 15050,
+  "declared_at": "2026-08-22",
+  "purpose": "Measure rather than assume the topology-motion trade-off over late H8 training.",
+  "run": "results/m6v3_start_aligned_h8_20k_s0",
+  "checkpoints": [5000, 10000, 15000, 20000],
+  "shared_evaluation": {
+    "split": "prompt-disjoint test",
+    "n": 64,
+    "noise_seed_start": 20260824,
+    "sampler": "rectified-flow Euler",
+    "steps_per_block": 10,
+    "cfg": 2.0,
+    "comparison_block_video_frames": 4,
+    "bootstrap_samples": 500
+  },
+  "reporting": {
+    "structural": ["TVR", "LIE", "CPE", "foreground occupancy"],
+    "motion_calibration": ["centroid speed", "motion fraction", "height variance"],
+    "long_horizon": ["motion decay", "boundary excess", "repetition"],
+    "conditioning": ["prompt/noise sensitivity ratio", "prompt-level real/generated motion-profile correlation and normalized MAE"],
+    "selection_rule": "Report all four checkpoints. Prefer a Pareto-nondominated topology/motion checkpoint; if several are effectively tied, prefer the earlier checkpoint. Do not select by validation flow MSE alone.",
+    "claim_limit": "One training seed and one fixed evaluation seed set support checkpoint diagnosis, not a universal convergence law."
+  }
+}

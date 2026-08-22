@@ -1,0 +1,2064 @@
+{
+  "protocol_version": 1,
+  "cache": "/data/dancing-stick-figure-paper/cache/mini",
+  "split": [
+    "test",
+    "val"
+  ],
+  "frames": 50,
+  "stride": 2,
+  "seed": 1,
+  "statistical_unit": "source_motion",
+  "reference_a": [
+    {
+      "motion_id": "locomotion/a_person_shuffles_forward_s1",
+      "clip_id": "locomotion/a_person_shuffles_forward_s1/c1",
+      "frame_offset": 8,
+      "absolute_start": 281288,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_standing_long_jump_s5",
+      "clip_id": "sport/a_person_does_a_standing_long_jump_s5/c2",
+      "frame_offset": 20,
+      "absolute_start": 369260,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_jumping_jacks_s6",
+      "clip_id": "sport/a_person_does_jumping_jacks_s6/c1",
+      "frame_offset": 14,
+      "absolute_start": 383894,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_wipes_sweat_from_their_brow_s5",
+      "clip_id": "gesture/a_person_wipes_sweat_from_their_brow_s5/c0",
+      "frame_offset": 12,
+      "absolute_start": 225012,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_touches_their_toes_s9",
+      "clip_id": "sport/a_person_touches_their_toes_s9/c0",
+      "frame_offset": 1,
+      "absolute_start": 460441,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_throws_a_ball_underhand_s7",
+      "clip_id": "sport/a_person_throws_a_ball_underhand_s7/c0",
+      "frame_offset": 1,
+      "absolute_start": 456121,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_sit_up_s5",
+      "clip_id": "sport/a_person_does_a_sit_up_s5/c2",
+      "frame_offset": 4,
+      "absolute_start": 365644,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_yoga_warrior_pose_s7",
+      "clip_id": "sport/a_person_does_a_yoga_warrior_pose_s7/c2",
+      "frame_offset": 3,
+      "absolute_start": 377163,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_twist_s5",
+      "clip_id": "dance/a_person_does_the_twist_s5/c2",
+      "frame_offset": 21,
+      "absolute_start": 99261,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_shakes_their_head_no_s9",
+      "clip_id": "gesture/a_person_shakes_their_head_no_s9/c0",
+      "frame_offset": 0,
+      "absolute_start": 201240,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_roundhouse_kick_s0",
+      "clip_id": "sport/a_person_does_a_roundhouse_kick_s0/c0",
+      "frame_offset": 8,
+      "absolute_start": 360008,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_running_man_dance_s1",
+      "clip_id": "dance/a_person_does_the_running_man_dance_s1/c1",
+      "frame_offset": 1,
+      "absolute_start": 83281,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_side_bends_s3",
+      "clip_id": "sport/a_person_does_side_bends_s3/c0",
+      "frame_offset": 14,
+      "absolute_start": 389894,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_burpee_s2",
+      "clip_id": "sport/a_person_does_a_burpee_s2/c0",
+      "frame_offset": 1,
+      "absolute_start": 346321,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_lunges_s2",
+      "clip_id": "sport/a_person_does_lunges_s2/c1",
+      "frame_offset": 1,
+      "absolute_start": 386041,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_a_heavy_box_s8",
+      "clip_id": "sport/a_person_lifts_a_heavy_box_s8/c0",
+      "frame_offset": 1,
+      "absolute_start": 416881,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_yoga_tree_pose_s3",
+      "clip_id": "sport/a_person_does_a_yoga_tree_pose_s3/c1",
+      "frame_offset": 5,
+      "absolute_start": 372005,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_burpee_s7",
+      "clip_id": "sport/a_person_does_a_burpee_s7/c2",
+      "frame_offset": 12,
+      "absolute_start": 348372,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_karate_chop_s7",
+      "clip_id": "sport/a_person_does_a_karate_chop_s7/c0",
+      "frame_offset": 17,
+      "absolute_start": 355337,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_lunges_s0",
+      "clip_id": "sport/a_person_does_lunges_s0/c0",
+      "frame_offset": 5,
+      "absolute_start": 385205,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s7",
+      "clip_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s7/c0",
+      "frame_offset": 6,
+      "absolute_start": 409326,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_gallops_sideways_s5",
+      "clip_id": "locomotion/a_person_gallops_sideways_s5/c1",
+      "frame_offset": 18,
+      "absolute_start": 268338,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_rope_s4",
+      "clip_id": "sport/a_person_jumps_rope_s4/c1",
+      "frame_offset": 16,
+      "absolute_start": 401176,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_dribbles_a_basketball_s1",
+      "clip_id": "sport/a_person_dribbles_a_basketball_s1/c2",
+      "frame_offset": 2,
+      "absolute_start": 396602,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_running_man_dance_s6",
+      "clip_id": "dance/a_person_does_the_running_man_dance_s6/c2",
+      "frame_offset": 17,
+      "absolute_start": 85217,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_rope_s0",
+      "clip_id": "sport/a_person_jumps_rope_s0/c1",
+      "frame_offset": 18,
+      "absolute_start": 399738,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_squats_s7",
+      "clip_id": "sport/a_person_does_squats_s7/c2",
+      "frame_offset": 3,
+      "absolute_start": 395163,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s9",
+      "clip_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s9/c0",
+      "frame_offset": 13,
+      "absolute_start": 410053,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_a_heavy_box_s4",
+      "clip_id": "sport/a_person_lifts_a_heavy_box_s4/c1",
+      "frame_offset": 4,
+      "absolute_start": 415564,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_rope_s9",
+      "clip_id": "sport/a_person_jumps_rope_s9/c2",
+      "frame_offset": 5,
+      "absolute_start": 403085,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_jumping_jacks_s1",
+      "clip_id": "sport/a_person_does_jumping_jacks_s1/c0",
+      "frame_offset": 10,
+      "absolute_start": 381970,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_yoga_tree_pose_s1",
+      "clip_id": "sport/a_person_does_a_yoga_tree_pose_s1/c1",
+      "frame_offset": 11,
+      "absolute_start": 371291,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_burpee_s3",
+      "clip_id": "sport/a_person_does_a_burpee_s3/c0",
+      "frame_offset": 10,
+      "absolute_start": 346690,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_yoga_warrior_pose_s3",
+      "clip_id": "sport/a_person_does_a_yoga_warrior_pose_s3/c1",
+      "frame_offset": 11,
+      "absolute_start": 375611,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_golf_club_s0",
+      "clip_id": "sport/a_person_swings_a_golf_club_s0/c2",
+      "frame_offset": 4,
+      "absolute_start": 443044,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swims_freestyle_in_place_s3",
+      "clip_id": "sport/a_person_swims_freestyle_in_place_s3/c1",
+      "frame_offset": 17,
+      "absolute_start": 436817,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_twist_s0",
+      "clip_id": "dance/a_person_does_the_twist_s0/c2",
+      "frame_offset": 6,
+      "absolute_start": 97446,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_rope_s2",
+      "clip_id": "sport/a_person_jumps_rope_s2/c2",
+      "frame_offset": 20,
+      "absolute_start": 400580,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_high_kick_s0",
+      "clip_id": "sport/a_person_does_a_high_kick_s0/c0",
+      "frame_offset": 11,
+      "absolute_start": 349211,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_sits_down_on_a_chair_s7",
+      "clip_id": "transitions/a_person_sits_down_on_a_chair_s7/c2",
+      "frame_offset": 6,
+      "absolute_start": 488766,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_wipes_sweat_from_their_brow_s9",
+      "clip_id": "gesture/a_person_wipes_sweat_from_their_brow_s9/c0",
+      "frame_offset": 3,
+      "absolute_start": 226443,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_sit_up_s8",
+      "clip_id": "sport/a_person_does_a_sit_up_s8/c1",
+      "frame_offset": 10,
+      "absolute_start": 366610,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_weights_overhead_s4",
+      "clip_id": "sport/a_person_lifts_weights_overhead_s4/c2",
+      "frame_offset": 8,
+      "absolute_start": 419288,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_running_man_dance_s9",
+      "clip_id": "dance/a_person_does_the_running_man_dance_s9/c1",
+      "frame_offset": 13,
+      "absolute_start": 86173,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_jumping_jacks_s5",
+      "clip_id": "sport/a_person_does_jumping_jacks_s5/c2",
+      "frame_offset": 10,
+      "absolute_start": 383650,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_roundhouse_kick_s2",
+      "clip_id": "sport/a_person_does_a_roundhouse_kick_s2/c0",
+      "frame_offset": 0,
+      "absolute_start": 360720,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_dribbles_a_basketball_s8",
+      "clip_id": "sport/a_person_dribbles_a_basketball_s8/c1",
+      "frame_offset": 18,
+      "absolute_start": 399018,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_weights_overhead_s1",
+      "clip_id": "sport/a_person_lifts_weights_overhead_s1/c1",
+      "frame_offset": 1,
+      "absolute_start": 418081,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_sit_up_s4",
+      "clip_id": "sport/a_person_does_a_sit_up_s4/c0",
+      "frame_offset": 18,
+      "absolute_start": 365058,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_shoots_a_basketball_s3",
+      "clip_id": "sport/a_person_shoots_a_basketball_s3/c0",
+      "frame_offset": 17,
+      "absolute_start": 433097,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_sit_up_s3",
+      "clip_id": "sport/a_person_does_a_sit_up_s3/c0",
+      "frame_offset": 20,
+      "absolute_start": 364700,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_running_man_dance_s8",
+      "clip_id": "dance/a_person_does_the_running_man_dance_s8/c0",
+      "frame_offset": 14,
+      "absolute_start": 85694,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_kicks_a_ball_s8",
+      "clip_id": "sport/a_person_kicks_a_ball_s8/c1",
+      "frame_offset": 3,
+      "absolute_start": 413403,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_shakes_their_head_no_s4",
+      "clip_id": "gesture/a_person_shakes_their_head_no_s4/c1",
+      "frame_offset": 9,
+      "absolute_start": 199569,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_push_up_s9",
+      "clip_id": "sport/a_person_does_a_push_up_s9/c0",
+      "frame_offset": 9,
+      "absolute_start": 359649,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_up_and_down_s2",
+      "clip_id": "sport/a_person_jumps_up_and_down_s2/c0",
+      "frame_offset": 13,
+      "absolute_start": 403933,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_yoga_warrior_pose_s1",
+      "clip_id": "sport/a_person_does_a_yoga_warrior_pose_s1/c2",
+      "frame_offset": 8,
+      "absolute_start": 375008,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_throws_a_ball_underhand_s8",
+      "clip_id": "sport/a_person_throws_a_ball_underhand_s8/c1",
+      "frame_offset": 14,
+      "absolute_start": 456614,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_dribbles_a_basketball_s7",
+      "clip_id": "sport/a_person_dribbles_a_basketball_s7/c2",
+      "frame_offset": 4,
+      "absolute_start": 398764,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_touches_their_toes_s3",
+      "clip_id": "sport/a_person_touches_their_toes_s3/c0",
+      "frame_offset": 7,
+      "absolute_start": 458287,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_baseball_bat_s2",
+      "clip_id": "sport/a_person_swings_a_baseball_bat_s2/c2",
+      "frame_offset": 11,
+      "absolute_start": 440171,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_push_up_s5",
+      "clip_id": "sport/a_person_does_a_push_up_s5/c0",
+      "frame_offset": 9,
+      "absolute_start": 358209,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_rope_s6",
+      "clip_id": "sport/a_person_jumps_rope_s6/c2",
+      "frame_offset": 2,
+      "absolute_start": 402002,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_sits_down_on_a_chair_s3",
+      "clip_id": "transitions/a_person_sits_down_on_a_chair_s3/c0",
+      "frame_offset": 21,
+      "absolute_start": 487101,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_balances_on_one_leg_s1",
+      "clip_id": "sport/a_person_balances_on_one_leg_s1/c0",
+      "frame_offset": 15,
+      "absolute_start": 342375,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_balances_on_one_leg_s3",
+      "clip_id": "sport/a_person_balances_on_one_leg_s3/c1",
+      "frame_offset": 18,
+      "absolute_start": 343218,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_roundhouse_kick_s1",
+      "clip_id": "sport/a_person_does_a_roundhouse_kick_s1/c2",
+      "frame_offset": 7,
+      "absolute_start": 360607,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_rope_s1",
+      "clip_id": "sport/a_person_jumps_rope_s1/c0",
+      "frame_offset": 20,
+      "absolute_start": 399980,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_yoga_warrior_pose_s6",
+      "clip_id": "sport/a_person_does_a_yoga_warrior_pose_s6/c1",
+      "frame_offset": 17,
+      "absolute_start": 376697,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_yoga_warrior_pose_s5",
+      "clip_id": "sport/a_person_does_a_yoga_warrior_pose_s5/c0",
+      "frame_offset": 21,
+      "absolute_start": 376221,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_shadow_boxes_s1",
+      "clip_id": "sport/a_person_shadow_boxes_s1/c1",
+      "frame_offset": 4,
+      "absolute_start": 428884,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_kneels_down_s3",
+      "clip_id": "transitions/a_person_kneels_down_s3/c1",
+      "frame_offset": 10,
+      "absolute_start": 472810,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_side_bends_s6",
+      "clip_id": "sport/a_person_does_side_bends_s6/c2",
+      "frame_offset": 8,
+      "absolute_start": 391208,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_up_and_down_s7",
+      "clip_id": "sport/a_person_jumps_up_and_down_s7/c0",
+      "frame_offset": 13,
+      "absolute_start": 405733,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_karate_chop_s1",
+      "clip_id": "sport/a_person_does_a_karate_chop_s1/c2",
+      "frame_offset": 5,
+      "absolute_start": 353405,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_karate_chop_s5",
+      "clip_id": "sport/a_person_does_a_karate_chop_s5/c1",
+      "frame_offset": 2,
+      "absolute_start": 354722,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_up_and_down_s1",
+      "clip_id": "sport/a_person_jumps_up_and_down_s1/c0",
+      "frame_offset": 10,
+      "absolute_start": 403570,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_shakes_their_head_no_s2",
+      "clip_id": "gesture/a_person_shakes_their_head_no_s2/c0",
+      "frame_offset": 14,
+      "absolute_start": 198734,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_lunges_s3",
+      "clip_id": "sport/a_person_does_lunges_s3/c1",
+      "frame_offset": 8,
+      "absolute_start": 386408,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_high_kick_s9",
+      "clip_id": "sport/a_person_does_a_high_kick_s9/c2",
+      "frame_offset": 21,
+      "absolute_start": 352701,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_throws_a_ball_underhand_s5",
+      "clip_id": "sport/a_person_throws_a_ball_underhand_s5/c2",
+      "frame_offset": 8,
+      "absolute_start": 455648,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_rope_s7",
+      "clip_id": "sport/a_person_jumps_rope_s7/c1",
+      "frame_offset": 6,
+      "absolute_start": 402246,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_punches_the_air_like_a_boxer_s7",
+      "clip_id": "sport/a_person_punches_the_air_like_a_boxer_s7/c0",
+      "frame_offset": 17,
+      "absolute_start": 423737,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_walks_like_a_zombie_s7",
+      "clip_id": "locomotion/a_person_walks_like_a_zombie_s7/c1",
+      "frame_offset": 10,
+      "absolute_start": 323050,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_twist_s8",
+      "clip_id": "dance/a_person_does_the_twist_s8/c1",
+      "frame_offset": 6,
+      "absolute_start": 100206,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_punches_the_air_like_a_boxer_s0",
+      "clip_id": "sport/a_person_punches_the_air_like_a_boxer_s0/c2",
+      "frame_offset": 6,
+      "absolute_start": 421446,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_roundhouse_kick_s7",
+      "clip_id": "sport/a_person_does_a_roundhouse_kick_s7/c0",
+      "frame_offset": 20,
+      "absolute_start": 362540,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_jumping_jacks_s8",
+      "clip_id": "sport/a_person_does_jumping_jacks_s8/c2",
+      "frame_offset": 21,
+      "absolute_start": 384741,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_a_heavy_box_s0",
+      "clip_id": "sport/a_person_lifts_a_heavy_box_s0/c2",
+      "frame_offset": 14,
+      "absolute_start": 414254,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_roundhouse_kick_s3",
+      "clip_id": "sport/a_person_does_a_roundhouse_kick_s3/c2",
+      "frame_offset": 6,
+      "absolute_start": 361326,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_kicks_a_ball_s1",
+      "clip_id": "sport/a_person_kicks_a_ball_s1/c0",
+      "frame_offset": 15,
+      "absolute_start": 410775,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_standing_long_jump_s0",
+      "clip_id": "sport/a_person_does_a_standing_long_jump_s0/c2",
+      "frame_offset": 4,
+      "absolute_start": 367444,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_sit_up_s7",
+      "clip_id": "sport/a_person_does_a_sit_up_s7/c2",
+      "frame_offset": 7,
+      "absolute_start": 366367,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_weights_overhead_s5",
+      "clip_id": "sport/a_person_lifts_weights_overhead_s5/c2",
+      "frame_offset": 11,
+      "absolute_start": 419651,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_running_man_dance_s5",
+      "clip_id": "dance/a_person_does_the_running_man_dance_s5/c0",
+      "frame_offset": 8,
+      "absolute_start": 84608,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_yoga_tree_pose_s2",
+      "clip_id": "sport/a_person_does_a_yoga_tree_pose_s2/c0",
+      "frame_offset": 7,
+      "absolute_start": 371527,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_wipes_sweat_from_their_brow_s2",
+      "clip_id": "gesture/a_person_wipes_sweat_from_their_brow_s2/c1",
+      "frame_offset": 21,
+      "absolute_start": 224061,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_kneels_down_s7",
+      "clip_id": "transitions/a_person_kneels_down_s7/c2",
+      "frame_offset": 3,
+      "absolute_start": 474363,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_kicks_a_ball_s0",
+      "clip_id": "sport/a_person_kicks_a_ball_s0/c2",
+      "frame_offset": 13,
+      "absolute_start": 410653,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_push_up_s3",
+      "clip_id": "sport/a_person_does_a_push_up_s3/c1",
+      "frame_offset": 0,
+      "absolute_start": 357600,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swims_freestyle_in_place_s9",
+      "clip_id": "sport/a_person_swims_freestyle_in_place_s9/c1",
+      "frame_offset": 2,
+      "absolute_start": 438962,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_jumping_jacks_s3",
+      "clip_id": "sport/a_person_does_jumping_jacks_s3/c2",
+      "frame_offset": 4,
+      "absolute_start": 382924,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s0",
+      "clip_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s0/c2",
+      "frame_offset": 21,
+      "absolute_start": 407061,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_tennis_racket_s5",
+      "clip_id": "sport/a_person_swings_a_tennis_racket_s5/c1",
+      "frame_offset": 15,
+      "absolute_start": 448335,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_walks_like_a_zombie_s9",
+      "clip_id": "locomotion/a_person_walks_like_a_zombie_s9/c1",
+      "frame_offset": 19,
+      "absolute_start": 323779,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_burpee_s1",
+      "clip_id": "sport/a_person_does_a_burpee_s1/c2",
+      "frame_offset": 1,
+      "absolute_start": 346201,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_kicks_a_ball_s3",
+      "clip_id": "sport/a_person_kicks_a_ball_s3/c1",
+      "frame_offset": 14,
+      "absolute_start": 411614,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_twist_s6",
+      "clip_id": "dance/a_person_does_the_twist_s6/c1",
+      "frame_offset": 9,
+      "absolute_start": 99489,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_wipes_sweat_from_their_brow_s1",
+      "clip_id": "gesture/a_person_wipes_sweat_from_their_brow_s1/c1",
+      "frame_offset": 9,
+      "absolute_start": 223689,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_sits_down_on_a_chair_s9",
+      "clip_id": "transitions/a_person_sits_down_on_a_chair_s9/c1",
+      "frame_offset": 15,
+      "absolute_start": 489375,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_standing_long_jump_s1",
+      "clip_id": "sport/a_person_does_a_standing_long_jump_s1/c0",
+      "frame_offset": 6,
+      "absolute_start": 367566,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_high_kick_s6",
+      "clip_id": "sport/a_person_does_a_high_kick_s6/c1",
+      "frame_offset": 11,
+      "absolute_start": 351491,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_arm_circles_s6",
+      "clip_id": "sport/a_person_does_arm_circles_s6/c1",
+      "frame_offset": 5,
+      "absolute_start": 380285,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_side_bends_s0",
+      "clip_id": "sport/a_person_does_side_bends_s0/c2",
+      "frame_offset": 8,
+      "absolute_start": 389048,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_rope_s8",
+      "clip_id": "sport/a_person_jumps_rope_s8/c1",
+      "frame_offset": 11,
+      "absolute_start": 402611,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_rows_a_boat_s9",
+      "clip_id": "sport/a_person_rows_a_boat_s9/c2",
+      "frame_offset": 3,
+      "absolute_start": 428283,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_sits_down_on_a_chair_s5",
+      "clip_id": "transitions/a_person_sits_down_on_a_chair_s5/c0",
+      "frame_offset": 6,
+      "absolute_start": 487806,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swims_freestyle_in_place_s5",
+      "clip_id": "sport/a_person_swims_freestyle_in_place_s5/c2",
+      "frame_offset": 9,
+      "absolute_start": 437649,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_squats_s0",
+      "clip_id": "sport/a_person_does_squats_s0/c0",
+      "frame_offset": 10,
+      "absolute_start": 392410,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_standing_long_jump_s9",
+      "clip_id": "sport/a_person_does_a_standing_long_jump_s9/c0",
+      "frame_offset": 17,
+      "absolute_start": 370457,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_squats_s2",
+      "clip_id": "sport/a_person_does_squats_s2/c0",
+      "frame_offset": 14,
+      "absolute_start": 393134,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_kneels_down_s2",
+      "clip_id": "transitions/a_person_kneels_down_s2/c0",
+      "frame_offset": 12,
+      "absolute_start": 472332,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_a_heavy_box_s9",
+      "clip_id": "sport/a_person_lifts_a_heavy_box_s9/c2",
+      "frame_offset": 19,
+      "absolute_start": 417499,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_touches_their_toes_s8",
+      "clip_id": "sport/a_person_touches_their_toes_s8/c0",
+      "frame_offset": 4,
+      "absolute_start": 460084,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_shuffles_forward_s9",
+      "clip_id": "locomotion/a_person_shuffles_forward_s9/c0",
+      "frame_offset": 2,
+      "absolute_start": 284042,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_push_up_s1",
+      "clip_id": "sport/a_person_does_a_push_up_s1/c0",
+      "frame_offset": 8,
+      "absolute_start": 356768,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_jumping_jacks_s2",
+      "clip_id": "sport/a_person_does_jumping_jacks_s2/c1",
+      "frame_offset": 3,
+      "absolute_start": 382443,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_dribbles_a_basketball_s2",
+      "clip_id": "sport/a_person_dribbles_a_basketball_s2/c2",
+      "frame_offset": 12,
+      "absolute_start": 396972,
+      "frames": 50,
+      "stride": 2
+    }
+  ],
+  "reference_b": [
+    {
+      "motion_id": "dance/a_person_does_the_twist_s3",
+      "clip_id": "dance/a_person_does_the_twist_s3/c2",
+      "frame_offset": 12,
+      "absolute_start": 98532,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_roundhouse_kick_s8",
+      "clip_id": "sport/a_person_does_a_roundhouse_kick_s8/c1",
+      "frame_offset": 2,
+      "absolute_start": 363002,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_dribbles_a_basketball_s0",
+      "clip_id": "sport/a_person_dribbles_a_basketball_s0/c1",
+      "frame_offset": 15,
+      "absolute_start": 396135,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_sits_down_on_a_chair_s6",
+      "clip_id": "transitions/a_person_sits_down_on_a_chair_s6/c0",
+      "frame_offset": 12,
+      "absolute_start": 488172,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_punches_the_air_like_a_boxer_s4",
+      "clip_id": "sport/a_person_punches_the_air_like_a_boxer_s4/c1",
+      "frame_offset": 9,
+      "absolute_start": 422769,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_baseball_bat_s3",
+      "clip_id": "sport/a_person_swings_a_baseball_bat_s3/c2",
+      "frame_offset": 20,
+      "absolute_start": 440540,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_shakes_their_head_no_s3",
+      "clip_id": "gesture/a_person_shakes_their_head_no_s3/c1",
+      "frame_offset": 18,
+      "absolute_start": 199218,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_throws_a_ball_overhand_s7",
+      "clip_id": "sport/a_person_throws_a_ball_overhand_s7/c2",
+      "frame_offset": 4,
+      "absolute_start": 452764,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_sit_up_s0",
+      "clip_id": "sport/a_person_does_a_sit_up_s0/c0",
+      "frame_offset": 3,
+      "absolute_start": 363603,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_side_bends_s8",
+      "clip_id": "sport/a_person_does_side_bends_s8/c0",
+      "frame_offset": 20,
+      "absolute_start": 391700,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_twist_s7",
+      "clip_id": "dance/a_person_does_the_twist_s7/c1",
+      "frame_offset": 3,
+      "absolute_start": 99843,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_push_up_s0",
+      "clip_id": "sport/a_person_does_a_push_up_s0/c0",
+      "frame_offset": 16,
+      "absolute_start": 356416,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_arm_circles_s1",
+      "clip_id": "sport/a_person_does_arm_circles_s1/c1",
+      "frame_offset": 6,
+      "absolute_start": 378486,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_shakes_their_head_no_s1",
+      "clip_id": "gesture/a_person_shakes_their_head_no_s1/c1",
+      "frame_offset": 7,
+      "absolute_start": 198487,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_burpee_s4",
+      "clip_id": "sport/a_person_does_a_burpee_s4/c1",
+      "frame_offset": 12,
+      "absolute_start": 347172,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_rows_a_boat_s3",
+      "clip_id": "sport/a_person_rows_a_boat_s3/c1",
+      "frame_offset": 20,
+      "absolute_start": 426020,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s2",
+      "clip_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s2/c2",
+      "frame_offset": 0,
+      "absolute_start": 407760,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_punches_the_air_like_a_boxer_s9",
+      "clip_id": "sport/a_person_punches_the_air_like_a_boxer_s9/c2",
+      "frame_offset": 3,
+      "absolute_start": 424683,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_burpee_s8",
+      "clip_id": "sport/a_person_does_a_burpee_s8/c1",
+      "frame_offset": 15,
+      "absolute_start": 348615,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_gallops_sideways_s0",
+      "clip_id": "locomotion/a_person_gallops_sideways_s0/c0",
+      "frame_offset": 8,
+      "absolute_start": 266408,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_yoga_tree_pose_s0",
+      "clip_id": "sport/a_person_does_a_yoga_tree_pose_s0/c2",
+      "frame_offset": 6,
+      "absolute_start": 371046,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_lunges_s1",
+      "clip_id": "sport/a_person_does_lunges_s1/c0",
+      "frame_offset": 21,
+      "absolute_start": 385581,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_shoots_a_basketball_s7",
+      "clip_id": "sport/a_person_shoots_a_basketball_s7/c1",
+      "frame_offset": 5,
+      "absolute_start": 434645,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_tennis_racket_s7",
+      "clip_id": "sport/a_person_swings_a_tennis_racket_s7/c2",
+      "frame_offset": 15,
+      "absolute_start": 449175,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_kicks_a_ball_s4",
+      "clip_id": "sport/a_person_kicks_a_ball_s4/c2",
+      "frame_offset": 21,
+      "absolute_start": 412101,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_karate_chop_s3",
+      "clip_id": "sport/a_person_does_a_karate_chop_s3/c0",
+      "frame_offset": 16,
+      "absolute_start": 353896,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_throws_a_ball_overhand_s4",
+      "clip_id": "sport/a_person_throws_a_ball_overhand_s4/c1",
+      "frame_offset": 15,
+      "absolute_start": 451575,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_punches_the_air_like_a_boxer_s6",
+      "clip_id": "sport/a_person_punches_the_air_like_a_boxer_s6/c1",
+      "frame_offset": 15,
+      "absolute_start": 423495,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_gallops_sideways_s3",
+      "clip_id": "locomotion/a_person_gallops_sideways_s3/c2",
+      "frame_offset": 17,
+      "absolute_start": 267737,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_side_bends_s9",
+      "clip_id": "sport/a_person_does_side_bends_s9/c1",
+      "frame_offset": 5,
+      "absolute_start": 392165,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_lunges_s8",
+      "clip_id": "sport/a_person_does_lunges_s8/c1",
+      "frame_offset": 13,
+      "absolute_start": 388213,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_arm_circles_s5",
+      "clip_id": "sport/a_person_does_arm_circles_s5/c1",
+      "frame_offset": 17,
+      "absolute_start": 379937,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_kicks_a_ball_s5",
+      "clip_id": "sport/a_person_kicks_a_ball_s5/c2",
+      "frame_offset": 19,
+      "absolute_start": 412459,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_dribbles_a_basketball_s5",
+      "clip_id": "sport/a_person_dribbles_a_basketball_s5/c1",
+      "frame_offset": 19,
+      "absolute_start": 397939,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_karate_chop_s8",
+      "clip_id": "sport/a_person_does_a_karate_chop_s8/c1",
+      "frame_offset": 19,
+      "absolute_start": 355819,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_running_man_dance_s7",
+      "clip_id": "dance/a_person_does_the_running_man_dance_s7/c2",
+      "frame_offset": 2,
+      "absolute_start": 85562,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_running_man_dance_s4",
+      "clip_id": "dance/a_person_does_the_running_man_dance_s4/c0",
+      "frame_offset": 8,
+      "absolute_start": 84248,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_balances_on_one_leg_s8",
+      "clip_id": "sport/a_person_balances_on_one_leg_s8/c2",
+      "frame_offset": 10,
+      "absolute_start": 345130,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_shoots_a_basketball_s1",
+      "clip_id": "sport/a_person_shoots_a_basketball_s1/c1",
+      "frame_offset": 19,
+      "absolute_start": 432499,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_walks_like_a_zombie_s5",
+      "clip_id": "locomotion/a_person_walks_like_a_zombie_s5/c2",
+      "frame_offset": 9,
+      "absolute_start": 322449,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_rows_a_boat_s8",
+      "clip_id": "sport/a_person_rows_a_boat_s8/c0",
+      "frame_offset": 5,
+      "absolute_start": 427685,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_burpee_s0",
+      "clip_id": "sport/a_person_does_a_burpee_s0/c0",
+      "frame_offset": 0,
+      "absolute_start": 345600,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_side_bends_s4",
+      "clip_id": "sport/a_person_does_side_bends_s4/c1",
+      "frame_offset": 6,
+      "absolute_start": 390366,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_dribbles_a_basketball_s6",
+      "clip_id": "sport/a_person_dribbles_a_basketball_s6/c1",
+      "frame_offset": 17,
+      "absolute_start": 398297,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_jumping_jacks_s4",
+      "clip_id": "sport/a_person_does_jumping_jacks_s4/c0",
+      "frame_offset": 0,
+      "absolute_start": 383040,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_a_heavy_box_s7",
+      "clip_id": "sport/a_person_lifts_a_heavy_box_s7/c1",
+      "frame_offset": 3,
+      "absolute_start": 416643,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swims_freestyle_in_place_s6",
+      "clip_id": "sport/a_person_swims_freestyle_in_place_s6/c1",
+      "frame_offset": 6,
+      "absolute_start": 437886,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swims_freestyle_in_place_s4",
+      "clip_id": "sport/a_person_swims_freestyle_in_place_s4/c2",
+      "frame_offset": 11,
+      "absolute_start": 437291,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_high_kick_s3",
+      "clip_id": "sport/a_person_does_a_high_kick_s3/c2",
+      "frame_offset": 7,
+      "absolute_start": 350527,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swims_freestyle_in_place_s1",
+      "clip_id": "sport/a_person_swims_freestyle_in_place_s1/c1",
+      "frame_offset": 19,
+      "absolute_start": 436099,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_shadow_boxes_s5",
+      "clip_id": "sport/a_person_shadow_boxes_s5/c1",
+      "frame_offset": 4,
+      "absolute_start": 430324,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_standing_long_jump_s7",
+      "clip_id": "sport/a_person_does_a_standing_long_jump_s7/c0",
+      "frame_offset": 12,
+      "absolute_start": 369732,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_weights_overhead_s9",
+      "clip_id": "sport/a_person_lifts_weights_overhead_s9/c2",
+      "frame_offset": 17,
+      "absolute_start": 421097,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_twist_s4",
+      "clip_id": "dance/a_person_does_the_twist_s4/c0",
+      "frame_offset": 20,
+      "absolute_start": 98660,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_shoots_a_basketball_s9",
+      "clip_id": "sport/a_person_shoots_a_basketball_s9/c2",
+      "frame_offset": 19,
+      "absolute_start": 435499,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_rope_s5",
+      "clip_id": "sport/a_person_jumps_rope_s5/c2",
+      "frame_offset": 2,
+      "absolute_start": 401642,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_walks_like_a_zombie_s1",
+      "clip_id": "locomotion/a_person_walks_like_a_zombie_s1/c0",
+      "frame_offset": 17,
+      "absolute_start": 320777,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_shadow_boxes_s7",
+      "clip_id": "sport/a_person_shadow_boxes_s7/c2",
+      "frame_offset": 14,
+      "absolute_start": 431174,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swims_freestyle_in_place_s0",
+      "clip_id": "sport/a_person_swims_freestyle_in_place_s0/c2",
+      "frame_offset": 9,
+      "absolute_start": 435849,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_shakes_their_head_no_s7",
+      "clip_id": "gesture/a_person_shakes_their_head_no_s7/c2",
+      "frame_offset": 0,
+      "absolute_start": 200760,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_tennis_racket_s1",
+      "clip_id": "sport/a_person_swings_a_tennis_racket_s1/c0",
+      "frame_offset": 3,
+      "absolute_start": 446763,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_weights_overhead_s7",
+      "clip_id": "sport/a_person_lifts_weights_overhead_s7/c0",
+      "frame_offset": 16,
+      "absolute_start": 420136,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_karate_chop_s9",
+      "clip_id": "sport/a_person_does_a_karate_chop_s9/c0",
+      "frame_offset": 1,
+      "absolute_start": 356041,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_shuffles_forward_s4",
+      "clip_id": "locomotion/a_person_shuffles_forward_s4/c2",
+      "frame_offset": 6,
+      "absolute_start": 282486,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_shadow_boxes_s6",
+      "clip_id": "sport/a_person_shadow_boxes_s6/c2",
+      "frame_offset": 5,
+      "absolute_start": 430805,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_yoga_tree_pose_s9",
+      "clip_id": "sport/a_person_does_a_yoga_tree_pose_s9/c2",
+      "frame_offset": 16,
+      "absolute_start": 374296,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_tennis_racket_s8",
+      "clip_id": "sport/a_person_swings_a_tennis_racket_s8/c1",
+      "frame_offset": 7,
+      "absolute_start": 449407,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_rows_a_boat_s4",
+      "clip_id": "sport/a_person_rows_a_boat_s4/c1",
+      "frame_offset": 1,
+      "absolute_start": 426361,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s4",
+      "clip_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s4/c1",
+      "frame_offset": 8,
+      "absolute_start": 408368,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_throws_a_ball_overhand_s5",
+      "clip_id": "sport/a_person_throws_a_ball_overhand_s5/c2",
+      "frame_offset": 7,
+      "absolute_start": 452047,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_baseball_bat_s0",
+      "clip_id": "sport/a_person_swings_a_baseball_bat_s0/c0",
+      "frame_offset": 15,
+      "absolute_start": 439215,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_a_heavy_box_s6",
+      "clip_id": "sport/a_person_lifts_a_heavy_box_s6/c1",
+      "frame_offset": 7,
+      "absolute_start": 416287,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_jumping_jacks_s9",
+      "clip_id": "sport/a_person_does_jumping_jacks_s9/c2",
+      "frame_offset": 15,
+      "absolute_start": 385095,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swims_freestyle_in_place_s7",
+      "clip_id": "sport/a_person_swims_freestyle_in_place_s7/c0",
+      "frame_offset": 11,
+      "absolute_start": 438131,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_burpee_s9",
+      "clip_id": "sport/a_person_does_a_burpee_s9/c2",
+      "frame_offset": 19,
+      "absolute_start": 349099,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_arm_circles_s8",
+      "clip_id": "sport/a_person_does_arm_circles_s8/c2",
+      "frame_offset": 16,
+      "absolute_start": 381136,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_tennis_racket_s6",
+      "clip_id": "sport/a_person_swings_a_tennis_racket_s6/c1",
+      "frame_offset": 8,
+      "absolute_start": 448688,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_tennis_racket_s4",
+      "clip_id": "sport/a_person_swings_a_tennis_racket_s4/c0",
+      "frame_offset": 10,
+      "absolute_start": 447850,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_kneels_down_s0",
+      "clip_id": "transitions/a_person_kneels_down_s0/c1",
+      "frame_offset": 10,
+      "absolute_start": 471730,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_golf_club_s8",
+      "clip_id": "sport/a_person_swings_a_golf_club_s8/c0",
+      "frame_offset": 19,
+      "absolute_start": 445699,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_throws_a_ball_overhand_s3",
+      "clip_id": "sport/a_person_throws_a_ball_overhand_s3/c0",
+      "frame_offset": 3,
+      "absolute_start": 451083,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_yoga_tree_pose_s7",
+      "clip_id": "sport/a_person_does_a_yoga_tree_pose_s7/c1",
+      "frame_offset": 9,
+      "absolute_start": 373449,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_sits_down_on_a_chair_s8",
+      "clip_id": "transitions/a_person_sits_down_on_a_chair_s8/c0",
+      "frame_offset": 11,
+      "absolute_start": 488891,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_standing_long_jump_s2",
+      "clip_id": "sport/a_person_does_a_standing_long_jump_s2/c0",
+      "frame_offset": 9,
+      "absolute_start": 367929,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_sits_down_on_a_chair_s4",
+      "clip_id": "transitions/a_person_sits_down_on_a_chair_s4/c0",
+      "frame_offset": 13,
+      "absolute_start": 487453,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_running_man_dance_s0",
+      "clip_id": "dance/a_person_does_the_running_man_dance_s0/c1",
+      "frame_offset": 10,
+      "absolute_start": 82930,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_kicks_a_ball_s9",
+      "clip_id": "sport/a_person_kicks_a_ball_s9/c0",
+      "frame_offset": 9,
+      "absolute_start": 413649,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_a_heavy_box_s5",
+      "clip_id": "sport/a_person_lifts_a_heavy_box_s5/c2",
+      "frame_offset": 15,
+      "absolute_start": 416055,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_throws_a_ball_overhand_s6",
+      "clip_id": "sport/a_person_throws_a_ball_overhand_s6/c0",
+      "frame_offset": 7,
+      "absolute_start": 452167,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_touches_their_toes_s0",
+      "clip_id": "sport/a_person_touches_their_toes_s0/c1",
+      "frame_offset": 13,
+      "absolute_start": 457333,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_dribbles_a_basketball_s9",
+      "clip_id": "sport/a_person_dribbles_a_basketball_s9/c0",
+      "frame_offset": 16,
+      "absolute_start": 399256,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_weights_overhead_s8",
+      "clip_id": "sport/a_person_lifts_weights_overhead_s8/c0",
+      "frame_offset": 2,
+      "absolute_start": 420482,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_throws_a_ball_overhand_s9",
+      "clip_id": "sport/a_person_throws_a_ball_overhand_s9/c2",
+      "frame_offset": 7,
+      "absolute_start": 453487,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_balances_on_one_leg_s4",
+      "clip_id": "sport/a_person_balances_on_one_leg_s4/c2",
+      "frame_offset": 20,
+      "absolute_start": 343700,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_sit_up_s6",
+      "clip_id": "sport/a_person_does_a_sit_up_s6/c0",
+      "frame_offset": 21,
+      "absolute_start": 365781,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_rope_s3",
+      "clip_id": "sport/a_person_jumps_rope_s3/c1",
+      "frame_offset": 21,
+      "absolute_start": 400821,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_sit_up_s1",
+      "clip_id": "sport/a_person_does_a_sit_up_s1/c2",
+      "frame_offset": 0,
+      "absolute_start": 364200,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_walks_like_a_zombie_s6",
+      "clip_id": "locomotion/a_person_walks_like_a_zombie_s6/c1",
+      "frame_offset": 18,
+      "absolute_start": 322698,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_weights_overhead_s3",
+      "clip_id": "sport/a_person_lifts_weights_overhead_s3/c2",
+      "frame_offset": 20,
+      "absolute_start": 418940,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_wipes_sweat_from_their_brow_s6",
+      "clip_id": "gesture/a_person_wipes_sweat_from_their_brow_s6/c2",
+      "frame_offset": 19,
+      "absolute_start": 225619,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_standing_long_jump_s8",
+      "clip_id": "sport/a_person_does_a_standing_long_jump_s8/c0",
+      "frame_offset": 15,
+      "absolute_start": 370095,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "transitions/a_person_kneels_down_s9",
+      "clip_id": "transitions/a_person_kneels_down_s9/c0",
+      "frame_offset": 14,
+      "absolute_start": 474854,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_gallops_sideways_s8",
+      "clip_id": "locomotion/a_person_gallops_sideways_s8/c2",
+      "frame_offset": 15,
+      "absolute_start": 269535,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_weights_overhead_s2",
+      "clip_id": "sport/a_person_lifts_weights_overhead_s2/c2",
+      "frame_offset": 12,
+      "absolute_start": 418572,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_up_and_down_s9",
+      "clip_id": "sport/a_person_jumps_up_and_down_s9/c1",
+      "frame_offset": 17,
+      "absolute_start": 406577,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_kicks_a_ball_s2",
+      "clip_id": "sport/a_person_kicks_a_ball_s2/c0",
+      "frame_offset": 11,
+      "absolute_start": 411131,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_tennis_racket_s9",
+      "clip_id": "sport/a_person_swings_a_tennis_racket_s9/c2",
+      "frame_offset": 4,
+      "absolute_start": 449884,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "dance/a_person_does_the_twist_s9",
+      "clip_id": "dance/a_person_does_the_twist_s9/c2",
+      "frame_offset": 2,
+      "absolute_start": 100682,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_arm_circles_s0",
+      "clip_id": "sport/a_person_does_arm_circles_s0/c2",
+      "frame_offset": 19,
+      "absolute_start": 378259,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s3",
+      "clip_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s3/c1",
+      "frame_offset": 16,
+      "absolute_start": 408016,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_gallops_sideways_s4",
+      "clip_id": "locomotion/a_person_gallops_sideways_s4/c1",
+      "frame_offset": 3,
+      "absolute_start": 267963,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_lifts_weights_overhead_s6",
+      "clip_id": "sport/a_person_lifts_weights_overhead_s6/c1",
+      "frame_offset": 18,
+      "absolute_start": 419898,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_walks_like_a_zombie_s3",
+      "clip_id": "locomotion/a_person_walks_like_a_zombie_s3/c0",
+      "frame_offset": 6,
+      "absolute_start": 321486,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_baseball_bat_s6",
+      "clip_id": "sport/a_person_swings_a_baseball_bat_s6/c2",
+      "frame_offset": 13,
+      "absolute_start": 441613,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_dribbles_a_basketball_s3",
+      "clip_id": "sport/a_person_dribbles_a_basketball_s3/c1",
+      "frame_offset": 7,
+      "absolute_start": 397207,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_jumps_up_and_down_s4",
+      "clip_id": "sport/a_person_jumps_up_and_down_s4/c2",
+      "frame_offset": 4,
+      "absolute_start": 404884,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_rows_a_boat_s0",
+      "clip_id": "sport/a_person_rows_a_boat_s0/c1",
+      "frame_offset": 3,
+      "absolute_start": 424923,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_throws_a_ball_underhand_s6",
+      "clip_id": "sport/a_person_throws_a_ball_underhand_s6/c0",
+      "frame_offset": 1,
+      "absolute_start": 455761,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_swings_a_golf_club_s3",
+      "clip_id": "sport/a_person_swings_a_golf_club_s3/c0",
+      "frame_offset": 1,
+      "absolute_start": 443881,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_kicks_a_ball_s7",
+      "clip_id": "sport/a_person_kicks_a_ball_s7/c1",
+      "frame_offset": 1,
+      "absolute_start": 413041,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "gesture/a_person_shakes_their_head_no_s0",
+      "clip_id": "gesture/a_person_shakes_their_head_no_s0/c0",
+      "frame_offset": 1,
+      "absolute_start": 198001,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_jumping_jacks_s0",
+      "clip_id": "sport/a_person_does_jumping_jacks_s0/c0",
+      "frame_offset": 18,
+      "absolute_start": 381618,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_touches_their_toes_s1",
+      "clip_id": "sport/a_person_touches_their_toes_s1/c2",
+      "frame_offset": 11,
+      "absolute_start": 457811,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_sit_up_s9",
+      "clip_id": "sport/a_person_does_a_sit_up_s9/c1",
+      "frame_offset": 2,
+      "absolute_start": 366962,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_shuffles_forward_s2",
+      "clip_id": "locomotion/a_person_shuffles_forward_s2/c1",
+      "frame_offset": 11,
+      "absolute_start": 281651,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "locomotion/a_person_shuffles_forward_s6",
+      "clip_id": "locomotion/a_person_shuffles_forward_s6/c1",
+      "frame_offset": 11,
+      "absolute_start": 283091,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_a_standing_long_jump_s3",
+      "clip_id": "sport/a_person_does_a_standing_long_jump_s3/c1",
+      "frame_offset": 10,
+      "absolute_start": 368410,
+      "frames": 50,
+      "stride": 2
+    },
+    {
+      "motion_id": "sport/a_person_does_lunges_s6",
+      "clip_id": "sport/a_person_does_lunges_s6/c0",
+      "frame_offset": 4,
+      "absolute_start": 387364,
+      "frames": 50,
+      "stride": 2
+    }
+  ]
+}
