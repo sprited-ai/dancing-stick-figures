@@ -152,6 +152,7 @@ def build(checkpoint: dict, device: str):
         "m6_latent_block_ar_v3_start_aligned", "m6_latent_block_ar_v4_decoded_rgba_aux",
         "m6_latent_block_ar_v5_noisy_history",
         "m6_latent_block_ar_v6_motion_weighted",
+        "m6_latent_block_ar_v7_fg_weighted",
         "r0_latent_full_clip_v1",
     ):
         raise ValueError("checkpoint is not a supported latent video protocol")
@@ -226,9 +227,15 @@ def generate_one(model, codec, standardizer, args, prompt: str, text_cache, seed
     if decode_mode == "full":
         rgba = decode_full(codec, standardizer, latent, output_size=int(args["output_size"]))
     elif decode_mode == "sliding":
+        # The bounded decode context is a cap on codec history, not part of the
+        # generation protocol; shrink it so the remaining latents split into
+        # whole commit blocks (e.g. history_max 12 over 25 rollout latents).
+        commit = int(args["target_latents"])
+        context = int(args["history_max"])
+        context = max(commit, context - (latent.shape[2] - context) % commit)
         rgba = decode_sliding(
-            codec, standardizer, latent, context_latents=int(args["history_max"]),
-            commit_latents=int(args["target_latents"]), output_size=int(args["output_size"]),
+            codec, standardizer, latent, context_latents=context,
+            commit_latents=commit, output_size=int(args["output_size"]),
         )
     else:
         raise ValueError(f"unknown decode mode: {decode_mode}")

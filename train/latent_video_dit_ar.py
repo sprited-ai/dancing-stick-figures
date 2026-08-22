@@ -87,6 +87,8 @@ def validate_experiment_protocol(
         expected["history_noise_max"] = float(model["history_noise_max"])
     if "motion_weight_alpha" in model:
         expected["motion_weight_alpha"] = float(model["motion_weight_alpha"])
+    if "fg_latent_weight" in model:
+        expected["fg_latent_weight"] = float(model["fg_latent_weight"])
     if "decoded_background_alpha_weight" in model:
         expected["decoded_background_alpha_weight"] = float(model["decoded_background_alpha_weight"])
     if task["generated_video_frames"] % temporal or model["target_video_frames_per_block"] % temporal:
@@ -246,6 +248,27 @@ def decoded_rgba_auxiliary_loss(
     return {"total": rgb_fg + alpha, "rgb_foreground": rgb_fg, "alpha": alpha}
 
 
+def foreground_latent_weight(
+    video: torch.Tensor, history: int, temporal: int, spatial: int, fg_weight: float,
+) -> torch.Tensor:
+    """Per-latent-cell flow-loss weight from ground-truth alpha coverage.
+
+    Thin limbs vanish under average pooling, so each latent cell takes the max
+    alpha over its spatiotemporal footprint: any cell the figure touches weighs
+    fg_weight, empty background cells weigh 1.  Normalized to per-sample mean 1
+    so the weighting redistributes gradient spatially without changing scale.
+    """
+    if video.shape[1] != 4 or fg_weight < 1:
+        raise ValueError("expected RGBA video and fg_weight >= 1")
+    if video.shape[2] % temporal or video.shape[3] % spatial or video.shape[4] % spatial:
+        raise ValueError("video geometry must divide the codec compression factors")
+    alpha = ((video[:, 3:4].float() + 1) / 2).clamp(0, 1)
+    pooled = torch.nn.functional.max_pool3d(alpha, kernel_size=(temporal, spatial, spatial))
+    weight = 1 + (fg_weight - 1) * pooled
+    weight = weight[:, :, history:]
+    return (weight / weight.mean(dim=(2, 3, 4), keepdim=True).clamp_min(1e-8)).detach()
+
+
 def flow_prediction_to_clean(
     model_input: torch.Tensor,
     prediction: torch.Tensor,
@@ -276,10 +299,16 @@ def flow_prediction_to_clean(
 def _protocol_id(
     attention_mode: str, training_mode: str = "block_ar", start_aligned: bool = False,
     decoded_loss_weight: float = 0.0, history_noise_max: float = 0.0,
-    motion_weight_alpha: float = 0.0,
+    motion_weight_alpha: float = 0.0, fg_latent_weight: float = 1.0,
 ) -> str:
     if training_mode == "full_clip":
         return "r0_latent_full_clip_v1"
+    if fg_latent_weight > 1:
+        if not start_aligned:
+            raise ValueError("foreground-weighted loss requires the corrected start-aligned protocol")
+        if decoded_loss_weight > 0 or history_noise_max > 0 or motion_weight_alpha > 0:
+            raise ValueError("foreground-weighted loss is a separate single-variable treatment")
+        return "m6_latent_block_ar_v7_fg_weighted"
     if decoded_loss_weight > 0:
         if not start_aligned:
             raise ValueError("decoded-RGBA supervision requires the corrected start-aligned protocol")
@@ -309,6 +338,7 @@ def save_checkpoint(path: Path, model, ema, optimizer, step: int, args: dict, co
             args["attention_mode"], args.get("training_mode", "block_ar"),
             args.get("start_aligned", False), args.get("decoded_loss_weight", 0.0),
             args.get("history_noise_max", 0.0), args.get("motion_weight_alpha", 0.0),
+            args.get("fg_latent_weight", 1.0),
         ),
         "codec": codec_meta,
     }
@@ -479,6 +509,12 @@ def main() -> None:
              "batch-normalized to mean 1 and clipped to [0.25, 4]",
     )
     parser.add_argument(
+        "--fg-latent-weight", type=float, default=1.0,
+        help="flow-loss weight for latent cells whose max-pooled ground-truth alpha "
+             "footprint contains figure pixels (background cells weigh 1; "
+             "per-sample mean-normalized so only the spatial distribution changes)",
+    )
+    parser.add_argument(
         "--history-noise-max", type=float, default=0.0,
         help="max flow-interpolation noise level applied to the teacher-forced history "
              "(uniform per sample; robustness augmentation, no extra conditioning)",
@@ -516,6 +552,8 @@ def main() -> None:
         parser.error("--history-noise-max must lie in [0, 1)")
     if args.motion_weight_alpha < 0:
         parser.error("--motion-weight-alpha must be nonnegative")
+    if args.fg_latent_weight < 1:
+        parser.error("--fg-latent-weight must be at least 1")
     if not 0 <= args.decoded_background_alpha_weight <= 1:
         parser.error("--decoded-background-alpha-weight must lie in [0,1]")
 
@@ -606,7 +644,7 @@ def main() -> None:
         saved = torch.load(args.resume, map_location=args.device, weights_only=False)
         if saved.get("protocol") != _protocol_id(
             args.attention_mode, args.training_mode, args.start_aligned, args.decoded_loss_weight,
-            args.history_noise_max, args.motion_weight_alpha,
+            args.history_noise_max, args.motion_weight_alpha, args.fg_latent_weight,
         ):
             raise ValueError("resume checkpoint is not the selected M6 attention protocol")
         expected_codec_sha = file_sha256(Path(args.codec))
@@ -652,13 +690,14 @@ def main() -> None:
     run_manifest = {
         "protocol": _protocol_id(
             args.attention_mode, args.training_mode, args.start_aligned, args.decoded_loss_weight,
-            args.history_noise_max, args.motion_weight_alpha,
+            args.history_noise_max, args.motion_weight_alpha, args.fg_latent_weight,
         ),
         "attention_mode": args.attention_mode,
         "training_mode": args.training_mode,
         "start_aligned": args.start_aligned,
         "history_noise_max": args.history_noise_max,
         "motion_weight_alpha": args.motion_weight_alpha,
+        "fg_latent_weight": args.fg_latent_weight,
         "decoded_rgba_auxiliary": {
             "enabled": args.decoded_loss_weight > 0,
             "weight": args.decoded_loss_weight,
@@ -756,9 +795,15 @@ def main() -> None:
         with torch.autocast("cuda", dtype=torch.bfloat16):
             prediction = train_model(model_input, timestep, cond=history_condition(conditioned, history),
                                      text=text, text_mask=text_mask, history_frames=history)
-            per_sample = (
+            flow_error = (
                 prediction[:, :, history:].float() - flow_target[:, :, history:]
-            ).square().mean(dim=(1, 2, 3, 4))
+            ).square()
+            if args.fg_latent_weight > 1:
+                flow_error = flow_error * foreground_latent_weight(
+                    video, history, temporal, codec.spatial_compression,
+                    args.fg_latent_weight,
+                )
+            per_sample = flow_error.mean(dim=(1, 2, 3, 4))
             if args.motion_weight_alpha > 0:
                 segment = clean[:, :, max(history - 1, 0):].float()
                 motion = segment.diff(dim=2).abs().mean(dim=(1, 2, 3, 4))

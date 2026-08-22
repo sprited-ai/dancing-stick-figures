@@ -313,3 +313,43 @@ def test_r0_protocol_is_same_full_st_model_without_ar_history():
         assert "training_mode" in str(error)
     else:
         raise AssertionError("R0 control must remain a full-clip training run")
+
+
+def test_foreground_latent_weight_upweights_figure_cells_only():
+    from train.latent_video_dit_ar import foreground_latent_weight
+
+    video = torch.full((2, 4, 8, 16, 16), -1.0)
+    # one thin 1-px limb inside the first spatial cell of the target segment
+    video[:, 3, 4:, 3, 0:2] = 1.0
+    weight = foreground_latent_weight(video, history=1, temporal=4, spatial=8, fg_weight=4.0)
+    assert weight.shape == (2, 1, 1, 2, 2)
+    # figure cell strictly above background cells despite covering 2/256 pixels
+    assert (weight[:, :, :, 0, 0] > weight[:, :, :, 1, 1]).all()
+    # per-sample mean 1: pure redistribution, no scale change
+    assert torch.allclose(weight.mean(dim=(2, 3, 4)), torch.ones(2, 1), atol=1e-5)
+    # empty background video degrades to uniform weight 1
+    uniform = foreground_latent_weight(
+        torch.full((1, 4, 8, 16, 16), -1.0), history=0, temporal=4, spatial=8, fg_weight=4.0,
+    )
+    assert torch.allclose(uniform, torch.ones_like(uniform), atol=1e-5)
+
+
+def test_fg_weighted_protocol_id_is_single_variable_and_start_aligned():
+    from train.latent_video_dit_ar import _protocol_id
+
+    assert _protocol_id("full", "block_ar", True, fg_latent_weight=4.0) == \
+        "m6_latent_block_ar_v7_fg_weighted"
+    assert _protocol_id("full", "block_ar", True, fg_latent_weight=1.0) == \
+        "m6_latent_block_ar_v3_start_aligned"
+    for kwargs in (
+        dict(start_aligned=False),
+        dict(start_aligned=True, motion_weight_alpha=1.0),
+        dict(start_aligned=True, history_noise_max=0.2),
+        dict(start_aligned=True, decoded_loss_weight=0.1),
+    ):
+        try:
+            _protocol_id("full", "block_ar", fg_latent_weight=4.0, **kwargs)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("fg-weighted treatment must stay single-variable and start-aligned")
