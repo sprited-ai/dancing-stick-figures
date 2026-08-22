@@ -153,6 +153,7 @@ def build(checkpoint: dict, device: str):
         "m6_latent_block_ar_v5_noisy_history",
         "m6_latent_block_ar_v6_motion_weighted",
         "m6_latent_block_ar_v7_fg_weighted",
+        "m6_latent_block_ar_v8_combined",
         "r0_latent_full_clip_v1",
     ):
         raise ValueError("checkpoint is not a supported latent video protocol")

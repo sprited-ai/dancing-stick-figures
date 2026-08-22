@@ -115,3 +115,43 @@ claim total-compute efficiency: the warm-start arm consumes an additional
   per arm, and R0's budget follows its own declared endpoint (10k vs 20k).
 - Artifacts: gin `results/r0_f8t4d16_fullst_10k_s0/` (+ `eval_n64/` with
   SHA256SUMS), collected to `pod_results/r0_f8t4d16_fullst_10k_s0/`.
+
+## M6 motion-collapse fix pilots -- completed (2026-08-22)
+
+Five matched single-variable 2k pilots against the start-aligned H8 2k control
+(TVR .745, centroid speed .300, motion fraction .403, height var .023; real
+floors .133/.314/.371/.061). Each declared its protocol config before results;
+identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
+
+| pilot | treatment | speed | mfrac | TVR | verdict |
+|---|---|---|---|---|---|
+| A h16 | 16-frame generation blocks | .507 | .682 | .760 | pass (overshoots) |
+| B v5 | history-noise augmentation 0.2 | .213 | .276 | -- | fail |
+| D v6 | motion-weighted flow loss a=1 | .383 | .523 | .738 | pass |
+| E hist24 | 2.4 s teacher-forced history | .187 | .232 | .748 | fail |
+| F v7 | foreground-alpha loss weight 4 | .327 | .455 | .757 | pass |
+
+- Reading: both history-side interventions suppress motion further, while all
+  three interventions that reallocate training signal toward moving figure
+  content revive it. Consistent with the ARDY horizon dose-response and with
+  its report that exposure-bias tricks were weak; the 2.4 s-history failure at
+  this budget shows long history alone (without ARDY's boundary-anchored
+  positional encoding and budget) is not the lever at 2k steps.
+- v7 detail: the transparent background dominates the 64x64 frame, so
+  unweighted latent MSE spends most of its gradient on cells that never move;
+  upweighting figure cells (max-pooled alpha footprint, weight 4, per-sample
+  mean-normalized) recovers real-level speed with control-level TVR.
+- Infrastructure note: the hist24 evaluation first crashed in the bounded
+  sliding decode (history_max 12 over 25 rollout latents leaves a partial
+  commit block); eval_m6 now shrinks the decode context to alignment. Verdict
+  above is from the fixed rerun.
+- Artifacts: gin `results/m6v{3,5,6,7}_*_2k_s0/` with `eval_n64/metrics.json`.
+
+## M6 v8 combined main run -- declared 2026-08-22, running
+
+- `configs/m6_protocol_v8_combined_h16_40k.json` declared before results:
+  h16 blocks + motion weighting + foreground weighting, 40k steps, milestone
+  n=64 evaluations at 2k/5k/10k/20k/30k/40k (config'd before any result).
+- Purpose: test whether the winner combination escapes the h8 structure-motion
+  Pareto front (no h8 checkpoint approaches both floors). Single seed;
+  component attribution rests on the matched pilots above.

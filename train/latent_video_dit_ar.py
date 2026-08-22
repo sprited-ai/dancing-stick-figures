@@ -306,8 +306,12 @@ def _protocol_id(
     if fg_latent_weight > 1:
         if not start_aligned:
             raise ValueError("foreground-weighted loss requires the corrected start-aligned protocol")
-        if decoded_loss_weight > 0 or history_noise_max > 0 or motion_weight_alpha > 0:
-            raise ValueError("foreground-weighted loss is a separate single-variable treatment")
+        if decoded_loss_weight > 0 or history_noise_max > 0:
+            raise ValueError("foreground-weighted loss composes only with motion weighting")
+        if motion_weight_alpha > 0:
+            # Declared winner combination of the 2026-08-22 single-variable
+            # pilots (h16 block + motion weighting + foreground weighting).
+            return "m6_latent_block_ar_v8_combined"
         return "m6_latent_block_ar_v7_fg_weighted"
     if decoded_loss_weight > 0:
         if not start_aligned:

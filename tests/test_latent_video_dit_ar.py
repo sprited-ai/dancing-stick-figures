@@ -341,9 +341,10 @@ def test_fg_weighted_protocol_id_is_single_variable_and_start_aligned():
         "m6_latent_block_ar_v7_fg_weighted"
     assert _protocol_id("full", "block_ar", True, fg_latent_weight=1.0) == \
         "m6_latent_block_ar_v3_start_aligned"
+    assert _protocol_id("full", "block_ar", True, fg_latent_weight=4.0,
+                        motion_weight_alpha=1.0) == "m6_latent_block_ar_v8_combined"
     for kwargs in (
         dict(start_aligned=False),
-        dict(start_aligned=True, motion_weight_alpha=1.0),
         dict(start_aligned=True, history_noise_max=0.2),
         dict(start_aligned=True, decoded_loss_weight=0.1),
     ):

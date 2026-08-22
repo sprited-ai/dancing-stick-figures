@@ -1,0 +1,59 @@
+{
+  "version": 8,
+  "declared_before_training_results": true,
+  "declared_at": "2026-08-22",
+  "purpose": "Main fix run combining the three winning single-variable 2k pilots against the measured M6 motion collapse: (A) 16-frame generation blocks (pilot speed .507 vs control .300), (D) motion-weighted flow loss alpha 1 (pilot speed .383), (F) foreground-alpha-weighted flow loss 4 (pilot speed .327, real .314, control-level TVR). The losing pilots (history-noise .213, 2.4s history .187) both intervened on the history side; all three winners reallocate training signal toward moving figure content, so they are combined. Budget follows Jin's much-longer-training directive: 40k steps with predeclared n=64 milestone evaluations at 2k/5k/10k/20k/30k/40k to extend the structure-motion trade-off curve. Claim limit: single seed; milestone curve diagnoses whether the combination escapes the h8 Pareto front, not a final ranking.",
+  "task": {
+    "resolution": 64,
+    "fps": 20,
+    "generated_video_frames": 100,
+    "duration_seconds": 5,
+    "condition": "text prompt",
+    "split": "prompt-disjoint test"
+  },
+  "frozen_model": {
+    "codec_selection_protocol": "configs/codec_selection_f8t4d16_reference.json",
+    "backbone": "full spatiotemporal DiT with signed local temporal and spatial 3D RoPE",
+    "attention_mode": "full",
+    "training_mode": "block_ar",
+    "start_aligned": true,
+    "history_seconds": 1,
+    "target_video_frames_per_block": 16,
+    "teacher_forcing": "clean ground-truth history during training; generated history during rollout",
+    "variable_history": true,
+    "rectified_flow": true,
+    "text_encoder": "frozen google-t5/t5-small",
+    "primary_sampling_steps_per_block": 10,
+    "cfg": 2.0,
+    "training_seed": 0,
+    "planned_optimizer_steps": 40000,
+    "motion_weight_alpha": 1.0,
+    "fg_latent_weight": 4.0
+  },
+  "milestones": [
+    0,
+    2000,
+    5000,
+    10000,
+    20000,
+    30000,
+    40000
+  ],
+  "milestone_evaluation": {
+    "n": 64,
+    "sensitivity_n": 8,
+    "sampler_steps": 10,
+    "cfg": 2.0,
+    "noise_seed": 20260824,
+    "split": "test",
+    "comparison_block_frames": 4,
+    "declared_before_any_milestone_result": true
+  },
+  "validation": {
+    "every_steps": 250,
+    "fixed_timestep_and_noise_seed": 20260822,
+    "first_block_definition": "true clip frames 0-15",
+    "claim_limit": "Single-seed combined-treatment run; attribution of any gain to individual components rests on the matched 2k pilots, not on this run."
+  },
+  "matched_control": "configs/m6_protocol_v3_start_aligned_h8_100k.json"
+}
