@@ -230,15 +230,23 @@ def m6_milestone_tradeoff():
                                    ("motion fraction", "motion_fraction"),
                                    ("height variance", "height_var")]),
     ]
+    long_run = data.get("h8_100k_run")
+    long_steps = sorted(int(s) for s in long_run["milestones"]) if long_run else []
+    long_series = {step: long_run["milestones"][str(step)] for step in long_steps} if long_run else {}
     fig, axes = plt.subplots(1, 2, figsize=(7.15, 2.35), gridspec_kw={"wspace": .30})
     colors = [PURPLE, TEAL, ORANGE]
     for ax, (title, metrics) in zip(axes, panels):
         for color, (label, key) in zip(colors, metrics):
             ax.plot(steps, [series[s][key] / real[key] for s in steps],
                     marker="o", ms=3, lw=1.2, color=color, label=label)
+            if long_series:
+                ax.plot(long_steps, [long_series[s][key] / real[key] for s in long_steps],
+                        marker="s", ms=3, lw=1.2, ls=":", color=color, mfc="white")
             if r0 is not None:
                 ax.plot([steps[-1]], [r0[key] / real[key]], marker="D", ms=4,
                         color=color, mec="#222222", mew=.6, ls="none")
+        if long_series:
+            ax.set_xscale("log")
         ax.axhline(1, color="#222222", lw=.8, ls="--")
         ax.set_xlabel("H8 block-AR training step")
         ax.set_ylabel("generated / real value")
@@ -248,6 +256,10 @@ def m6_milestone_tradeoff():
     if r0 is not None:
         axes[1].plot([], [], marker="D", ms=4, color="#999999", mec="#222222",
                      mew=.6, ls="none", label="R0 full-clip 10k")
+    if long_series:
+        axes[1].plot([], [], marker="s", ms=3, lw=1.2, ls=":", color="#999999",
+                     mfc="white", label="independent 100k run")
+    if r0 is not None or long_series:
         axes[1].legend(loc="upper right")
     fig.savefig(FIGS / "m6_milestone_tradeoff.pdf")
     fig.savefig(FIGS / "m6_milestone_tradeoff.png")

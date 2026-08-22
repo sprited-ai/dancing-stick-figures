@@ -147,6 +147,22 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   above is from the fixed rerun.
 - Artifacts: gin `results/m6v{3,5,6,7}_*_2k_s0/` with `eval_n64/metrics.json`.
 
+## M6 h8 100k convergence run -- completed (2026-08-22)
+
+- Independent fresh 100k run of the h8 start-aligned protocol
+  (`configs/m6_protocol_v3_start_aligned_h8_100k.json`), evaluated at
+  10k/20k/40k/60k/80k/100k under the convergence rule declared before results
+  (`configs/m6_r0_convergence_evaluation_v1.json`), n=64 each.
+- Result: frame structure converges through the real floors (TVR .434 -> .097,
+  LIE .193 -> .075 versus real .133/.110) while motion stays collapsed the
+  whole way: centroid speed .134 -> .115 (real .314), motion fraction
+  .137 -> .111 (real .371), height variance ~.008 (real .061). Prompt/noise
+  L1 ratio stays in .67-.82 with no trend.
+- Reading: the freeze is structural, not under-training -- 100k steps buy
+  ever-cleaner statues. Milestone series checked into
+  `paper/results/m6_h8_milestones_n64.json` (`h8_100k_run`); figure and paper
+  text updated (fig:m6 dotted squares).
+
 ## M6 v8 combined main run -- declared 2026-08-22, running
 
 - `configs/m6_protocol_v8_combined_h16_40k.json` declared before results:

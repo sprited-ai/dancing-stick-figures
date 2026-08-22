@@ -286,7 +286,12 @@ collapses early and then flatlines: by step 10k centroid speed falls from $.300$
 $.403$ to $.155$, and pose height variance to one sixth of the real value. Per prompt the model is not uniformly
 static — locomotion prompts keep moving while gesture prompts complete one action and rest, echoing the
 action-then-rest profile of the data — but the aggregate statistics sit far below matched real clips, so the collapse
-is genuine.
+is genuine. An independent 100k-step run of the same protocol, evaluated under a convergence rule declared before its
+results, settles the question of whether the collapse is under-training: frame structure converges through the real
+floors (TVR $.097$ and LIE $.075$ at 100k, below the real $.133$/$.110$) while centroid speed stays pinned near
+$.11$--$.13$ from step 10k onward — about a third of the real value — and never recovers (Figure~\ref{fig:m6},
+dotted). The model learns to draw ever-cleaner figures that barely move; the freeze is structural, not a budget
+artifact.
 
 \paragraph{Full-clip latent control R0.} R0 keeps the frozen codec, backbone family, text encoder, flow objective,
 optimizer, and seed, and denoises the complete 25-latent (100-frame) clip jointly with no history prefix for a
@@ -303,8 +308,9 @@ runs are single-seed, and R0's budget follows its own declared endpoint.
 \includegraphics[width=0.96\textwidth]{paper/figs/m6_milestone_tradeoff.pdf}
 \caption{Pre-declared milestone evaluation of the block-autoregressive latent model ($n{=}64$ per checkpoint, paired
 prompts and noise, values normalized by the real reference). Structure converges toward its occlusion floor while
-motion calibration collapses by step 10k and does not recover; later checkpoints trade motion for anatomy. Diamonds
-mark the matched full-clip control R0 at its 10k endpoint.}
+motion calibration collapses by step 10k and does not recover; later checkpoints trade motion for anatomy. Dotted
+squares show an independent 100k run of the same protocol: structure passes below the real floor while motion stays
+collapsed. Diamonds mark the matched full-clip control R0 at its 10k endpoint.}
 \label{fig:m6}\end{figure*}
 
 \begin{table}[t]\centering\caption{What can be claimed from v0.1, and what cannot.}\label{tab:status}\scriptsize

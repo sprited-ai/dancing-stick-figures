@@ -90,5 +90,88 @@
   "angle_jerk": 0.22045533194238728,
   "prompt_noise_ratio": 0.48473071157171504
  },
- "r0_note": "r0_f8t4d16_fullst_10k_s0 at its declared 10k endpoint, sampler 10 steps, same n/prompts/noise"
+ "r0_note": "r0_f8t4d16_fullst_10k_s0 at its declared 10k endpoint, sampler 10 steps, same n/prompts/noise",
+ "h8_100k_run": {
+  "run": "m6v3_start_aligned_h8_100k_s0",
+  "protocol": "configs/m6_protocol_v3_start_aligned_h8_100k.json",
+  "n": 64,
+  "sampler_steps": 10,
+  "cfg": 2.0,
+  "seed": 20260824,
+  "note": "independent fresh 100k run of the same h8 protocol (not a resume of the 20k run); milestones evaluated after completion under the predeclared convergence protocol",
+  "milestones": {
+   "10000": {
+    "tvr": 0.43353515625000005,
+    "lie": 0.1928125,
+    "cpe": 0.08157851345609679,
+    "fg": 0.05908893585205078,
+    "centroid_speed": 0.13394445121179901,
+    "centroid_accel": 0.18588412892304795,
+    "motion_fraction": 0.1369949494949495,
+    "height_var": 0.008410736257137213,
+    "angle_jerk": 0.08955954953482881,
+    "prompt_noise_ratio": 0.7369375636079805
+   },
+   "20000": {
+    "tvr": 0.3094140625,
+    "lie": 0.13871093750000002,
+    "cpe": 0.07220515755441555,
+    "fg": 0.060303993225097656,
+    "centroid_speed": 0.09970317615560259,
+    "centroid_accel": 0.1428620173913989,
+    "motion_fraction": 0.07954545454545454,
+    "height_var": 0.00579392159412004,
+    "angle_jerk": 0.05607050901726529,
+    "prompt_noise_ratio": 0.6664687592274542
+   },
+   "40000": {
+    "tvr": 0.19146484375,
+    "lie": 0.12791015625,
+    "cpe": 0.05387226765591445,
+    "fg": 0.059000740051269526,
+    "centroid_speed": 0.09927862926778376,
+    "centroid_accel": 0.14232829525395302,
+    "motion_fraction": 0.0798611111111111,
+    "height_var": 0.006324610013945542,
+    "angle_jerk": 0.036239835379044814,
+    "prompt_noise_ratio": 0.782027858063489
+   },
+   "60000": {
+    "tvr": 0.17513671874999998,
+    "lie": 0.12638671875000002,
+    "cpe": 0.050249260410881146,
+    "fg": 0.059386024475097665,
+    "centroid_speed": 0.11413268211008634,
+    "centroid_accel": 0.16337362595120947,
+    "motion_fraction": 0.10969065656565657,
+    "height_var": 0.008006088020953876,
+    "angle_jerk": 0.04331180765474149,
+    "prompt_noise_ratio": 0.8163212509488266
+   },
+   "80000": {
+    "tvr": 0.12625,
+    "lie": 0.09142578125,
+    "cpe": 0.040820167332182036,
+    "fg": 0.06047603607177734,
+    "centroid_speed": 0.10950636751277247,
+    "centroid_accel": 0.1520884816207217,
+    "motion_fraction": 0.10369318181818182,
+    "height_var": 0.007632901713636345,
+    "angle_jerk": 0.03575697284540291,
+    "prompt_noise_ratio": 0.7745829061762356
+   },
+   "100000": {
+    "tvr": 0.09718750000000001,
+    "lie": 0.07486328125,
+    "cpe": 0.03243794912765591,
+    "fg": 0.061352195739746096,
+    "centroid_speed": 0.11538195958075684,
+    "centroid_accel": 0.16389986290547012,
+    "motion_fraction": 0.11142676767676768,
+    "height_var": 0.008853725123076911,
+    "angle_jerk": 0.038440037733631034,
+    "prompt_noise_ratio": 0.7627218957090753
+   }
+  }
+ }
 }
