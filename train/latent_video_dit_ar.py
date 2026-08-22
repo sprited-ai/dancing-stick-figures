@@ -85,6 +85,8 @@ def validate_experiment_protocol(
         expected["decoded_loss_weight"] = float(model["decoded_loss_weight"])
     if "history_noise_max" in model:
         expected["history_noise_max"] = float(model["history_noise_max"])
+    if "motion_weight_alpha" in model:
+        expected["motion_weight_alpha"] = float(model["motion_weight_alpha"])
     if "decoded_background_alpha_weight" in model:
         expected["decoded_background_alpha_weight"] = float(model["decoded_background_alpha_weight"])
     if task["generated_video_frames"] % temporal or model["target_video_frames_per_block"] % temporal:
@@ -274,6 +276,7 @@ def flow_prediction_to_clean(
 def _protocol_id(
     attention_mode: str, training_mode: str = "block_ar", start_aligned: bool = False,
     decoded_loss_weight: float = 0.0, history_noise_max: float = 0.0,
+    motion_weight_alpha: float = 0.0,
 ) -> str:
     if training_mode == "full_clip":
         return "r0_latent_full_clip_v1"
@@ -286,7 +289,13 @@ def _protocol_id(
     if history_noise_max > 0:
         if not start_aligned:
             raise ValueError("history-noise augmentation requires the corrected start-aligned protocol")
+        if motion_weight_alpha > 0:
+            raise ValueError("history-noise and motion-weighted-loss are separate treatments")
         return "m6_latent_block_ar_v5_noisy_history"
+    if motion_weight_alpha > 0:
+        if not start_aligned or decoded_loss_weight > 0:
+            raise ValueError("motion-weighted loss requires start alignment and no decoded auxiliary")
+        return "m6_latent_block_ar_v6_motion_weighted"
     if start_aligned:
         return "m6_latent_block_ar_v3_start_aligned"
     return "m6_latent_block_ar_v2_full_st" if attention_mode == "full" else "m6_latent_block_ar_v1"
@@ -299,7 +308,7 @@ def save_checkpoint(path: Path, model, ema, optimizer, step: int, args: dict, co
         "protocol": _protocol_id(
             args["attention_mode"], args.get("training_mode", "block_ar"),
             args.get("start_aligned", False), args.get("decoded_loss_weight", 0.0),
-            args.get("history_noise_max", 0.0),
+            args.get("history_noise_max", 0.0), args.get("motion_weight_alpha", 0.0),
         ),
         "codec": codec_meta,
     }
@@ -465,6 +474,11 @@ def main() -> None:
         help="relative alpha-loss weight for transparent target pixels",
     )
     parser.add_argument(
+        "--motion-weight-alpha", type=float, default=0.0,
+        help="weight each sample's flow loss by (target latent temporal difference)^alpha, "
+             "batch-normalized to mean 1 and clipped to [0.25, 4]",
+    )
+    parser.add_argument(
         "--history-noise-max", type=float, default=0.0,
         help="max flow-interpolation noise level applied to the teacher-forced history "
              "(uniform per sample; robustness augmentation, no extra conditioning)",
@@ -500,6 +514,8 @@ def main() -> None:
         parser.error("--decoded-loss-weight must be nonnegative")
     if not 0 <= args.history_noise_max < 1:
         parser.error("--history-noise-max must lie in [0, 1)")
+    if args.motion_weight_alpha < 0:
+        parser.error("--motion-weight-alpha must be nonnegative")
     if not 0 <= args.decoded_background_alpha_weight <= 1:
         parser.error("--decoded-background-alpha-weight must lie in [0,1]")
 
@@ -590,7 +606,7 @@ def main() -> None:
         saved = torch.load(args.resume, map_location=args.device, weights_only=False)
         if saved.get("protocol") != _protocol_id(
             args.attention_mode, args.training_mode, args.start_aligned, args.decoded_loss_weight,
-            args.history_noise_max,
+            args.history_noise_max, args.motion_weight_alpha,
         ):
             raise ValueError("resume checkpoint is not the selected M6 attention protocol")
         expected_codec_sha = file_sha256(Path(args.codec))
@@ -636,12 +652,13 @@ def main() -> None:
     run_manifest = {
         "protocol": _protocol_id(
             args.attention_mode, args.training_mode, args.start_aligned, args.decoded_loss_weight,
-            args.history_noise_max,
+            args.history_noise_max, args.motion_weight_alpha,
         ),
         "attention_mode": args.attention_mode,
         "training_mode": args.training_mode,
         "start_aligned": args.start_aligned,
         "history_noise_max": args.history_noise_max,
+        "motion_weight_alpha": args.motion_weight_alpha,
         "decoded_rgba_auxiliary": {
             "enabled": args.decoded_loss_weight > 0,
             "weight": args.decoded_loss_weight,
@@ -739,9 +756,17 @@ def main() -> None:
         with torch.autocast("cuda", dtype=torch.bfloat16):
             prediction = train_model(model_input, timestep, cond=history_condition(conditioned, history),
                                      text=text, text_mask=text_mask, history_frames=history)
-            latent_loss = (
+            per_sample = (
                 prediction[:, :, history:].float() - flow_target[:, :, history:]
-            ).square().mean()
+            ).square().mean(dim=(1, 2, 3, 4))
+            if args.motion_weight_alpha > 0:
+                segment = clean[:, :, max(history - 1, 0):].float()
+                motion = segment.diff(dim=2).abs().mean(dim=(1, 2, 3, 4))
+                weight = (motion + 1e-4) ** args.motion_weight_alpha
+                weight = (weight / weight.mean().clamp_min(1e-8)).clamp(0.25, 4.0)
+                latent_loss = (weight.detach() * per_sample).mean()
+            else:
+                latent_loss = per_sample.mean()
             decoded_aux = None
             loss = latent_loss
             if args.decoded_loss_weight > 0:
