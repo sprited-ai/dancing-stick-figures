@@ -1,0 +1,90 @@
+{
+  "version": 2,
+  "declared_before_training_results": true,
+  "declared_at": "2026-08-22",
+  "purpose": "Separately-labelled convergence extension of the matched full-clip control: a fresh run with a 50k-step cosine schedule. Tests whether R0 topology approaches the block-AR model's while its motion calibration stays near the real reference.",
+  "task": {
+    "resolution": 64,
+    "fps": 20,
+    "generated_video_frames": 100,
+    "duration_seconds": 5,
+    "condition": "text prompt",
+    "split": "prompt-disjoint test"
+  },
+  "frozen_model": {
+    "codec_selection_protocol": "configs/codec_selection_f8t4d16_reference.json",
+    "codec_checkpoint_and_latent_stats": "record exact SHA256 after visual codec gate",
+    "backbone": "full spatiotemporal DiT with 3D RoPE",
+    "attention_mode": "full",
+    "training_mode": "full_clip",
+    "history_seconds": 0,
+    "target_video_frames_per_block": 100,
+    "teacher_forcing": "not applicable; entire latent clip is noised and denoised jointly",
+    "variable_history": false,
+    "rectified_flow": true,
+    "text_encoder": "frozen google-t5/t5-small",
+    "primary_sampling_steps_per_block": 10,
+    "secondary_sampling_steps_per_block": 20,
+    "cfg": 2.0,
+    "training_seed": 0,
+    "planned_optimizer_steps": 50000
+  },
+  "milestones": [
+    0,
+    100,
+    250,
+    500,
+    1000,
+    2000,
+    5000,
+    10000,
+    20000,
+    30000,
+    40000,
+    50000
+  ],
+  "validation": {
+    "every_steps": 250,
+    "fixed_timestep_and_noise_seed": 20260822,
+    "losses": [
+      "full_clip_flow_mse"
+    ],
+    "claim_limit": "This is a matched small reference, not a reproduction of Wan or CogVideoX training scale."
+  },
+  "final_evaluation": {
+    "generated_samples": 64,
+    "explicit_paired_noise_seeds": true,
+    "paired_noise_policy": "materialize one complete latent-noise tensor per seed; R0 consumes it jointly and M6 consumes the identical tensor in temporal block slices",
+    "sampler_steps": [
+      10,
+      20
+    ],
+    "common_virtual_boundary_video_frames": 4,
+    "compare_to": "M6 v2 with the same frozen codec and full-ST backbone",
+    "metrics": [
+      "TVR",
+      "LIE",
+      "CPE",
+      "foreground occupancy",
+      "motion and jerk",
+      "four-frame virtual-boundary versus within transitions",
+      "repetition",
+      "prompt sensitivity",
+      "seconds per frame",
+      "peak VRAM"
+    ]
+  },
+  "hard_correctness_gates": {
+    "checkpoint_codec_and_stats_sha256_match": true,
+    "output_shape": [
+      4,
+      100,
+      64,
+      64
+    ],
+    "finite_outputs": true,
+    "no_all_background_or_all_foreground_collapse": true
+  },
+  "extension_rule": "The original 10k endpoint stays the declared v1 result; this v2 run is reported separately and keeps the checkpoint-bound protocol unchanged.",
+  "extension_of": "configs/r0_full_clip_latent_protocol_v1.json"
+}

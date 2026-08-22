@@ -1,0 +1,46 @@
+{
+  "version": 3,
+  "declared_before_training_results": true,
+  "declared_at": "2026-08-22",
+  "purpose": "Fix pilot for the measured motion collapse: a sixteen-video-frame generation horizon as the midpoint of the measured H8/H40 motion-topology dial. Matched to the H8 2k control in everything else.",
+  "task": {
+    "resolution": 64,
+    "fps": 20,
+    "generated_video_frames": 100,
+    "duration_seconds": 5,
+    "condition": "text prompt",
+    "split": "prompt-disjoint test"
+  },
+  "frozen_model": {
+    "codec_selection_protocol": "configs/codec_selection_f8t4d16_reference.json",
+    "backbone": "full spatiotemporal DiT with signed local temporal and spatial 3D RoPE",
+    "attention_mode": "full",
+    "training_mode": "block_ar",
+    "start_aligned": true,
+    "history_seconds": 1,
+    "target_video_frames_per_block": 16,
+    "teacher_forcing": "clean ground-truth history during training; generated history during rollout",
+    "variable_history": true,
+    "rectified_flow": true,
+    "text_encoder": "frozen google-t5/t5-small",
+    "primary_sampling_steps_per_block": 10,
+    "cfg": 2.0,
+    "training_seed": 0,
+    "planned_optimizer_steps": 2000
+  },
+  "milestones": [
+    0,
+    100,
+    250,
+    500,
+    1000,
+    2000
+  ],
+  "validation": {
+    "every_steps": 250,
+    "fixed_timestep_and_noise_seed": 20260822,
+    "first_block_definition": "true clip frames 0-7",
+    "claim_limit": "A two-thousand-step single-seed pilot diagnoses motion onset; it is not a final architecture ranking."
+  },
+  "matched_control": "configs/m6_protocol_v3_start_aligned_h8_pilot.json"
+}

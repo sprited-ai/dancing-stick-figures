@@ -83,6 +83,8 @@ def validate_experiment_protocol(
         expected["start_aligned"] = bool(model["start_aligned"])
     if "decoded_loss_weight" in model:
         expected["decoded_loss_weight"] = float(model["decoded_loss_weight"])
+    if "history_noise_max" in model:
+        expected["history_noise_max"] = float(model["history_noise_max"])
     if "decoded_background_alpha_weight" in model:
         expected["decoded_background_alpha_weight"] = float(model["decoded_background_alpha_weight"])
     if task["generated_video_frames"] % temporal or model["target_video_frames_per_block"] % temporal:
@@ -271,14 +273,20 @@ def flow_prediction_to_clean(
 
 def _protocol_id(
     attention_mode: str, training_mode: str = "block_ar", start_aligned: bool = False,
-    decoded_loss_weight: float = 0.0,
+    decoded_loss_weight: float = 0.0, history_noise_max: float = 0.0,
 ) -> str:
     if training_mode == "full_clip":
         return "r0_latent_full_clip_v1"
     if decoded_loss_weight > 0:
         if not start_aligned:
             raise ValueError("decoded-RGBA supervision requires the corrected start-aligned protocol")
+        if history_noise_max > 0:
+            raise ValueError("decoded-RGBA supervision and history-noise augmentation are separate treatments")
         return "m6_latent_block_ar_v4_decoded_rgba_aux"
+    if history_noise_max > 0:
+        if not start_aligned:
+            raise ValueError("history-noise augmentation requires the corrected start-aligned protocol")
+        return "m6_latent_block_ar_v5_noisy_history"
     if start_aligned:
         return "m6_latent_block_ar_v3_start_aligned"
     return "m6_latent_block_ar_v2_full_st" if attention_mode == "full" else "m6_latent_block_ar_v1"
@@ -291,6 +299,7 @@ def save_checkpoint(path: Path, model, ema, optimizer, step: int, args: dict, co
         "protocol": _protocol_id(
             args["attention_mode"], args.get("training_mode", "block_ar"),
             args.get("start_aligned", False), args.get("decoded_loss_weight", 0.0),
+            args.get("history_noise_max", 0.0),
         ),
         "codec": codec_meta,
     }
@@ -455,6 +464,11 @@ def main() -> None:
         "--decoded-background-alpha-weight", type=float, default=0.02,
         help="relative alpha-loss weight for transparent target pixels",
     )
+    parser.add_argument(
+        "--history-noise-max", type=float, default=0.0,
+        help="max flow-interpolation noise level applied to the teacher-forced history "
+             "(uniform per sample; robustness augmentation, no extra conditioning)",
+    )
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--steps", type=int, default=10000)
     parser.add_argument("--lr", type=float, default=2e-4)
@@ -484,6 +498,8 @@ def main() -> None:
 
     if args.decoded_loss_weight < 0:
         parser.error("--decoded-loss-weight must be nonnegative")
+    if not 0 <= args.history_noise_max < 1:
+        parser.error("--history-noise-max must lie in [0, 1)")
     if not 0 <= args.decoded_background_alpha_weight <= 1:
         parser.error("--decoded-background-alpha-weight must lie in [0,1]")
 
@@ -574,6 +590,7 @@ def main() -> None:
         saved = torch.load(args.resume, map_location=args.device, weights_only=False)
         if saved.get("protocol") != _protocol_id(
             args.attention_mode, args.training_mode, args.start_aligned, args.decoded_loss_weight,
+            args.history_noise_max,
         ):
             raise ValueError("resume checkpoint is not the selected M6 attention protocol")
         expected_codec_sha = file_sha256(Path(args.codec))
@@ -619,10 +636,12 @@ def main() -> None:
     run_manifest = {
         "protocol": _protocol_id(
             args.attention_mode, args.training_mode, args.start_aligned, args.decoded_loss_weight,
+            args.history_noise_max,
         ),
         "attention_mode": args.attention_mode,
         "training_mode": args.training_mode,
         "start_aligned": args.start_aligned,
+        "history_noise_max": args.history_noise_max,
         "decoded_rgba_auxiliary": {
             "enabled": args.decoded_loss_weight > 0,
             "weight": args.decoded_loss_weight,
@@ -703,14 +722,22 @@ def main() -> None:
         dropped = torch.rand(clean.shape[0], device=args.device) < args.cfg_drop
         text = torch.where(dropped[:, None, None], null_text, text)
         text_mask = torch.where(dropped[:, None], null_mask, text_mask)
-        model_input, flow_target, timestep = _make_flow_batch(clean, history, args.shift)
+        conditioned = clean
+        if args.history_noise_max > 0 and history:
+            strength = torch.rand(clean.shape[0], 1, 1, 1, 1, device=clean.device) * args.history_noise_max
+            conditioned = clean.clone()
+            conditioned[:, :, :history] = (
+                (1 - strength) * clean[:, :, :history]
+                + strength * torch.randn_like(clean[:, :, :history])
+            )
+        model_input, flow_target, timestep = _make_flow_batch(conditioned, history, args.shift)
         progress = max(0.0, (step-args.warmup) / max(1, args.steps-args.warmup))
         lr = args.lr * min(1.0, (step+1)/max(1,args.warmup))
         lr *= args.lr_final + (1-args.lr_final)*0.5*(1+math.cos(math.pi*progress))
         for group in optimizer.param_groups: group["lr"] = lr
         optimizer.zero_grad(set_to_none=True)
         with torch.autocast("cuda", dtype=torch.bfloat16):
-            prediction = train_model(model_input, timestep, cond=history_condition(clean, history),
+            prediction = train_model(model_input, timestep, cond=history_condition(conditioned, history),
                                      text=text, text_mask=text_mask, history_frames=history)
             latent_loss = (
                 prediction[:, :, history:].float() - flow_target[:, :, history:]
