@@ -1,0 +1,94 @@
+{
+ "run": "m6v3_start_aligned_h8_20k_s0",
+ "n": 64,
+ "sampler_steps": 10,
+ "cfg": 2.0,
+ "seed": 20260824,
+ "note": "step 2000 point comes from the matched decoded-aux control evaluation (same protocol)",
+ "milestones": {
+  "2000": {
+   "tvr": 0.7445312500000001,
+   "lie": 0.26146484375,
+   "cpe": 0.12070193905436657,
+   "fg": 0.060329437255859375,
+   "centroid_speed": 0.3003115574828304,
+   "centroid_accel": 0.406230003945592,
+   "motion_fraction": 0.40309343434343436,
+   "height_var": 0.02348040504865344,
+   "angle_jerk": 0.21672422862789625,
+   "prompt_noise_ratio": 0.47890470256699436
+  },
+  "5000": {
+   "tvr": 0.5849023437499999,
+   "lie": 0.2244140625,
+   "cpe": 0.09212419097105047,
+   "fg": 0.05857894897460938,
+   "centroid_speed": 0.19003028572251812,
+   "centroid_accel": 0.25658849797053046,
+   "motion_fraction": 0.23642676767676768,
+   "height_var": 0.014536193062002534,
+   "angle_jerk": 0.14529705493128803,
+   "prompt_noise_ratio": 0.7657354042182364
+  },
+  "10000": {
+   "tvr": 0.44908203125,
+   "lie": 0.21619140625,
+   "cpe": 0.08422918853460162,
+   "fg": 0.05929428100585937,
+   "centroid_speed": 0.14218537429639436,
+   "centroid_accel": 0.19566598693915938,
+   "motion_fraction": 0.15214646464646464,
+   "height_var": 0.010589394210087104,
+   "angle_jerk": 0.09637731717354368,
+   "prompt_noise_ratio": 0.627808199303418
+  },
+  "15000": {
+   "tvr": 0.36892578125000003,
+   "lie": 0.18619140625000002,
+   "cpe": 0.07688721399402848,
+   "fg": 0.058238067626953126,
+   "centroid_speed": 0.14388089553707006,
+   "centroid_accel": 0.19778737703309254,
+   "motion_fraction": 0.16130050505050506,
+   "height_var": 0.009713812550386487,
+   "angle_jerk": 0.09067826016094413,
+   "prompt_noise_ratio": 0.8524704102178373
+  },
+  "20000": {
+   "tvr": 0.34853515625,
+   "lie": 0.18837890624999998,
+   "cpe": 0.075080086856603,
+   "fg": 0.057686996459960935,
+   "centroid_speed": 0.14193339231044866,
+   "centroid_accel": 0.1940729513113727,
+   "motion_fraction": 0.15514520202020204,
+   "height_var": 0.00955021041712539,
+   "angle_jerk": 0.08859983995371187,
+   "prompt_noise_ratio": 0.8001249911329925
+  }
+ },
+ "real_reference": {
+  "tvr": 0.13314453125,
+  "lie": 0.110078125,
+  "cpe": 0.0396787892915912,
+  "fg": 0.05845367431640625,
+  "centroid_speed": 0.314352166347581,
+  "centroid_accel": 0.3115811342663205,
+  "motion_fraction": 0.37073863636363635,
+  "height_var": 0.060682712505402664,
+  "angle_jerk": 0.059053210142206616
+ },
+ "r0_reference": {
+  "tvr": 0.45578124999999997,
+  "lie": 0.20503906249999998,
+  "cpe": 0.08240498747022659,
+  "fg": 0.058012809753417965,
+  "centroid_speed": 0.3822196817402095,
+  "centroid_accel": 0.4551260484666695,
+  "motion_fraction": 0.5397727272727273,
+  "height_var": 0.04315637584112048,
+  "angle_jerk": 0.22045533194238728,
+  "prompt_noise_ratio": 0.48473071157171504
+ },
+ "r0_note": "r0_f8t4d16_fullst_10k_s0 at its declared 10k endpoint, sampler 10 steps, same n/prompts/noise"
+}

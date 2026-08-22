@@ -214,6 +214,14 @@ also move farther away. Figure~\ref{fig:k1} makes this tradeoff explicit. Becaus
 run resumed from step 6000 after a storage interruption; model, EMA, and optimizer state were restored, but random
 number and data-order state restarted.
 
+\begin{figure*}[t]\centering
+\includegraphics[width=0.96\textwidth]{paper/figs/k1_warmstart_tradeoff.pdf}
+\caption{Corrected K1 evaluation on the released colour data ($n=64$, paired prompts and noise). Values are normalized
+by the corresponding real-reference statistic, so proximity to the dashed line is desirable for two-sided signals.
+Warm-starting strongly improves topology and occupancy, but over-amplifies image-space translation. LIE below the real
+reference is not ``superhuman'': occlusion makes real topology non-zero, while a generated figure can be simpler.}
+\label{fig:k1}\end{figure*}
+
 \begin{table*}[t]\centering
 \caption{The implemented M0--M3 curriculum. Each stage asks one question, preserves its artifacts, and exposes a
 failure that motivates the next stage. M2 and M3 use $64^2\!\times\!50$ output at 10 fps.}
@@ -255,20 +263,56 @@ variable-history block-autoregressive model: completed history is immutable, the
 and frames inside that block still interact bidirectionally, following the windowed distinction used by interactive
 motion and chunked-video systems~\cite{zhao2026ardy,magi2025}.
 
+\paragraph{Latent long-horizon track: a frozen causal codec.} To make block-autoregressive training and 100-frame
+rollouts affordable we leave pixel space: a 3D causal video VAE (spatial stride 8, temporal stride 4, 16 latent
+channels) is trained for 40k steps on the released RGBA frames and then frozen, with checkpoint and latent statistics
+pinned by SHA-256. On held-out clips it reconstructs at alpha IoU $.952$ and $\approx$34\,dB PSNR, and a sliding-window
+decode audit over 100-frame clips shows no causal-prefix error or boundary flicker. The higher temporal compression was
+adopted over a conservative alternative (stride 2, 32 channels) through a pre-declared reconstruction gate rather than
+throughput preference.
+
+\paragraph{Block-autoregressive M6 and its convergence trade-off.} M6 is a 39.8M full-spatiotemporal latent DiT with 3D
+rotary embeddings: an immutable clean-history prefix of up to five latent blocks ($\approx$1\,s) conditions
+rectified-flow denoising of the next two-latent block (eight video frames), teacher-forced in training and rolled out
+to 100 frames at 20\,fps. Small pre-runs expose a generation-horizon dial ($n{=}4$, 2k steps): a four-frame target
+block nearly freezes (centroid speed $.120$ versus real $.314$), eight frames is balanced ($.294$), and forty frames
+overshoots motion ($.713$) with the worst topology (TVR $.797$). A decoded-RGBA auxiliary loss through the frozen
+decoder — differentiable end-to-end, at $1.6\times$ step cost — improved limb existence by 11\% but worsened topology,
+occupancy, and prompt sensitivity at $n{=}64$, and was rejected as the default objective. We then trained the balanced
+eight-frame model for 20k steps and, by a rule declared before results existed, evaluated every late milestone rather
+than the final checkpoint alone ($n{=}64$, paired prompts and noise; Figure~\ref{fig:m6}). Frame structure improves
+monotonically (TVR $.745{\to}.349$, LIE $.261{\to}.188$ against real floors of $.133$/$.110$) while motion calibration
+collapses early and then flatlines: by step 10k centroid speed falls from $.300$ to $.142$, motion fraction from
+$.403$ to $.155$, and pose height variance to one sixth of the real value. Per prompt the model is not uniformly
+static — locomotion prompts keep moving while gesture prompts complete one action and rest, echoing the
+action-then-rest profile of the data — but the aggregate statistics sit far below matched real clips, so the collapse
+is genuine.
+
+\paragraph{Full-clip latent control R0.} R0 keeps the frozen codec, backbone family, text encoder, flow objective,
+optimizer, and seed, and denoises the complete 25-latent (100-frame) clip jointly with no history prefix for a
+pre-declared 10k-step budget. Under the same evaluation it does not freeze: centroid speed is $.382$ and motion
+fraction $.540$ — mildly overshooting the real $.314$/$.371$ — with height variance at $.043$ versus M6's $.010$,
+while topology is worse than the 20k block-AR model ($.456$ versus $.349$ TVR) and angular jerk is high ($.220$
+versus $.059$ real). Since parameters, objective, codec, and data are shared, the motion collapse is attributable to
+the teacher-forced short-horizon block factorization rather than to model capacity or the latent flow loss itself,
+consistent with the horizon dial above: the shorter the denoised block relative to its clean history, the stronger the
+static shortcut. The comparison is diagnostic, not a ranking — R0 trades the collapse for jitter and overshoot, both
+runs are single-seed, and R0's budget follows its own declared endpoint.
+
 \begin{figure*}[t]\centering
-\includegraphics[width=0.96\textwidth]{paper/figs/k1_warmstart_tradeoff.pdf}
-\caption{Corrected K1 evaluation on the released colour data ($n=64$, paired prompts and noise). Values are normalized
-by the corresponding real-reference statistic, so proximity to the dashed line is desirable for two-sided signals.
-Warm-starting strongly improves topology and occupancy, but over-amplifies image-space translation. LIE below the real
-reference is not ``superhuman'': occlusion makes real topology non-zero, while a generated figure can be simpler.}
-\label{fig:k1}\end{figure*}
+\includegraphics[width=0.96\textwidth]{paper/figs/m6_milestone_tradeoff.pdf}
+\caption{Pre-declared milestone evaluation of the block-autoregressive latent model ($n{=}64$ per checkpoint, paired
+prompts and noise, values normalized by the real reference). Structure converges toward its occlusion floor while
+motion calibration collapses by step 10k and does not recover; later checkpoints trade motion for anatomy. Diamonds
+mark the matched full-clip control R0 at its 10k endpoint.}
+\label{fig:m6}\end{figure*}
 
 \begin{table}[t]\centering\caption{What can be claimed from v0.1, and what cannot.}\label{tab:status}\scriptsize
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{.23\columnwidth}>{\raggedright\arraybackslash}p{.32\columnwidth}>{\raggedright\arraybackslash}p{.32\columnwidth}@{}}\toprule
 Area & Implemented evidence & TODO / not claimed \\\midrule
 Data & 3 views, exact labels, prompt split & real-video proxy, broad styles \\
 Evaluation & frozen 50f manifest; topology, motion, FVD & geometry, prompt adherence \\
-Baselines & controlled failures; matched K1 50f pair & multi-seed K1; semantic text score \\
+Baselines & controlled failures; matched K1 50f pair; frozen codec + block-AR milestone curve + full-clip control & multi-seed K1; semantic text score \\
 Access & public data/code/models; Colab outputs & recorded clean end-to-end rerun \\
 Community & fixed protocol and comparison script & hosted leaderboard/submissions \\\bottomrule
 \end{tabular}\end{table}
@@ -294,8 +338,8 @@ renders; add bone-length, joint-angle, and left/right identity errors.
 with retrieval, motion semantics, or blinded human judgments; the current prompt-swap result measures sensitivity only.
 \item \textbf{Architecture benchmark (TODO):} compare UNet, DiT, and later models under matched data, parameter or
 compute budgets, sampling cost, repeated seeds, and confidence intervals; test whether rankings survive renderer shifts.
-\item \textbf{Long-horizon track (TODO):} report error by distance from chunk boundaries and compare autoregression,
-sliding-window diffusion, and one-shot longer-context models.
+\item \textbf{Long-horizon track (started):} the frozen codec, block-AR milestone curve, and full-clip control above
+are its first results; error by distance from chunk boundaries and Diffusion-/Self-Forcing variants remain.
 \item \textbf{Renderer tracks (TODO):} publish fixed palette, camera, and appearance shifts produced by the harness;
 test whether methods improve structure or only fit one raster style.
 \item \textbf{Course leaderboard (TODO):} freeze an evaluation container and hidden test split so student and lab

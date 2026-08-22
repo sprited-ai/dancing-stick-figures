@@ -1,4 +1,23 @@
-# STATUS — 2026-08-18 22:30 PDT (Claudia) — v0.1 shipped: dataset + baselines + route + notebook
+# STATUS — 2026-08-22 07:00 PDT (Claudia) — latent long-horizon evidence complete, paper updated
+
+## 2026-08-22 overnight (Claudia, taking over the ChatGPT/Codex paper session on Jin's ask)
+- ChatGPT session (08-20→22, died 05:31 08-22) built: paper.tex repositioning, K1 canonical protocol + warm-start
+  result, video-VAE codec ablation (**f8t4d16 40k frozen, sha256-pinned**; alpha IoU .952, PSNR ~34 dB), M6 block-AR
+  latent track (start-aligned fix, h4/h8/h40 horizon dial, decoded-RGBA aux NO-GO at n=64), H8 fresh 20k run.
+  Snapshot committed as-is on branch `paper-m6` (7866ad9). Workspace on gin: `/data/dancing-stick-figure-paper`.
+- Milestone evals (declared before results; 5k/10k/15k/20k, n=64): structure → floor monotonically
+  (TVR .745→.349, floor .133) while **motion collapses by 10k and flatlines** (speed .300→.142 vs real .314;
+  height var → 1/6 real). `paper/results/m6_h8_milestones_n64.json`, figure `paper/figs/m6_milestone_tradeoff.*`.
+- **R0 full-clip control trained (10k, gin, ~50 min) + evaluated: no freeze** (speed .382, fraction .540, mild
+  overshoot; TVR .456; jerk .220). → M6 freeze is the teacher-forced short-horizon block factorization, not
+  capacity and not the latent flow loss. Full log entries in `paper/EXPERIMENT_LOG.md`.
+- Paper updated: latent-track paragraphs (codec / M6 trade-off / R0 control), fig:m6, status table, future item 4
+  → "started". 7 pages now (refs spill to p7). PDF page-QA'd: `output/pdf/paper.pdf`.
+- Open: 2 EXITED RunPod pods (`dsf-ar-pilot-*-seed1`) hold volumes — terminate after confirming collection (Jin).
+  T4 clean notebook rerun still owed. VAE 96-frame-window idea from the side session was superseded by the main
+  session's "codec validated, don't retrain" decision.
+
+# (2026-08-18 state below)
 
 ## Public
 - Dataset https://huggingface.co/datasets/sprited/dancing-stick-figures (public; configs frames 4.6 GB / mini 0.85 GB / motion 0.35 GB; viewer live)

@@ -218,6 +218,42 @@ def k1_warmstart_tradeoff():
     plt.close(fig)
 
 
+def m6_milestone_tradeoff():
+    data = load("m6_h8_milestones_n64.json")
+    real = data["real_reference"]
+    steps = sorted(int(s) for s in data["milestones"])
+    series = {step: data["milestones"][str(step)] for step in steps}
+    r0 = data.get("r0_reference")
+    panels = [
+        ("a  Frame structure", [("TVR", "tvr"), ("LIE", "lie"), ("colour purity", "cpe")]),
+        ("b  Motion calibration", [("centroid speed", "centroid_speed"),
+                                   ("motion fraction", "motion_fraction"),
+                                   ("height variance", "height_var")]),
+    ]
+    fig, axes = plt.subplots(1, 2, figsize=(7.15, 2.35), gridspec_kw={"wspace": .30})
+    colors = [PURPLE, TEAL, ORANGE]
+    for ax, (title, metrics) in zip(axes, panels):
+        for color, (label, key) in zip(colors, metrics):
+            ax.plot(steps, [series[s][key] / real[key] for s in steps],
+                    marker="o", ms=3, lw=1.2, color=color, label=label)
+            if r0 is not None:
+                ax.plot([steps[-1]], [r0[key] / real[key]], marker="D", ms=4,
+                        color=color, mec="#222222", mew=.6, ls="none")
+        ax.axhline(1, color="#222222", lw=.8, ls="--")
+        ax.set_xlabel("H8 block-AR training step")
+        ax.set_ylabel("generated / real value")
+        ax.set_title(title)
+        ax.grid(axis="y", color="#dddddd", lw=.5)
+        ax.legend(loc="upper right")
+    if r0 is not None:
+        axes[1].plot([], [], marker="D", ms=4, color="#999999", mec="#222222",
+                     mew=.6, ls="none", label="R0 full-clip 10k")
+        axes[1].legend(loc="upper right")
+    fig.savefig(FIGS / "m6_milestone_tradeoff.pdf")
+    fig.savefig(FIGS / "m6_milestone_tradeoff.png")
+    plt.close(fig)
+
+
 def main():
     FIGS.mkdir(parents=True, exist_ok=True)
     style()
@@ -232,6 +268,7 @@ def main():
     training_curve()
     failure_modes()
     k1_warmstart_tradeoff()
+    m6_milestone_tradeoff()
 
 
 if __name__ == "__main__":

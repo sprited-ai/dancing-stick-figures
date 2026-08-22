@@ -79,3 +79,39 @@ The video-stage architecture, data mixture, optimizer schedule, seed, and
 not claim broad architecture ranking or statistical generality. Also do not
 claim total-compute efficiency: the warm-start arm consumes an additional
 30,000 T2I steps. The warm run's step-6,000 recovery is disclosed above.
+
+## M6 H8 20k milestone evaluation -- completed (2026-08-22)
+
+- Rule declared at training step 15,050, before any late-milestone result
+  existed (`configs/m6_evaluation_v1_h8_5k_20k.json`): evaluate 5k/10k/15k/20k
+  under identical n=64 prompts, noise seeds (20260824+), 10-step sampler, CFG 2.
+- Result: frame structure improves monotonically (TVR .745@2k -> .349@20k, LIE
+  .261 -> .188; real floors .133/.110) while motion collapses by 10k and
+  flatlines: centroid speed .300 -> .142 (real .314), motion fraction .403 ->
+  .155 (real .371), height variance -> .010 (real .061). Prompt/noise L1 ratio
+  oscillates (.766/.628/.852/.800) with no monotone trend.
+- Pareto front over topology/motion is {2k-5k, 20k}; no checkpoint approaches
+  both floors. Checked-in summary: `paper/results/m6_h8_milestones_n64.json`.
+- Provenance: evaluations ran on gin under the after-complete watcher script
+  (`scripts/eval_m6_h8_20k_after_complete.sh`); all four output directories
+  passed SHA256 manifests; collected to `pod_results/m6v3_start_aligned_h8_20k_s0/`.
+
+## R0 full-clip latent control -- completed (2026-08-22)
+
+- Matched control per `configs/r0_full_clip_latent_protocol_v1.json`: same
+  frozen f8t4d16 codec + stats hashes, same 39.8M full-ST DiT family, text
+  encoder, flow objective, optimizer, batch 16, seed 0; denoises all 25
+  latents (100 frames) jointly, no history prefix; declared 10k endpoint.
+  Final val_full_clip 0.349. Trained on gin (~50 min, 0.30 s/it, 9.1 GB peak).
+- n=64 evaluation, same prompts/noise/sampler as the M6 milestones (10-step):
+  TVR .456, LIE .205, centroid speed .382, motion fraction .540, height
+  variance .043, angle jerk .220 (real .059). 20-step sampler: TVR .426,
+  speed .338.
+- Reading: R0 does not freeze -- it mildly overshoots motion with worse
+  topology than M6@20k (.456 vs .349) and high jerk. With parameters,
+  objective, codec, and data shared, the M6 motion collapse is attributable to
+  teacher-forced short-horizon block factorization, consistent with the
+  h4/h8/h40 horizon dial. Diagnostic comparison, not a ranking: single seed
+  per arm, and R0's budget follows its own declared endpoint (10k vs 20k).
+- Artifacts: gin `results/r0_f8t4d16_fullst_10k_s0/` (+ `eval_n64/` with
+  SHA256SUMS), collected to `pod_results/r0_f8t4d16_fullst_10k_s0/`.
