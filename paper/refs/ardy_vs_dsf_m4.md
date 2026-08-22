@@ -227,3 +227,27 @@ paper run, freeze the 20-fps protocol, add generated-history evaluation, and pre
 the horizon, sampling-step, prompt-switch, and repetition experiments above as explicit
 gates.
 
+
+## M6 addendum (2026-08-22, Claudia) — techniques for the motion-collapse fix
+
+Verified in the ARDY source (`gin:~/dev/ardy/ardy/model/backbone.py`,
+`auto_latent_twostage_denoiser.py`):
+
+1. **Boundary-anchored positional encoding.** Mode
+   `learned_prefix_zero_at_first_generation`: motion tokens receive a sinusoidal
+   encoding (`PositionalEncodingNegativeIndex`) whose index is
+   `arange(num_tokens) - history_len_tokens` — index 0 sits at the *first
+   generation token*, history tokens carry negative indices. Every token
+   therefore knows its absolute distance from the generation boundary, and the
+   encoding is consistent across rollout windows. Our M6 uses purely relative
+   signed RoPE, which cannot express this. Porting this additive PE is fix
+   candidate C' (model change; after the 2k pilot wave).
+2. **Long variable history is ARDY's answer to action-completion ambiguity.**
+   No clip-absolute time and no "once" timer: the model infers whether a
+   non-cyclic action already happened from the history itself. Our 1.0 s latent
+   history cannot contain a 1-3 s action; hence the resting-context ambiguity
+   that plausibly drives the collapse. Fix pilot E (`hist24`, 2.4 s history) is
+   the direct port, declared in
+   `configs/m6_protocol_v3_start_aligned_h8_hist24_pilot.json`.
+3. Not ported now (unchanged from the M4 verdict): motion tokenizer, root/body
+   two-stage, FK/goal losses, LLM2Vec text, million-step recipe.
