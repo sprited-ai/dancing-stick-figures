@@ -173,5 +173,113 @@
     "prompt_noise_ratio": 0.7627218957090753
    }
   }
+ },
+ "v8_100k_run": {
+  "run": "m6v8_combined_h16_100k_s0",
+  "protocol": "configs/m6_protocol_v8_combined_h16_100k.json",
+  "treatments": "16-frame generation blocks + motion-weighted flow loss (alpha 1) + foreground-alpha loss weight 4",
+  "n": 64,
+  "sampler_steps": 10,
+  "cfg": 2.0,
+  "seed": 20260824,
+  "note": "winner-combination run declared after the 2026-08-22 single-variable pilots; milestones evaluated after completion under the predeclared rule in the protocol config",
+  "milestones": {
+   "2000": {
+    "tvr": 0.76654296875,
+    "lie": 0.24654296874999998,
+    "cpe": 0.11849962583784984,
+    "fg": 0.0687109375,
+    "centroid_speed": 0.48501622687436263,
+    "centroid_accel": 0.6092632616426565,
+    "motion_fraction": 0.6523042929292928,
+    "height_var": 0.04120430375341949,
+    "angle_jerk": 0.33649206328494125,
+    "prompt_noise_ratio": 0.45453366406959833
+   },
+   "5000": {
+    "tvr": 0.62015625,
+    "lie": 0.221875,
+    "cpe": 0.09175626108857732,
+    "fg": 0.06810825347900391,
+    "centroid_speed": 0.42621359125689545,
+    "centroid_accel": 0.5176505199756136,
+    "motion_fraction": 0.6306818181818182,
+    "height_var": 0.03802221880099799,
+    "angle_jerk": 0.2936622851431428,
+    "prompt_noise_ratio": 0.55483137452224
+   },
+   "10000": {
+    "tvr": 0.4680859375,
+    "lie": 0.1849609375,
+    "cpe": 0.07597790410532809,
+    "fg": 0.06416255950927735,
+    "centroid_speed": 0.3368870776859378,
+    "centroid_accel": 0.4146301385549183,
+    "motion_fraction": 0.5160984848484849,
+    "height_var": 0.03292065105974901,
+    "angle_jerk": 0.20647019369667746,
+    "prompt_noise_ratio": 0.5863210331730517
+   },
+   "20000": {
+    "tvr": 0.3130859375,
+    "lie": 0.14291015625,
+    "cpe": 0.06578468254414269,
+    "fg": 0.061166992187500005,
+    "centroid_speed": 0.31202792306172383,
+    "centroid_accel": 0.39080486855754815,
+    "motion_fraction": 0.47143308080808083,
+    "height_var": 0.030276137451795124,
+    "angle_jerk": 0.15819702472825758,
+    "prompt_noise_ratio": 0.6123188133181147
+   },
+   "40000": {
+    "tvr": 0.16457031249999998,
+    "lie": 0.08455078125,
+    "cpe": 0.044848519996815384,
+    "fg": 0.06157398223876953,
+    "centroid_speed": 0.2814042490600973,
+    "centroid_accel": 0.3550654369805149,
+    "motion_fraction": 0.41871843434343436,
+    "height_var": 0.02543608293406989,
+    "angle_jerk": 0.10735515210857033,
+    "prompt_noise_ratio": 0.6435378022563907
+   },
+   "60000": {
+    "tvr": 0.12193359375000001,
+    "lie": 0.06701171875,
+    "cpe": 0.03697844122596687,
+    "fg": 0.060937423706054684,
+    "centroid_speed": 0.2761823946127781,
+    "centroid_accel": 0.3427505268159796,
+    "motion_fraction": 0.4172979797979798,
+    "height_var": 0.026716237478031993,
+    "angle_jerk": 0.0942446999265556,
+    "prompt_noise_ratio": 0.7475987303298345
+   },
+   "80000": {
+    "tvr": 0.12898437499999998,
+    "lie": 0.0764453125,
+    "cpe": 0.040733601577978104,
+    "fg": 0.06155796051025391,
+    "centroid_speed": 0.2733815068328007,
+    "centroid_accel": 0.33549212999804273,
+    "motion_fraction": 0.4182449494949495,
+    "height_var": 0.024321693641266937,
+    "angle_jerk": 0.09401191125268442,
+    "prompt_noise_ratio": 0.7900614011336937
+   },
+   "100000": {
+    "tvr": 0.12177734375000002,
+    "lie": 0.073359375,
+    "cpe": 0.03834947167281095,
+    "fg": 0.06097270965576172,
+    "centroid_speed": 0.2857361555302993,
+    "centroid_accel": 0.3604330852057366,
+    "motion_fraction": 0.43355429292929293,
+    "height_var": 0.027696020923696843,
+    "angle_jerk": 0.09483869504571191,
+    "prompt_noise_ratio": 0.772629079667709
+   }
+  }
  }
 }

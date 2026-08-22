@@ -293,6 +293,26 @@ $.11$--$.13$ from step 10k onward — about a third of the real value — and ne
 dotted). The model learns to draw ever-cleaner figures that barely move; the freeze is structural, not a budget
 artifact.
 
+\paragraph{Breaking the freeze.} Guided by the collapse diagnosis, we ran five matched single-variable 2k-step pilots
+against the eight-frame control, each declared before its result. Both history-side interventions failed — noising the
+teacher-forced history ($.213$ centroid speed versus the control's $.300$) and extending it to $2.4$\,s ($.187$) —
+while all three interventions that reallocate training signal toward moving figure content revived motion:
+sixteen-frame generation blocks ($.507$), a motion-weighted flow loss ($.383$), and a foreground-alpha loss weight
+that upweights latent cells the figure touches ($.327$, matching the real $.314$ at control-level topology; the
+transparent background dominates the frame, so uniform latent MSE spends most of its gradient on cells that never
+move). A combined run of the three winners at the same 100k budget as the baseline escapes the trade-off
+(Figure~\ref{fig:m6fix}): at 100k steps it reaches TVR $.122$ and LIE $.073$ — at the real floors — while holding
+centroid speed at $.286$ (91\% of real) and motion fraction at $.434$, where the baseline froze at a third of the
+real value. Residual gaps remain in pose height variance ($.028$ versus $.061$) and angular jerk ($1.6\times$ real).
+Component attribution rests on the matched pilots; the combined run is single-seed.
+
+\begin{figure*}[t]\centering
+\includegraphics[width=0.96\textwidth]{paper/figs/m6_fix_comparison.pdf}
+\caption{Matched 100k-step runs of the eight-frame baseline and the combined fix (sixteen-frame blocks,
+motion-weighted and foreground-weighted flow loss), values normalized by the real reference. Both converge to the
+structural floor (a); only the combined fix retains real-level motion (b).}
+\label{fig:m6fix}\end{figure*}
+
 \paragraph{Full-clip latent control R0.} R0 keeps the frozen codec, backbone family, text encoder, flow objective,
 optimizer, and seed, and denoises the complete 25-latent (100-frame) clip jointly with no history prefix for a
 pre-declared 10k-step budget. Under the same evaluation it does not freeze: centroid speed is $.382$ and motion

@@ -266,6 +266,35 @@ def m6_milestone_tradeoff():
     plt.close(fig)
 
 
+def m6_fix_comparison():
+    data = load("m6_h8_milestones_n64.json")
+    real = data["real_reference"]
+    h8 = data["h8_100k_run"]["milestones"]
+    v8 = data["v8_100k_run"]["milestones"]
+    h8_steps = sorted(int(s) for s in h8)
+    v8_steps = sorted(int(s) for s in v8)
+    panels = [
+        ("a  Frame structure (TVR)", "tvr"),
+        ("b  Motion (centroid speed)", "centroid_speed"),
+    ]
+    fig, axes = plt.subplots(1, 2, figsize=(7.15, 2.2), gridspec_kw={"wspace": .28})
+    for ax, (title, key) in zip(axes, panels):
+        ax.plot(h8_steps, [h8[str(s)][key] / real[key] for s in h8_steps],
+                marker="o", ms=3, lw=1.2, color=PURPLE, label="h8 baseline")
+        ax.plot(v8_steps, [v8[str(s)][key] / real[key] for s in v8_steps],
+                marker="s", ms=3, lw=1.4, color=TEAL, label="v8 combined fix")
+        ax.axhline(1, color="#222222", lw=.8, ls="--")
+        ax.set_xscale("log")
+        ax.set_xlabel("training step")
+        ax.set_ylabel("generated / real value")
+        ax.set_title(title)
+        ax.grid(axis="y", color="#dddddd", lw=.5)
+        ax.legend(loc="upper right")
+    fig.savefig(FIGS / "m6_fix_comparison.pdf")
+    fig.savefig(FIGS / "m6_fix_comparison.png")
+    plt.close(fig)
+
+
 def main():
     FIGS.mkdir(parents=True, exist_ok=True)
     style()
@@ -281,6 +310,7 @@ def main():
     failure_modes()
     k1_warmstart_tradeoff()
     m6_milestone_tradeoff()
+    m6_fix_comparison()
 
 
 if __name__ == "__main__":

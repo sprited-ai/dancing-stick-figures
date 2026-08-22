@@ -163,7 +163,24 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   `paper/results/m6_h8_milestones_n64.json` (`h8_100k_run`); figure and paper
   text updated (fig:m6 dotted squares).
 
-## M6 v8 combined main run -- declared 2026-08-22, running
+## M6 v8 combined main run -- completed (2026-08-22): freeze broken
+
+- 100k-step run of the winner combination (16-frame blocks + motion-weighted
+  + foreground-weighted flow loss), milestones evaluated after completion
+  under the predeclared rule (n=64 at 2k/5k/10k/20k/40k/60k/80k/100k).
+- Result: escapes the h8 structure-motion Pareto front. At 100k: TVR .122,
+  LIE .073 (real floors .133/.110) with centroid speed .286 (91% of real
+  .314), motion fraction .434 (real .371), against the h8 baseline's frozen
+  .115/.111 at the same budget. Motion is stable from 20k onward while
+  structure keeps converging.
+- Residual gaps: height variance .028 (real .061), angle jerk .095 (real
+  .059, ~1.6x), prompt/noise ratio .77 at 100k. Single seed; component
+  attribution rests on the matched 2k pilots.
+- Series in `paper/results/m6_h8_milestones_n64.json` (`v8_100k_run`);
+  figure `paper/figs/m6_fix_comparison.*`; paper paragraph "Breaking the
+  freeze". Superseded 40k declaration noted in the 100k protocol config.
+
+## M6 v8 combined main run -- declared 2026-08-22, superseded 40k note
 
 - `configs/m6_protocol_v8_combined_h16_40k.json` declared before results:
   h16 blocks + motion weighting + foreground weighting, 40k steps, milestone
