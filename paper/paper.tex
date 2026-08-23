@@ -293,18 +293,63 @@ $.11$--$.13$ from step 10k onward — about a third of the real value — and ne
 dotted). The model learns to draw ever-cleaner figures that barely move; the freeze is structural, not a budget
 artifact.
 
+\begin{figure*}[t]\centering
+\includegraphics[width=0.96\textwidth]{paper/figs/m6_milestone_tradeoff.pdf}
+\caption{Pre-declared milestone evaluation of the block-autoregressive latent model ($n{=}64$ per checkpoint, paired
+prompts and noise, values normalized by the real reference). Structure converges toward its occlusion floor while
+motion calibration collapses by step 10k and does not recover; later checkpoints trade motion for anatomy. Dotted
+squares show an independent 100k run of the same protocol: structure passes below the real floor while motion stays
+collapsed. Diamonds mark the matched full-clip control R0 at its 10k endpoint.}
+\label{fig:m6}\end{figure*}
+
 \paragraph{Breaking the freeze.} Guided by the collapse diagnosis, we ran five matched single-variable 2k-step pilots
-against the eight-frame control, each declared before its result. Both history-side interventions failed — noising the
-teacher-forced history ($.213$ centroid speed versus the control's $.300$) and extending it to $2.4$\,s ($.187$) —
-while all three interventions that reallocate training signal toward moving figure content revived motion:
-sixteen-frame generation blocks ($.507$), a motion-weighted flow loss ($.383$), and a foreground-alpha loss weight
-that upweights latent cells the figure touches ($.327$, matching the real $.314$ at control-level topology; the
+against the eight-frame control, each declared before its result (Table~\ref{tab:pilots}). Both history-side
+interventions failed — noising the teacher-forced history and extending it to $2.4$\,s both suppress motion further —
+while all three interventions that reallocate training signal toward moving figure content revived it:
+sixteen-frame generation blocks, a motion-weighted flow loss, and a foreground-alpha loss weight
+that upweights latent cells the figure touches (matching the real $.314$ centroid speed at control-level topology; the
 transparent background dominates the frame, so uniform latent MSE spends most of its gradient on cells that never
-move). A combined run of the three winners at the same 100k budget as the baseline escapes the trade-off
+move). The split is mechanistically coherent: the collapse is not a failure to understand history but a gradient
+allocation that makes copying rest profitable, so only treatments that change the allocation help.
+
+\begin{table}[t]\centering\caption{Matched single-variable fix pilots (2k steps, $n{=}64$; control: TVR $.745$,
+centroid speed $.300$, motion fraction $.403$; real floors $.133$/$.314$/$.371$). Verdicts were declared per
+pre-registered config before results existed.}\label{tab:pilots}\scriptsize
+\begin{tabular}{llccc c}
+\toprule
+pilot & treatment & speed & m.\,frac & TVR & verdict \\
+\midrule
+A & 16-frame generation blocks & .507 & .682 & .760 & pass (overshoots) \\
+B & history-noise augmentation $0.2$ & .213 & .276 & — & fail \\
+D & motion-weighted flow loss $\alpha{=}1$ & .383 & .523 & .738 & pass \\
+E & $2.4$\,s teacher-forced history & .187 & .232 & .748 & fail \\
+F & foreground-alpha loss weight $4$ & .327 & .455 & .757 & pass \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A combined run of the three winners at the same 100k budget as the baseline escapes the trade-off
 (Figure~\ref{fig:m6fix}): at 100k steps it reaches TVR $.122$ and LIE $.073$ — at the real floors — while holding
 centroid speed at $.286$ (91\% of real) and motion fraction at $.434$, where the baseline froze at a third of the
 real value. Residual gaps remain in pose height variance ($.028$ versus $.061$) and angular jerk ($1.6\times$ real).
 Component attribution rests on the matched pilots; the combined run is single-seed.
+
+\paragraph{What remains broken, and what each failure is.} Per-prompt analysis of the repaired model splits its
+residual errors systematically. Undershoot concentrates on compound vertical motions — squats ($-.47$ centroid-speed
+error against matched real clips), burpees ($-.41$), lunges ($-.37$) — which localizes the height-variance deficit;
+these numbers are flat from 60k to 100k, so the gap is not a budget problem. Overshoot concentrates on hold-still
+prompts (balancing on one leg $+.23$, yoga poses ${\sim}{+}.16$): the model regresses toward mean motion instead of
+obeying "stay still". Semantic following saturates: the correlation between per-prompt generated and real motion
+statistics rises to ${\sim}.30$ by 40k and then plateaus, while prompt-versus-noise output sensitivity keeps rising
+($.46{\to}.79$) — with more training the model listens to the prompt more but does not understand it better. Two
+sampler-side diagnostics bound the remaining knobs: raising CFG from 2 to 4 lifts the per-prompt speed correlation
+monotonically ($.24{\to}.30$) at no structural cost (TVR improves to ${\sim}.105$), evidence that the conditioning
+signal survives the frozen latent space but is weak at the source; and doubling sampler steps to 20 removes about
+$40\%$ of the excess angular jerk ($.095{\to}.079$, real $.059$) at mild motion damping, so jerk is partly a sampler
+artifact and partly trained-in. A matched pair differing only in the frozen text encoder (t5-small versus t5-base at
+10k steps) shows no alignment gain from encoder scale, pointing at the templated one-sentence-per-action captions —
+and at conditioning architecture — rather than encoder capacity as the binding constraint. All values are $n{=}64$
+under the declared evaluation; per-item details are in the experiment log.
 
 \begin{figure*}[t]\centering
 \includegraphics[width=0.96\textwidth]{paper/figs/m6_fix_comparison.pdf}
@@ -328,14 +373,7 @@ $.375{\to}.293$) but structure plateaus at TVR $\approx.22$ from 30k onward, wel
 under these budgets the fixed block-autoregressive model above is the only configuration that reaches the structural
 floor while keeping real-level motion.
 
-\begin{figure*}[t]\centering
-\includegraphics[width=0.96\textwidth]{paper/figs/m6_milestone_tradeoff.pdf}
-\caption{Pre-declared milestone evaluation of the block-autoregressive latent model ($n{=}64$ per checkpoint, paired
-prompts and noise, values normalized by the real reference). Structure converges toward its occlusion floor while
-motion calibration collapses by step 10k and does not recover; later checkpoints trade motion for anatomy. Dotted
-squares show an independent 100k run of the same protocol: structure passes below the real floor while motion stays
-collapsed. Diamonds mark the matched full-clip control R0 at its 10k endpoint.}
-\label{fig:m6}\end{figure*}
+
 
 \begin{table}[t]\centering\caption{What can be claimed from v0.1, and what cannot.}\label{tab:status}\scriptsize
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{.23\columnwidth}>{\raggedright\arraybackslash}p{.32\columnwidth}>{\raggedright\arraybackslash}p{.32\columnwidth}@{}}\toprule
