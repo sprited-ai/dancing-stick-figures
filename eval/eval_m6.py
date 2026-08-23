@@ -154,6 +154,7 @@ def build(checkpoint: dict, device: str):
         "m6_latent_block_ar_v6_motion_weighted",
         "m6_latent_block_ar_v7_fg_weighted",
         "m6_latent_block_ar_v8_combined",
+        "m6_latent_block_ar_v9_rig_cogen",
         "r0_latent_full_clip_v1",
     ):
         raise ValueError("checkpoint is not a supported latent video protocol")
@@ -173,6 +174,17 @@ def build(checkpoint: dict, device: str):
     text_dim = int(state["text_proj.weight"].shape[1])
     latent_size = int(args["output_size"]) // codec.spatial_compression
     attention_mode = args.get("attention_mode", "factorized")
+    if checkpoint.get("protocol") == "m6_latent_block_ar_v9_rig_cogen":
+        from train.latent_video_dit_ar_rig import RigFullSTARVideoDiT
+
+        model = RigFullSTARVideoDiT(
+            temporal_compression=codec.temporal_compression,
+            size=latent_size, patch=int(args["patch"]), in_ch=codec.latent_channels,
+            dim=int(args["dim"]), depth=int(args["depth"]), heads=int(args["heads"]),
+            cond_ch=codec.latent_channels + 1, text_dim=text_dim,
+        ).to(device).eval().requires_grad_(False)
+        model.load_state_dict(state, strict=True)
+        return model, codec, standardizer, codec_checkpoint, stats, args
     model_class = FullSTARVideoDiT if attention_mode == "full" else ARVideoDiT
     model = model_class(
         size=latent_size, patch=int(args["patch"]), in_ch=codec.latent_channels,
@@ -204,10 +216,31 @@ def build_text_cache(prompts: list[str], args: dict, device: str):
 
 @torch.no_grad()
 def generate_one(model, codec, standardizer, args, prompt: str, text_cache, seed: int, steps: int,
-                 cfg: float, device: str, *, decode_mode: str = "full") -> tuple[torch.Tensor, float]:
+                 cfg: float, device: str, *, decode_mode: str = "full",
+                 rig_sink: list | None = None) -> tuple[torch.Tensor, float]:
     text, mask = text_cache[prompt]
     null_text, null_mask = text_cache[""]
     generator = torch.Generator(device=device).manual_seed(seed)
+    if hasattr(model, "rig_dim"):
+        # v9 rig co-generation: pixel and rig noise both come from the seeded
+        # generator, so paired-noise semantics across prompts are preserved.
+        from train.latent_video_dit_ar_rig import rollout_blocks_rig
+
+        if device.startswith("cuda"):
+            torch.cuda.synchronize(); torch.cuda.reset_peak_memory_stats()
+        started = time.perf_counter()
+        latent, rig = rollout_blocks_rig(
+            model, [(text, mask)], total_frames=int(args["rollout_latents"]),
+            target_frames=int(args["target_latents"]), history_max=int(args["history_max"]),
+            steps=steps, null_text=null_text, null_mask=null_mask, cfg=cfg,
+            shift=float(args["shift"]), generator=generator,
+        )
+        if rig_sink is not None:
+            rig_sink.append(rig.cpu().float())
+        rgba = decode_full(codec, standardizer, latent, output_size=int(args["output_size"]))
+        if device.startswith("cuda"):
+            torch.cuda.synchronize()
+        return rgba.mul(2).sub(1).cpu(), time.perf_counter() - started
     required_noise_frames = (
         (int(args["rollout_latents"]) + int(args["target_latents"]) - 1)
         // int(args["target_latents"])
@@ -246,12 +279,13 @@ def generate_one(model, codec, standardizer, args, prompt: str, text_cache, seed
 
 def evaluate_sampler(
     model, codec, standardizer, args, prompts, text_cache, seeds, steps, cfg, device,
-    *, comparison_block_frames: int,
+    *, comparison_block_frames: int, rig_sink: list | None = None,
 ):
     videos, seconds, peaks = [], [], []
     for prompt, seed in zip(prompts, seeds):
         video, elapsed = generate_one(
             model, codec, standardizer, args, prompt, text_cache, seed, steps, cfg, device,
+            rig_sink=rig_sink,
         )
         videos.append(video); seconds.append(elapsed)
         peaks.append(torch.cuda.max_memory_allocated()/2**20 if device.startswith("cuda") else 0.0)
@@ -308,11 +342,16 @@ def main() -> None:
     samplers = {}
     videos_by_step = {}
     for steps in step_counts:
+        rig_sink = [] if hasattr(model, "rig_dim") else None
         videos, result = evaluate_sampler(
             model, codec, standardizer, args, prompts, text_cache, seeds, steps,
             args_cli.cfg, args_cli.device,
             comparison_block_frames=args_cli.comparison_block_frames,
+            rig_sink=rig_sink,
         )
+        if rig_sink:
+            np.save(destination / f"rigs_{steps:02d}step.npy",
+                    ((torch.cat(rig_sink) + 1) / 2).numpy().astype(np.float16))
         videos_by_step[steps] = videos
         samplers[str(steps)] = result
         labels = [f"{steps} steps | {prompt}" for prompt in prompts[:4]]
