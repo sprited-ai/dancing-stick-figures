@@ -147,6 +147,20 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   above is from the fixed rerun.
 - Artifacts: gin `results/m6v{3,5,6,7}_*_2k_s0/` with `eval_n64/metrics.json`.
 
+## v9.1 rig-strengthening pilot -- rejected (2026-08-23)
+
+- Single-variable pair vs the v9.0 pilot: rig flow weight 1->4 plus a
+  bone-length preservation loss (weight 5) on the recovered clean rig
+  (`configs/m6_protocol_v9p1_rigweight_bones_10k.json`).
+- Result: bone-length error tightens only modestly (10-19% -> 10-12%) while
+  pixel quality regresses sharply at the same budget (TVR .538 -> .708,
+  angle jerk .230 -> .341) and prompt retrieval stays at chance (top-1 3.1%).
+- Reading: rig-side loss strength is not the alignment lever and taxes the
+  shared trunk. v9.0 (weight 1, no bone loss) remains the standing recipe.
+  Together with the t5-base rejection, the alignment floor points at
+  caption/conditioning data, not loss shaping or encoder scale.
+- Artifacts: gin `results/m6v9p1_rigweight_bones_10k_s0/`.
+
 ## Rig-space prompt alignment metric -- validated (2026-08-23)
 
 - New metric (`scripts/rig_alignment_metric.py`): per-joint signature (speed
