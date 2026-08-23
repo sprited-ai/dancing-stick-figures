@@ -147,6 +147,29 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   above is from the fixed rerun.
 - Artifacts: gin `results/m6v{3,5,6,7}_*_2k_s0/` with `eval_n64/metrics.json`.
 
+## Text-encoder pilot pair -- t5-base rejected (2026-08-23)
+
+- Matched fresh 10k runs of the v8 recipe differing only in the frozen text
+  encoder (declared `configs/m6_protocol_v8_text_pilot_t5{small,base}_10k.json`).
+- Result: t5-base does not improve prompt-motion alignment (speed pearson
+  .196 vs .263 for t5-small; motion-fraction pearson ~0 for both; prompt/noise
+  ratio .706 vs .655). Encoder scale is not the conditioning bottleneck at
+  this data/model scale; remaining suspects are the templated single-sentence
+  captions (one fixed string per action) and cross-attention capacity.
+- Artifacts: gin `results/m6v8_text_t5{small,base}_10k_s0/`.
+
+## v8 weakness probes (2026-08-23, ongoing)
+
+- Per-prompt alignment on the v8 100k checkpoint splits systematically:
+  undershoot concentrates on vertical/full-body compound motions (squats
+  -.47, burpee -.41, lunges -.37 centroid-speed error) -- the height-variance
+  deficit localized -- while overshoot concentrates on hold-still prompts
+  (balance on one leg +.23, yoga poses +.16): regression toward mean motion.
+- Within the 5 s rollout, motion decays mildly block-over-block
+  (motion-fraction drift slope -.067).
+- 10 s (2x training horizon) rollout probe saved to
+  `results/m6v8_combined_h16_100k_s0/infer_10s/`.
+
 ## v8 100k CFG sweep -- sampler diagnostic (2026-08-23)
 
 - Question (Jin): does the frozen VAE hurt prompt following? Sampler-only

@@ -26,6 +26,8 @@ def main():
     parser.add_argument("--seeds", default="0,1")
     parser.add_argument("--steps", type=int, default=10)
     parser.add_argument("--cfg", type=float, default=2.0)
+    parser.add_argument("--rollout-latents", type=int, default=0,
+                        help="override the checkpoint's rollout length (0 = use training default)")
     parser.add_argument("--device", default="cuda")
     args = parser.parse_args()
 
@@ -63,7 +65,8 @@ def main():
         generator = torch.Generator(device=args.device).manual_seed(20260821 + seed)
         with torch.no_grad():
             latent = rollout_blocks(
-                model, [(text, mask)], total_frames=train_args["rollout_latents"],
+                model, [(text, mask)],
+                total_frames=args.rollout_latents or train_args["rollout_latents"],
                 target_frames=train_args["target_latents"], history_max=train_args["history_max"],
                 steps=args.steps, null_text=null_text, null_mask=null_mask,
                 cfg=args.cfg, shift=train_args["shift"], generator=generator, sample_clamp=None,
