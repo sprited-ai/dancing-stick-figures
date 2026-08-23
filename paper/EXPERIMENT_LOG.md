@@ -147,6 +147,22 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   above is from the fixed rerun.
 - Artifacts: gin `results/m6v{3,5,6,7}_*_2k_s0/` with `eval_n64/metrics.json`.
 
+## v9 rig co-generation pilot -- proof of concept (2026-08-23)
+
+- 10k run of the v8 recipe plus co-denoised rig tokens
+  (`configs/m6_protocol_v9_rig_cogen_10k_pilot.json`; module
+  `train/latent_video_dit_ar_rig.py`, existing code paths untouched).
+- Pixel cost: none measurable -- final pixel flow loss .410 vs .403 for the
+  matched rig-free control (t5-small text-pilot arm, same fresh 10k cosine).
+- Rig quality (self-emitted, overlay probe on 4 prompts): rig flow loss .020;
+  on-figure rate .54-.79; bone-length error 10-19% of mean bone; temporal
+  jitter 12-16%. The rig tracks the figure but is loose.
+- Next levers: bone-length preservation loss, higher rig loss weight, longer
+  training; eval_m6 v9 support for the full pixel metric set; rig-space
+  prompt alignment metric (the point of the track).
+- Artifacts: gin `results/m6v9_rig_cogen_10k_s0/` (+ `rig_probe/` overlays
+  and `rig_report.json`).
+
 ## Text-encoder pilot pair -- t5-base rejected (2026-08-23)
 
 - Matched fresh 10k runs of the v8 recipe differing only in the frozen text
