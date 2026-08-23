@@ -147,6 +147,24 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   above is from the fixed rerun.
 - Artifacts: gin `results/m6v{3,5,6,7}_*_2k_s0/` with `eval_n64/metrics.json`.
 
+## Rig-space prompt alignment metric -- validated (2026-08-23)
+
+- New metric (`scripts/rig_alignment_metric.py`): per-joint signature (speed
+  profile, amplitude profile, end-effector periodicity) from 2D rig
+  trajectories, z-scored over the prompt reference set; retrieval asks
+  whether a clip's motion is nearest its own prompt's reference.
+- Validation: held-out REAL clips retrieve their own prompt at top-1 59% /
+  top-5 89% over 37 test prompts (chance 2.7%/13.5%) -- the signature is
+  discriminative on real motion. A naive uncentered cosine was NOT (matched
+  .871 vs shuffled .866, dominated by the generic hands-move-more profile);
+  caught by a shuffled-prompt sanity check and replaced.
+- First reading on v9 10k (self-emitted rig, n=64): top-1 4.7% / top-5 14.1%
+  -- at chance. The model's motion carries almost no prompt-specific
+  signature, consistent with the pixel-side pearson ~.20. Semantic following
+  now has a measurable floor (chance) and ceiling (real).
+- v9 n=64 pixel verdict vs matched control: statistically indistinguishable
+  (TVR .538 vs .527, speed .385 vs .368) -- the rig output remains free.
+
 ## v9 rig co-generation pilot -- proof of concept (2026-08-23)
 
 - 10k run of the v8 recipe plus co-denoised rig tokens
