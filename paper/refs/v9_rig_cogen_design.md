@@ -56,6 +56,32 @@ exact projection call chain, clip-id ↔ npz ↔ camera mapping, gotchas.
   oracle metrics unchanged or better, (ii) rig-pixel consistency, (iii)
   per-prompt rig-trajectory alignment vs GT.
 
+## Status after the 10k pilot (2026-08-23)
+
+Proof of concept done: rig comes free (pixel metrics match the rig-free
+control at n=64), rig flow loss .020, overlay tracks the figure loosely
+(on-figure .54-.79, bone error 10-19%). The alignment metric is validated:
+real clips retrieve their own prompt at 59%/89% top-1/5 (chance 2.7%/13.5%);
+the pilot's emitted rig scores at chance — motion carries no prompt-specific
+signature yet.
+
+### Next-pilot candidates (awaiting Jin's pick)
+
+1. **Rig loss weight up (e.g. 4-8)** — cheapest; forces the shared trunk to
+   allocate capacity to rig accuracy; may pull prompt information into the
+   motion pathway. Risk: pixel regression.
+2. **Bone-length preservation loss** — tightens rig plausibility (10-19%
+   error today); orthogonal to alignment.
+3. **Caption diversity (data work, v0.2)** — the standing suspect for the
+   alignment floor itself (t5-base already rejected encoder scale; CFG sweep
+   showed the signal is weak at the source). Multiple phrasings per action;
+   ties into the v0.2 dense-caption item. Likely the binding constraint —
+   without it, 1-2 may sharpen the rig without making it obey the prompt.
+
+Recommendation: run 1+2 together as one cheap combined pilot (both are
+single-flag changes, measured by the validated retrieval metric + overlay
+probe), and schedule 3 as the next data milestone.
+
 ## Open questions (pending scoping)
 
 - Is the projection deterministic and exactly frame-aligned with rendered
