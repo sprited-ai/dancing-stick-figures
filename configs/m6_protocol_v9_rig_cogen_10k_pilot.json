@@ -1,0 +1,58 @@
+{
+  "version": 10,
+  "declared_before_training_results": true,
+  "declared_at": "2026-08-23",
+  "purpose": "v9 rig co-generation pilot (Jin's direction 2026-08-23): the v8 recipe plus one rig token per temporal latent index (temporal_compression x 27 joints x 2D screen coords, [-1,1]) appended to the token sequence and denoised under the same rectified flow with a shared per-sample timestep; rig flow loss weight 1. Rig ground truth from cache rig.npy (bit-exact joint_xy from the dataset's source parquet, foreground-hit rate 1.0). Matched control: the t5-small 10k arm of the text pilot (identical v8 recipe, same fresh 10k cosine, no rig). Verdict: (i) pixel oracle metrics not worse than control, (ii) emitted-rig plausibility (bone lengths, on-figure rate vs generated pixels), (iii) rig-space per-prompt alignment. Single seed. Design doc: paper/refs/v9_rig_cogen_design.md.",
+  "task": {
+    "resolution": 64,
+    "fps": 20,
+    "generated_video_frames": 100,
+    "duration_seconds": 5,
+    "condition": "text prompt",
+    "split": "prompt-disjoint test"
+  },
+  "frozen_model": {
+    "codec_selection_protocol": "configs/codec_selection_f8t4d16_reference.json",
+    "backbone": "full spatiotemporal DiT with signed local temporal and spatial 3D RoPE",
+    "attention_mode": "full",
+    "training_mode": "block_ar",
+    "start_aligned": true,
+    "history_seconds": 1,
+    "target_video_frames_per_block": 16,
+    "teacher_forcing": "clean ground-truth history during training; generated history during rollout",
+    "variable_history": true,
+    "rectified_flow": true,
+    "text_encoder": "frozen google-t5/t5-small",
+    "primary_sampling_steps_per_block": 10,
+    "cfg": 2.0,
+    "training_seed": 0,
+    "planned_optimizer_steps": 10000,
+    "motion_weight_alpha": 1.0,
+    "fg_latent_weight": 4.0,
+    "rig_cogeneration": true,
+    "rig_loss_weight": 1.0
+  },
+  "milestones": [
+    0,
+    2000,
+    5000,
+    10000
+  ],
+  "milestone_evaluation": {
+    "n": 64,
+    "sensitivity_n": 8,
+    "sampler_steps": 10,
+    "cfg": 2.0,
+    "noise_seed": 20260824,
+    "split": "test",
+    "comparison_block_frames": 4,
+    "declared_before_any_milestone_result": true
+  },
+  "validation": {
+    "every_steps": 250,
+    "fixed_timestep_and_noise_seed": 20260822,
+    "first_block_definition": "true clip frames 0-15",
+    "claim_limit": "Single-seed combined-treatment run; attribution of any gain to individual components rests on the matched 2k pilots, not on this run."
+  },
+  "matched_control": "results/m6v8_text_t5small_10k_s0 (v8 recipe, same budget, no rig)"
+}
