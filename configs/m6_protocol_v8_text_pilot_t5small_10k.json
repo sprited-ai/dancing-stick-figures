@@ -1,0 +1,56 @@
+{
+  "version": 9,
+  "declared_before_training_results": true,
+  "declared_at": "2026-08-23",
+  "purpose": "Text-conditioning pilot pair: v8 recipe unchanged except the frozen text encoder (google-t5/t5-small). Motivated by the CFG sweep on the v8 100k checkpoint: prompt-motion alignment rises with CFG (speed pearson .24->.30) but stays weak, implicating the conditioning pathway rather than the frozen VAE. Matched fresh 10k cosine runs (2k is too short for alignment signal; the frozen h8 model cannot show alignment at all because its motion is collapsed). Verdict metric: prompt-motion alignment pearson and prompt/noise L1 ratio at 10k, n=64, primary CFG 2 sampler. Single seed per arm.",
+  "task": {
+    "resolution": 64,
+    "fps": 20,
+    "generated_video_frames": 100,
+    "duration_seconds": 5,
+    "condition": "text prompt",
+    "split": "prompt-disjoint test"
+  },
+  "frozen_model": {
+    "codec_selection_protocol": "configs/codec_selection_f8t4d16_reference.json",
+    "backbone": "full spatiotemporal DiT with signed local temporal and spatial 3D RoPE",
+    "attention_mode": "full",
+    "training_mode": "block_ar",
+    "start_aligned": true,
+    "history_seconds": 1,
+    "target_video_frames_per_block": 16,
+    "teacher_forcing": "clean ground-truth history during training; generated history during rollout",
+    "variable_history": true,
+    "rectified_flow": true,
+    "text_encoder": "frozen google-t5/t5-small",
+    "primary_sampling_steps_per_block": 10,
+    "cfg": 2.0,
+    "training_seed": 0,
+    "planned_optimizer_steps": 10000,
+    "motion_weight_alpha": 1.0,
+    "fg_latent_weight": 4.0
+  },
+  "milestones": [
+    0,
+    2000,
+    5000,
+    10000
+  ],
+  "milestone_evaluation": {
+    "n": 64,
+    "sensitivity_n": 8,
+    "sampler_steps": 10,
+    "cfg": 2.0,
+    "noise_seed": 20260824,
+    "split": "test",
+    "comparison_block_frames": 4,
+    "declared_before_any_milestone_result": true
+  },
+  "validation": {
+    "every_steps": 250,
+    "fixed_timestep_and_noise_seed": 20260822,
+    "first_block_definition": "true clip frames 0-15",
+    "claim_limit": "Single-seed combined-treatment run; attribution of any gain to individual components rests on the matched 2k pilots, not on this run."
+  },
+  "matched_control": "the paired t5-small arm of this declaration"
+}

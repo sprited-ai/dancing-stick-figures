@@ -147,6 +147,21 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   above is from the fixed rerun.
 - Artifacts: gin `results/m6v{3,5,6,7}_*_2k_s0/` with `eval_n64/metrics.json`.
 
+## v8 100k CFG sweep -- sampler diagnostic (2026-08-23)
+
+- Question (Jin): does the frozen VAE hurt prompt following? Sampler-only
+  sweep on the v8 100k checkpoint, same n=64 evaluation at CFG 2/3/4.
+- Result: prompt-motion alignment rises monotonically with CFG (speed pearson
+  .242 -> .271 -> .302; motion-fraction pearson .101 -> .184; prompt/noise L1
+  ratio .77 -> .86) at no quality cost (TVR improves .122 -> ~.105, motion and
+  jerk essentially unchanged).
+- Reading: the conditioning signal survives the latent space and is amplified
+  by CFG -- evidence against the VAE hypothesis -- but even amplified it is
+  weak (pearson .30), pointing at the conditioning pathway (60M t5-small over
+  templated single-sentence captions) rather than the representation. The
+  declared primary sampler stays CFG 2; this sweep is diagnostic.
+- Artifacts: gin `results/m6v8_combined_h16_100k_s0/eval_n64_100000_cfg{3.0,4.0}/`.
+
 ## M6 h8 100k convergence run -- completed (2026-08-22)
 
 - Independent fresh 100k run of the h8 start-aligned protocol
