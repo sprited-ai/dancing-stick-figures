@@ -403,6 +403,7 @@ def main():
 
     codec_meta = {
         "checkpoint": str(Path(args.codec).resolve()), "checkpoint_sha256": file_sha256(Path(args.codec)),
+        "stats": str(Path(args.latent_stats).resolve()),
         "latent_stats_sha256": file_sha256(Path(args.latent_stats)),
         "experiment_protocol": str(protocol_path),
         "experiment_protocol_sha256": file_sha256(protocol_path),
