@@ -158,7 +158,34 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   captions (one fixed string per action) and cross-attention capacity.
 - Artifacts: gin `results/m6v8_text_t5{small,base}_10k_s0/`.
 
-## v8 weakness probes (2026-08-23, ongoing)
+## v8 weakness report -- probes concluded (2026-08-23)
+
+Taxonomy of the v8 100k model's remaining weaknesses, each probed and
+attributed:
+
+1. Vertical-motion deficit (data/objective): undershoot concentrates on
+   compound vertical motions (squats -.47, burpee -.41, lunges -.37) --
+   height variance .028 vs real .061. Not budget-limited (flat 60k-100k).
+   Lever: future-keyframe goal conditioning (ARDY Sec 3.3) or vertical-motion
+   data upweighting.
+2. Hold-still failure (conditioning): overshoot concentrates on static-pose
+   prompts (balance +.23, yoga ~+.16) -- regression toward mean motion.
+   Lever: caption diversity; conditioning pathway (t5-base already rejected).
+3. Weak semantic following (conditioning/data): prompt-motion pearson rises
+   to ~.30 by 40k then saturates while prompt/noise sensitivity keeps rising
+   (.46->.79) -- the model listens more but does not understand better.
+   CFG amplifies (pearson .24->.30 at CFG 4, no quality cost). Quantity
+   metrics cannot judge intent (e.g. wave vs raise-and-lower); action
+   classifier + pose-regressor retrieval metrics designed, not yet built.
+4. Jerk (sampler + training, split measured): 20-step sampling cuts angle
+   jerk .095 -> .079 (real .059) at mild motion damping (speed .286 -> .256)
+   -- ~40% of the excess is sampler, the rest trained-in.
+5. Mild in-horizon decay: motion-fraction drift slope -.067 per block within
+   the 5 s rollout. 10 s (2x horizon) probe recorded for visual reference.
+6. OOD prompts (cartwheel, ballet, crawl, spin) probe saved at
+   `infer_ood/` -- expected to fall back to in-distribution motions.
+
+## v8 weakness probes (2026-08-23, superseded by report above)
 
 - Per-prompt alignment on the v8 100k checkpoint splits systematically:
   undershoot concentrates on vertical/full-body compound motions (squats
