@@ -281,5 +281,76 @@
     "prompt_noise_ratio": 0.772629079667709
    }
   }
+ },
+ "r0_50k_run": {
+  "run": "r0_f8t4d16_fullst_50k_s0",
+  "protocol": "configs/r0_full_clip_latent_protocol_v2_50k.json",
+  "n": 64,
+  "sampler_steps": 10,
+  "cfg": 2.0,
+  "seed": 20260824,
+  "note": "independent fresh 50k full-clip run; milestones per configs/m6_r0_convergence_evaluation_v1.json",
+  "milestones": {
+   "10000": {
+    "tvr": 0.43828125,
+    "lie": 0.2219921875,
+    "cpe": 0.08752288213925924,
+    "fg": 0.05603015899658203,
+    "centroid_speed": 0.37487793573637535,
+    "centroid_accel": 0.4288639481482437,
+    "motion_fraction": 0.5427714646464646,
+    "height_var": 0.041643664019253915,
+    "angle_jerk": 0.21152276421607275,
+    "prompt_noise_ratio": 0.49119730686539687
+   },
+   "20000": {
+    "tvr": 0.2703125,
+    "lie": 0.14818359375,
+    "cpe": 0.060195020304772195,
+    "fg": 0.0569869613647461,
+    "centroid_speed": 0.3277319581898006,
+    "centroid_accel": 0.3970290639430395,
+    "motion_fraction": 0.49289772727272724,
+    "height_var": 0.028972980849320196,
+    "angle_jerk": 0.15171567185727053,
+    "prompt_noise_ratio": 0.5481535246228134
+   },
+   "30000": {
+    "tvr": 0.257109375,
+    "lie": 0.16912109375,
+    "cpe": 0.06331913445820919,
+    "fg": 0.055603981018066406,
+    "centroid_speed": 0.3199781087168908,
+    "centroid_accel": 0.39009709652209756,
+    "motion_fraction": 0.4761679292929293,
+    "height_var": 0.02528627788815862,
+    "angle_jerk": 0.14072314553510107,
+    "prompt_noise_ratio": 0.7022158597555462
+   },
+   "40000": {
+    "tvr": 0.21501953124999998,
+    "lie": 0.1423046875,
+    "cpe": 0.05291924355474134,
+    "fg": 0.05681144714355469,
+    "centroid_speed": 0.2901059771002897,
+    "centroid_accel": 0.3712364453833284,
+    "motion_fraction": 0.43465909090909094,
+    "height_var": 0.02120976024417202,
+    "angle_jerk": 0.12097846084363537,
+    "prompt_noise_ratio": 0.690755686523294
+   },
+   "50000": {
+    "tvr": 0.2228125,
+    "lie": 0.14322265625000002,
+    "cpe": 0.056708091300647634,
+    "fg": 0.056173057556152345,
+    "centroid_speed": 0.292704872886532,
+    "centroid_accel": 0.37235090308615504,
+    "motion_fraction": 0.4401830808080808,
+    "height_var": 0.018883789330424186,
+    "angle_jerk": 0.12241426001090776,
+    "prompt_noise_ratio": 0.7242901919168875
+   }
+  }
  }
 }

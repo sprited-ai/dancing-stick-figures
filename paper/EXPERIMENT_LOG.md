@@ -163,6 +163,22 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   `paper/results/m6_h8_milestones_n64.json` (`h8_100k_run`); figure and paper
   text updated (fig:m6 dotted squares).
 
+## R0 full-clip 50k convergence run -- completed (2026-08-22)
+
+- Independent fresh 50k full-clip run
+  (`configs/r0_full_clip_latent_protocol_v2_50k.json`), milestones 10k-50k
+  per the predeclared convergence rule, n=64 each.
+- Result: motion stays calibrated (centroid speed .375 -> .293, real .314;
+  motion fraction .543 -> .440, real .371) but structure plateaus: TVR
+  .438 -> .223 with no improvement after 40k (real floor .133), LIE ~.14,
+  angle jerk ~.12 (real .059).
+- Reading: full-clip denoising avoids the static shortcut but does not reach
+  the structural floor at this budget; the v8 fixed block-AR run dominates it
+  on structure at comparable motion (.122 TVR / .286 speed at 100k vs .223 /
+  .293 at 50k -- budgets differ, single seeds, diagnostic only).
+- Series `r0_50k_run` in `paper/results/m6_h8_milestones_n64.json`; paper R0
+  paragraph extended.
+
 ## M6 v8 combined main run -- completed (2026-08-22): freeze broken
 
 - 100k-step run of the winner combination (16-frame blocks + motion-weighted

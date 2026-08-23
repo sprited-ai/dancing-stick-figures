@@ -322,7 +322,11 @@ versus $.059$ real). Since parameters, objective, codec, and data are shared, th
 the teacher-forced short-horizon block factorization rather than to model capacity or the latent flow loss itself,
 consistent with the horizon dial above: the shorter the denoised block relative to its clean history, the stronger the
 static shortcut. The comparison is diagnostic, not a ranking — R0 trades the collapse for jitter and overshoot, both
-runs are single-seed, and R0's budget follows its own declared endpoint.
+runs are single-seed, and R0's budget follows its own declared endpoint. An independent 50k full-clip run under the
+same convergence rule confirms the profile at scale: motion stays calibrated throughout (centroid speed
+$.375{\to}.293$) but structure plateaus at TVR $\approx.22$ from 30k onward, well short of the $.133$ floor — so
+under these budgets the fixed block-autoregressive model above is the only configuration that reaches the structural
+floor while keeping real-level motion.
 
 \begin{figure*}[t]\centering
 \includegraphics[width=0.96\textwidth]{paper/figs/m6_milestone_tradeoff.pdf}
