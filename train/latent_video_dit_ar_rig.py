@@ -52,7 +52,18 @@ from train.latent_video_dit_ar import (
 )
 
 RIG_JOINTS = 27
+RIG_PARENTS = (-1, 0, 1, 2, 3, 4, 5, 4, 7, 8, 9, 10, 10, 4, 13, 14, 15, 16, 16,
+               0, 19, 20, 21, 0, 23, 24, 25)
 V9_PROTOCOL = "m6_latent_block_ar_v9_rig_cogen"
+
+
+def rig_bone_lengths(rig_tokens: torch.Tensor, temporal: int) -> torch.Tensor:
+    """[B, T_lat, temporal*27*2] rig tokens -> [B, T_video, 26] bone lengths."""
+    batch, t_lat, _ = rig_tokens.shape
+    xy = rig_tokens.reshape(batch, t_lat * temporal, RIG_JOINTS, 2)
+    child = torch.arange(1, RIG_JOINTS, device=rig_tokens.device)
+    parent = torch.tensor(RIG_PARENTS[1:], device=rig_tokens.device)
+    return (xy[:, :, child] - xy[:, :, parent]).norm(dim=-1)
 
 
 # ----------------------------------------------------------------- data
@@ -305,6 +316,11 @@ def main():
     parser.add_argument("--motion-weight-alpha", type=float, default=1.0)
     parser.add_argument("--fg-latent-weight", type=float, default=4.0)
     parser.add_argument("--rig-loss-weight", type=float, default=1.0)
+    parser.add_argument(
+        "--bone-length-weight", type=float, default=0.0,
+        help="weight of the bone-length preservation loss on the recovered clean "
+             "rig (x0 = input - t*v) against the sample's ground-truth bone lengths",
+    )
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--steps", type=int, default=2000)
     parser.add_argument("--lr", type=float, default=2e-4)
@@ -350,6 +366,8 @@ def main():
         raise ValueError("v9 launch requires a protocol declaring rig_cogeneration")
     if float(protocol["frozen_model"].get("rig_loss_weight", -1)) != args.rig_loss_weight:
         raise ValueError("launch differs from predeclared rig_loss_weight")
+    if float(protocol["frozen_model"].get("bone_length_weight", 0.0)) != args.bone_length_weight:
+        raise ValueError("launch differs from predeclared bone_length_weight")
     temporal = codec.temporal_compression
     video_frames = (args.history_max + args.target_latents) * temporal
     latent_size = args.output_size // codec.spatial_compression
@@ -414,6 +432,7 @@ def main():
         "protocol": V9_PROTOCOL,
         "base_recipe": "v8 combined (16f blocks + motion weight + fg weight)",
         "rig_loss_weight": args.rig_loss_weight,
+        "bone_length_weight": args.bone_length_weight,
         "rig_dim_per_token": temporal * RIG_JOINTS * 2,
         "rig_meta_sha256": file_sha256(rig_meta_path),
         "model_parameters": sum(p.numel() for p in model.parameters()),
@@ -507,6 +526,14 @@ def main():
             pixel_loss = per_sample.mean()
             rig_loss = rig_per_sample.mean()
             loss = pixel_loss + args.rig_loss_weight * rig_loss
+            bone_loss = None
+            if args.bone_length_weight > 0:
+                amount = timestep[:, None, None]
+                rig_x0 = rig_input.float() - amount * rig_prediction.float()
+                bones = rig_bone_lengths(rig_x0[:, history:], temporal)
+                bones_gt = rig_bone_lengths(rig_clean[:, history:].float(), temporal)
+                bone_loss = (bones - bones_gt).square().mean()
+                loss = loss + args.bone_length_weight * bone_loss
         loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); optimizer.step()
         with torch.no_grad():
             decay = min(0.999 if step < 5000 else 0.9995, (1+step)/(10+step))
@@ -517,6 +544,8 @@ def main():
             writer.add_scalar("train/loss_total", value, step)
             writer.add_scalar("train/pixel_flow_mse", float(pixel_loss.detach()), step)
             writer.add_scalar("train/rig_flow_mse", float(rig_loss.detach()), step)
+            if bone_loss is not None:
+                writer.add_scalar("train/bone_length_mse", float(bone_loss.detach()), step)
             writer.add_scalar("train/learning_rate", lr, step)
         if step % 50 == 0 or step == args.steps:
             rate = (time.time()-started) / step

@@ -61,3 +61,14 @@ def test_rig_model_forward_shapes_and_history_immutability():
                             history_frames=2, rig_input=rig, rig_cond=rcond)
         assert torch.allclose(vel1[:, :, :2], vel2[:, :, :2], atol=1e-5)
         assert torch.allclose(rvel1[:, :2], rvel2[:, :2], atol=1e-5)
+
+
+def test_bone_lengths_from_rig_tokens_match_direct_computation():
+    from train.latent_video_dit_ar_rig import RIG_PARENTS, rig_bone_lengths
+
+    rig = torch.rand(2, 3, 4 * 27 * 2) * 2 - 1
+    bones = rig_bone_lengths(rig, 4)
+    assert bones.shape == (2, 12, 26)
+    xy = rig.reshape(2, 12, 27, 2)
+    manual = (xy[:, :, 5] - xy[:, :, RIG_PARENTS[5]]).norm(dim=-1)
+    assert torch.allclose(bones[:, :, 4], manual, atol=1e-6)
