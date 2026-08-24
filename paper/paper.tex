@@ -418,9 +418,10 @@ are its first results; error by distance from chunk boundaries and Diffusion-/Se
 test whether methods improve structure or only fit one raster style.
 \item \textbf{Course leaderboard (TODO):} freeze an evaluation container and hidden test split so student and lab
 submissions can improve on public baselines without changing the metric implementation.
-\item \textbf{Motion-prior feedback probe (TODO):} because the source motion model is autoregressive, generated
-motion can be fed back to it as history; whether it continues naturally or degenerates is a training-free
-out-of-distribution signal for generated dynamics, and potentially a cycle-consistency training signal.
+\item \textbf{Expert-corrected recovery training (TODO):} because the source motion model is autoregressive, it can
+continue from \emph{any} state — including the drifted states our model's own rollouts produce. Feeding those states
+back to the motion prior yields expert corrections on exactly the model's own error distribution, DAgger-style,
+teaching recovery from drift rather than only imitation of clean trajectories.
 \end{enumerate}
 }
 

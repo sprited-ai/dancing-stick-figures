@@ -61,14 +61,17 @@ note is the canonical record; treat it as the north star for v0.2 decisions.
 
 ## Future study (Jin, deferred by design)
 
-- **ARDY feedback cycle as an OOD probe**: feed our model's generated
-  motion (rig, via the exact projection chain inverted or directly in
-  joint space) back into ARDY as history and observe its continuation.
-  If ARDY continues naturally, our motion is in-distribution for the
-  motion prior; degenerate continuations flag OOD output. A free
-  realism/OOD detector (no training), and potentially a training signal
-  later (cycle-consistency). Explicitly future work — not in the current
-  cycle.
+- **ARDY expert-corrected recovery training (DAgger-style)** — Jin's
+  intent, corrected from my first reading: our rollouts WILL drift; feed
+  the drifted rig state into ARDY as history, let the expert produce the
+  correct continuation from that state, and train our model on those
+  corrections. Supervision lands exactly on the model's own error
+  distribution — teaches RECOVERY from drift, not just imitation of clean
+  data. Attacks exposure bias directly (the thing history-noise v5 failed
+  to do synthetically — this does it with real expert corrections).
+  Requires rig↔ARDY state mapping (projection chain is verified; the
+  inverse 2D→3D lift is approximate — or run the loop in ARDY's joint
+  space before projection). Explicitly future work — not in this cycle.
 
 ## Claudia's assessment (recorded at Jin's request)
 
