@@ -147,6 +147,28 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   above is from the fixed rerun.
 - Artifacts: gin `results/m6v{3,5,6,7}_*_2k_s0/` with `eval_n64/metrics.json`.
 
+## v9.3 render-coupling pair -- mechanism validated, tuning needed (2026-08-24)
+
+- Pair on the v9 recipe, 10k each, declared before results
+  (`configs/m6_protocol_v9p3_{anchor,coupled}_10k.json`): soft-capsule
+  renderer matched to the dataset geometry (palette RGB, thumbs dropped,
+  head capsule), union-foreground weighting, anchor target = soft-render of
+  the GT rig (renderer bias cancels); coupled adds rendered-rig vs
+  decoded-predicted-pixel RGBA matching (gradient through both streams).
+- anchor (weight 2): pixel tax (TVR .538 -> .645) with no rig gain
+  (on-figure .678 == v9.0) -- rejected at this weight.
+- coupled (+ weight 2): **on-figure .93** -- rig-pixel binding at 10k that
+  the uncoupled recipe only reaches by 100k of convergence -- so the
+  cross-modal gradient does exactly what it was designed to do. Costs:
+  TVR .721, jerk .307, bone error .213 at this budget/weight; retrieval
+  stays at chance (semantic alignment is untouched by coupling, consistent
+  with every other lever).
+- Reading: Jin's coupling mechanism is real but over-weighted at 2.0 for a
+  10k budget; next tuning = lower weight or coupling warmup, or the 32px
+  pixel-space pilot to study the coupling without the frozen-VAE decode in
+  the loop. Alignment remains a conditioning/data problem.
+- Artifacts: gin `results/m6v9p3_{anchor,coupled}_10k_s0/`.
+
 ## Seed-1 replication + v9 convergence -- completed (2026-08-24)
 
 - v8 seed-1 100k (`configs/m6_protocol_v8_combined_h16_100k_seed1.json`,
