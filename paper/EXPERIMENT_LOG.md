@@ -416,3 +416,32 @@ attributed:
 - All models sit well below the real floor: they track the specific
   continuation better than a legitimately different real take (metric sane).
 - Artifacts: `results/divergence/*.json` (local + gin).
+
+## v9.3 coupling-weight sweep -- completed (2026-08-24): warmup wins
+
+- Four arms, protocols + judgment rule declared before any result
+  (`configs/m6_protocol_v9p3_sweep_*.json`): constant render+consistency
+  weight 0.25/0.5/1.0, plus the full 2.0 weight linearly warmed up over the
+  first 5k steps (new `--coupling-warmup-steps` trainer flag). 10k steps
+  each, matched to the coupled pilot and v9.0 control.
+- Gate: on-figure >= .85 AND TVR <= v9.0-10k .538; winner = lowest
+  teacher-forced divergence among passers.
+- Results (on-figure / TVR / TF div / FR div):
+  w0.25 .724 / .518 / .2959 / .4510 -- binding lost, pixels fine
+  w0.5  .799 / .563 / .2953 / .4519 -- both gates missed
+  w1.0  .876 / .597 / .2994 / .4625 -- binding passes, pixel tax clear
+  w2.0-warmup .912 / .493 / .2977 / .4522 -- BOTH GATES PASS
+  (constant w2.0 pilot: .93 / .721 / .3091 / .4968)
+- Reading: constant coupling weight is a strictly monotone binding-vs-pixels
+  tradeoff with NO feasible point; the 5k warmup breaks the tradeoff --
+  full-strength coupling applied after pixels settle keeps ~all of the
+  binding gain (.912 vs .93) while IMPROVING structure over the uncoupled
+  control (TVR .493 vs .538). Mechanistically consistent with the coupled
+  arm's failure mode: early in training the decoded pixel x0 is noise, so
+  the consistency loss drags the pixel path toward the (also-noisy) rendered
+  rig; ramping the weight lets attention-level co-generation establish the
+  representation first.
+- Verdict per declared rule: winner = w2.0 + 5k warmup. Flagship recipe =
+  v9.3-warmup at 100k x 2 seeds.
+- Artifacts: gin `results/m6v9p3_sweep_*`, divergence jsons mirrored to
+  `results/divergence/`.
