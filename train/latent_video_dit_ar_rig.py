@@ -44,12 +44,14 @@ from train.latent_video_dit_ar import (
     decode_full,
     encode_video,
     file_sha256,
+    flow_prediction_to_clean,
     foreground_latent_weight,
     load_codec,
     m6_switch_prompt_grid,
     select_video_history_window,
     validate_experiment_protocol,
 )
+from train.soft_skeleton_renderer import SoftSkeletonRenderer
 
 RIG_JOINTS = 27
 RIG_PARENTS = (-1, 0, 1, 2, 3, 4, 5, 4, 7, 8, 9, 10, 10, 4, 13, 14, 15, 16, 16,
@@ -73,8 +75,9 @@ class RigVideoWindows(VideoWindows):
     def __init__(self, cache, frames, split, stride, **kwargs):
         super().__init__(cache, frames, split, stride, **kwargs)
         self.rig = np.load(os.path.join(cache, "rig.npy"), mmap_mode="r")
-        if self.rig.shape[0] != self.frames.shape[0]:
-            raise ValueError("rig.npy is not aligned with frames.npy")
+        self.rig_depth = np.load(os.path.join(cache, "rig_depth.npy"), mmap_mode="r")
+        if self.rig.shape[0] != self.frames.shape[0] or self.rig_depth.shape[0] != self.frames.shape[0]:
+            raise ValueError("rig.npy/rig_depth.npy are not aligned with frames.npy")
 
     def __getitem__(self, i):
         c, repeat = self.items[i]
@@ -86,6 +89,7 @@ class RigVideoWindows(VideoWindows):
         s = c["start"] + offset
         x = np.asarray(self.frames[s:s + self.span:self.stride]).astype(np.float32) / 255.0
         rig = np.asarray(self.rig[s:s + self.span:self.stride]).astype(np.float32)
+        depth = np.asarray(self.rig_depth[s:s + self.span:self.stride]).astype(np.float32)
         if self.size != x.shape[1]:
             f = x.shape[1] // self.size
             x = np.concatenate([x[..., :3] * x[..., 3:4], x[..., 3:4]], -1)
@@ -95,7 +99,7 @@ class RigVideoWindows(VideoWindows):
             x = np.concatenate([x[..., :3] * a, a], -1)
         video = torch.from_numpy(x).permute(3, 0, 1, 2) * 2 - 1
         rig = torch.from_numpy(rig) * 2 - 1          # normalised [0,1] -> [-1,1]
-        return video, rig, c["text"]
+        return video, rig, torch.from_numpy(depth), c["text"]
 
 
 def select_rig_history_window(
@@ -323,6 +327,18 @@ def main():
              "(validation and previews keep canonical captions)",
     )
     parser.add_argument(
+        "--rig-render-weight", type=float, default=0.0,
+        help="weight of the differentiable-render anchor: the recovered clean rig "
+             "is rendered as soft capsules (ground-truth joint depth) and its alpha "
+             "compared with the sample's ground-truth alpha (gradient to the rig path)",
+    )
+    parser.add_argument(
+        "--rig-pixel-consistency-weight", type=float, default=0.0,
+        help="weight of the rig<->pixel coupling: rendered clean-rig alpha compared "
+             "with the alpha of the DECODED predicted clean pixels (frozen decoder; "
+             "gradient flows into BOTH the rig and pixel paths; ~1.6x step cost)",
+    )
+    parser.add_argument(
         "--bone-length-weight", type=float, default=0.0,
         help="weight of the bone-length preservation loss on the recovered clean "
              "rig (x0 = input - t*v) against the sample's ground-truth bone lengths",
@@ -376,6 +392,10 @@ def main():
         raise ValueError("launch differs from predeclared bone_length_weight")
     if bool(protocol["frozen_model"].get("caption_variants", False)) != bool(args.caption_variants):
         raise ValueError("launch differs from predeclared caption_variants treatment")
+    for field, value in (("rig_render_weight", args.rig_render_weight),
+                         ("rig_pixel_consistency_weight", args.rig_pixel_consistency_weight)):
+        if float(protocol["frozen_model"].get(field, 0.0)) != value:
+            raise ValueError(f"launch differs from predeclared {field}")
     variant_bank = {}
     if args.caption_variants:
         variant_bank = json.loads(Path(args.caption_variants).read_text())
@@ -423,6 +443,12 @@ def main():
         embeddings, masks = zip(*(text_cache[prompt] for prompt in prompts))
         return torch.stack(embeddings).to(args.device), torch.stack(masks).to(args.device)
 
+    renderer = None
+    if args.rig_render_weight > 0 or args.rig_pixel_consistency_weight > 0:
+        renderer = SoftSkeletonRenderer(
+            RIG_PARENTS, body_radius=1.3, image_size=args.output_size,
+            normalized_coordinates=True,
+        ).to(args.device)
     model = RigFullSTARVideoDiT(
         temporal_compression=temporal, size=latent_size, patch=args.patch, in_ch=channels,
         dim=args.dim, depth=args.depth, heads=args.heads, cond_ch=channels + 1, text_dim=text_dim,
@@ -446,6 +472,8 @@ def main():
         "base_recipe": "v8 combined (16f blocks + motion weight + fg weight)",
         "rig_loss_weight": args.rig_loss_weight,
         "bone_length_weight": args.bone_length_weight,
+        "rig_render_weight": args.rig_render_weight,
+        "rig_pixel_consistency_weight": args.rig_pixel_consistency_weight,
         "caption_variants": {
             "enabled": bool(args.caption_variants),
             "path": str(Path(args.caption_variants).resolve()) if args.caption_variants else None,
@@ -485,13 +513,13 @@ def main():
         history = random.choice(histories)
         use_initial = history == 0
         try:
-            video, rig, labels = next(initial_iterator if use_initial else iterator)
+            video, rig, depth, labels = next(initial_iterator if use_initial else iterator)
         except StopIteration:
             if use_initial:
                 initial_iterator = iter(initial_train_loader)
             else:
                 iterator = iter(train_loader)
-            video, rig, labels = next(initial_iterator if use_initial else iterator)
+            video, rig, depth, labels = next(initial_iterator if use_initial else iterator)
         video = select_video_history_window(
             video.to(args.device, non_blocking=True), history_latents=history,
             target_latents=args.target_latents, history_max=args.history_max,
@@ -499,6 +527,11 @@ def main():
         )
         rig = select_rig_history_window(
             rig.to(args.device, non_blocking=True), history_latents=history,
+            target_latents=args.target_latents, history_max=args.history_max,
+            temporal_compression=temporal, initial_block=use_initial,
+        )
+        depth = select_rig_history_window(
+            depth.to(args.device, non_blocking=True), history_latents=history,
             target_latents=args.target_latents, history_max=args.history_max,
             temporal_compression=temporal, initial_block=use_initial,
         )
@@ -546,14 +579,35 @@ def main():
             pixel_loss = per_sample.mean()
             rig_loss = rig_per_sample.mean()
             loss = pixel_loss + args.rig_loss_weight * rig_loss
-            bone_loss = None
-            if args.bone_length_weight > 0:
+            bone_loss = render_loss = consistency_loss = None
+            need_x0 = args.bone_length_weight > 0 or renderer is not None
+            if need_x0:
                 amount = timestep[:, None, None]
                 rig_x0 = rig_input.float() - amount * rig_prediction.float()
+            if args.bone_length_weight > 0:
                 bones = rig_bone_lengths(rig_x0[:, history:], temporal)
                 bones_gt = rig_bone_lengths(rig_clean[:, history:].float(), temporal)
                 bone_loss = (bones - bones_gt).square().mean()
                 loss = loss + args.bone_length_weight * bone_loss
+            if renderer is not None:
+                joints = rig_x0[:, history:].reshape(
+                    video.shape[0], -1, RIG_JOINTS, 2)          # [-1,1], target frames
+                target_depth = depth[:, history * temporal:].float()
+                rendered_alpha = renderer(joints, target_depth)["alpha"].squeeze(2)
+                if args.rig_render_weight > 0:
+                    gt_alpha = ((video[:, 3].float() + 1) / 2)[:, history * temporal:]
+                    render_loss = (rendered_alpha - gt_alpha).square().mean()
+                    loss = loss + args.rig_render_weight * render_loss
+                if args.rig_pixel_consistency_weight > 0:
+                    predicted_clean = flow_prediction_to_clean(
+                        model_input, prediction, timestep,
+                        clean_history=clean[:, :, :history] if history else None,
+                    )
+                    decoded = decode_full(codec, standardizer, predicted_clean,
+                                          output_size=args.output_size)
+                    decoded_alpha = decoded[:, 3][:, history * temporal:]
+                    consistency_loss = (rendered_alpha - decoded_alpha).square().mean()
+                    loss = loss + args.rig_pixel_consistency_weight * consistency_loss
         loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); optimizer.step()
         with torch.no_grad():
             decay = min(0.999 if step < 5000 else 0.9995, (1+step)/(10+step))
@@ -566,6 +620,10 @@ def main():
             writer.add_scalar("train/rig_flow_mse", float(rig_loss.detach()), step)
             if bone_loss is not None:
                 writer.add_scalar("train/bone_length_mse", float(bone_loss.detach()), step)
+            if render_loss is not None:
+                writer.add_scalar("train/rig_render_mse", float(render_loss.detach()), step)
+            if consistency_loss is not None:
+                writer.add_scalar("train/rig_pixel_consistency_mse", float(consistency_loss.detach()), step)
             writer.add_scalar("train/learning_rate", lr, step)
         if step % 50 == 0 or step == args.steps:
             rate = (time.time()-started) / step
