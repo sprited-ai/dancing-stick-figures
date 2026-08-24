@@ -77,22 +77,13 @@ and frames inside that block still interact bidirectionally, following the windo
 motion and chunked-video systems~\cite{zhao2026ardy,magi2025,yin2026evoke}.
 
 \section{Setup}
-The testbed, frozen $64^2$ 50-frame protocol, structural oracle (TVR/LIE), and motion diagnostics are those of the
-Dancing Stick Figures release~\cite{cho2026dsf}; all real-reference values below come from its motion-disjoint
-reference sets. % TODO: compress to ~1 column-inch; cite, don't restate.
-
-% --- moved from testbed report: frozen causal codec paragraph ---
-To make block-autoregressive training and 100-frame rollouts affordable we leave pixel space: a 3D causal video VAE
-(spatial stride 8, temporal stride 4, 16 latent channels) is trained for 40k steps on the released RGBA frames and
-then frozen, with checkpoint and latent statistics pinned by SHA-256. On held-out clips it reconstructs at alpha IoU
-$.952$ and $\approx$34\,dB PSNR, and a sliding-window decode audit over 100-frame clips shows no causal-prefix error
-or boundary flicker. The higher temporal compression was adopted over a conservative alternative (stride 2, 32
-channels) through a pre-declared reconstruction gate rather than throughput preference.
-
-% --- moved from testbed report: M6 architecture description (first half of the M6 paragraph) ---
-M6 is a 39.8M full-spatiotemporal latent DiT with 3D rotary embeddings: an immutable clean-history prefix of up to
-five latent blocks ($\approx$1\,s) conditions rectified-flow denoising of the next two-latent block (eight video
-frames), teacher-forced in training and rolled out to 100 frames at 20\,fps.
+The testbed, structural oracle (TVR/LIE), motion diagnostics, and all real-reference floors are those of the Dancing
+Stick Figures release~\cite{cho2026dsf}. Training leaves pixel space through a frozen 3D causal video VAE (spatial
+stride 8, temporal stride 4, 16 channels; alpha IoU $.952$, $\approx$34\,dB PSNR held-out; no causal-prefix error or
+boundary flicker in a 100-frame sliding-decode audit), adopted over a more conservative codec by a pre-declared
+reconstruction gate and pinned by SHA-256. The generator, M6, is a 39.8M full-spatiotemporal latent DiT with 3D
+rotary embeddings: an immutable clean-history prefix of up to five latent blocks ($\approx$1\,s) conditions
+rectified-flow denoising of the next block, teacher-forced in training and rolled out to 100 frames at 20\,fps.
 
 \section{Next-block divergence: an AR-native evaluation}
 The metric asks the autoregressive question directly: given the data's own history, how far is the model's next block
@@ -393,9 +384,20 @@ parameters, data, and budget matched, the structural channel by itself improves 
 against the data's actual continuation.
 
 \section{Limitations}
-\todoblock{Single traced synthetic domain (defended, not hidden); single-seed pilots with seed-replicated main run;
-one backbone family and codec; metric suite is image-space diagnostics; alignment remains open (taxonomy section) —
-enumerate honestly, mirroring the testbed report's style.}
+Everything here is measured on one traced synthetic domain: colour-coded stick figures at $64^2$ on a transparent
+background. That choice is the point — it buys an exact rig, an oracle, and matched controls that no natural-video
+corpus offers — but the quantitative levers are domain-coupled: the gradient-starvation mechanism behind the
+static-copy shortcut leans on a background that never moves, and SRE's accuracy leans on colour-coded limb identity.
+We claim the mechanisms and the measurement methodology transfer, not the constants. Scale is bounded: one backbone
+family (a 39.8M latent DiT) and one frozen codec, with the full-clip control sharing both, so family-level
+confounds are controlled but no second architecture cross-checks the block-AR tier. The fix pilots are
+single-seed by declared design, with attribution resting on matched single-variable controls; the combined run is
+seed-replicated, and the rig-co-generation comparison is single-seed at each budget until the flagship pair lands.
+Rig-space scores rely on SRE, a learned instrument with $0.66$\,px noise whose far-off-screen gate is vacuous on
+this data, and generated frames are out-of-distribution for it — mitigated, not eliminated, by the corruption
+probes, the label-space floors, and the self-consistency check. The metric suite is image- and rig-space
+diagnostics with no human evaluation, and the residual-failure taxonomy documents an unsolved alignment ceiling:
+more training makes the model listen to the prompt more without understanding it better.
 
 \section{Conclusion}
 \todoblock{Write last.}
