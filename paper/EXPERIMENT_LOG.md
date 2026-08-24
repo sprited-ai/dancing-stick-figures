@@ -402,7 +402,8 @@ attributed:
   v8 100k .3139/.4584 | v9.0 conv 100k .2870/.4399 | v9.3 coupled 10k
   .3091/.4968.
 - Matched 10k-budget scores: v8 .3007/.4653 | v9.0 varied-captions .2947/.4471
-  | v9.0 rig-cogen (canon) .2966/.4504 | v9.3 coupled .3091/.4968.
+  | v9.0 rig-cogen (canon) .2966/.4504 | v9.3 anchor .3009/.4486 | v9.3
+  coupled .3091/.4968.
 - Readings: (1) v9.0 beats v8 on BOTH teacher-forced and free-running at both
   budgets -- first quantitative evidence that rig co-generation improves pixel
   prediction for free. (2) v9.3 coupled w2.0 is the WORST arm at matched 10k
