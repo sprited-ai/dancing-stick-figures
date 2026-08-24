@@ -656,11 +656,18 @@ def main():
                 rendered_alpha = rendered["alpha"].squeeze(2)
                 rendered_rgb = rendered["rgb"]                   # premultiplied, like the data
                 if args.rig_render_weight > 0:
-                    target_slice = slice(history * temporal, None)
-                    gt = ((video.float() + 1) / 2)[:, :, target_slice]
+                    # Target = the SAME soft renderer applied to the ground-truth
+                    # rig, so the capsule-vs-procedural approximation cancels and
+                    # the loss measures rig error alone (Jin's observation: the
+                    # procedural renderer reproduces pixels exactly but is not
+                    # differentiable; matching soft-to-soft removes its bias).
+                    with torch.no_grad():
+                        gt_joints = rig_clean[:, history:].float().reshape(
+                            video.shape[0], -1, RIG_JOINTS, 2)
+                        gt_rendered = renderer(gt_joints, target_depth)
                     render_loss = fg_weighted_rgba_mse(
                         rendered_alpha, rendered_rgb,
-                        gt[:, 3], gt[:, :3].transpose(1, 2),
+                        gt_rendered["alpha"].squeeze(2), gt_rendered["rgb"],
                     )
                     loss = loss + args.rig_render_weight * render_loss
                 if args.rig_pixel_consistency_weight > 0:
