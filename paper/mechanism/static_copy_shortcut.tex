@@ -353,12 +353,30 @@ and at conditioning architecture — rather than encoder capacity as the binding
 under the declared evaluation; per-item details are in the experiment log.
 
 \section{Related work}
-\todoblock{Write around: UnityVideo (CVPR 2026, joint multi-modal co-training/co-generation at 10B scale — our scale precedent; full-clip, no continuation measurement, no controlled attribution), LDM3D/IDOL/Structural Video Diffusion (joint RGB+depth/normal), AnimaX (joint video-pose for 3D animation transfer), REPA/V-Co (auxiliary representation alignment/co-denoising), Diffusion Forcing~\cite{chen2024diffusionforcing}, Self Forcing~\cite{huang2025selfforcing}
-(exposure bias in AR video diffusion), MAGI-1~\cite{magi2025} (chunk-AR at scale), exposure bias / DAgger literature,
-and loss-weighting precedents (min-SNR, P2). Position: those works target the train--test gap at rollout time; the
-static-copy shortcut is a \emph{training-time} gradient-allocation failure that appears before any rollout drift, and
-history-side remedies do not touch it. The frontier-state paragraph below is drafted; fold it in rather than
-re-covering EVOKE.}
+\paragraph{Joint multi-modal video generation.} Large systems increasingly co-train video with auxiliary modalities.
+UnityVideo~\cite{huang2025unityvideo} extends a 10B backbone with a joint RGB/auxiliary stream spanning five
+modalities including skeletons and depth, and reports that joint training accelerates convergence and improves
+generation — the scale precedent for our question. Joint RGB-plus-structure generation likewise appears as LDM3D's
+RGB+depth~\cite{stan2023ldm3d}, IDOL's parameter-shared video--depth denoising~\cite{zhai2024idol}, Structural Video
+Diffusion's depth and normal streams for multi-human animation~\cite{wang2025svd}, and AnimaX's joint video--pose
+diffusion, where the co-generated pose sequence is itself the product~\cite{huang2025animax}. A parallel line treats
+auxiliary signal as representation regularization rather than an output: REPA aligns denoiser features with a
+pretrained encoder~\cite{yu2024repa}, and V-Co co-denoises an auxiliary representation stream~\cite{lin2026vco}. In
+all of these the evidence is observational at system scale — full-clip objectives, uncontrolled data and capacity,
+and no measurement of continuation. Our study is the causal complement: one change (co-generated rig tokens) at
+matched parameters, data, and budget, scored by next-block divergence against the data's actual continuation on a
+testbed whose rig is exact.
+
+\paragraph{Block-autoregressive diffusion and its train--test gap.} Diffusion Forcing unifies full-sequence
+diffusion with autoregressive rollout through per-token noise levels~\cite{chen2024diffusionforcing}; MAGI-1 scales
+chunk-autoregressive denoising to production~\cite{magi2025}; Self Forcing closes the exposure-bias gap by training
+on the model's own rollouts~\cite{huang2025selfforcing} — the diffusion instance of the distribution-shift problem
+DAgger addresses in imitation learning~\cite{ross2011dagger}. These works locate the failure at rollout time, where
+generated history drifts off the training distribution. The static-copy shortcut is different in kind: a
+training-time gradient-allocation failure that appears under pure teacher forcing, before any rollout — and,
+correspondingly, history-side remedies of the kind that help exposure bias fail on it, while reallocating training
+signal repairs it. Our loss reallocation extends diffusion loss-reweighting — min-SNR and P2 reweight across noise
+levels~\cite{hang2023minsnr,choi2022p2} — to the space-time content axis, which is where this factorization starves.
 
 % --- EVOKE positioning: frontier evidence for explicit structural state in chunk-AR generation ---
 \paragraph{Explicit structural state at the frontier.} Concurrent interactive systems arrive at this paper's design
@@ -394,5 +412,15 @@ Diagnostics. arXiv, 2026. % TODO: fill arXiv id after the testbed report is subm
 \bibitem{huang2025selfforcing} X. Huang et al. Self Forcing: Bridging the Train-Test Gap in Autoregressive Video Diffusion. arXiv:2506.08009, 2025.
 \bibitem{zhao2026ardy} K. Zhao et al. ARDY: Autoregressive Diffusion with Hybrid Representation for Interactive Human Motion Generation. arXiv:2607.08741, 2026.
 \bibitem{yin2026evoke} Y. Yin et al. Alaya-EVOKE: From Linear-Scaling Supervision to Endless World. arXiv:2608.13546, 2026.
+\bibitem{huang2025unityvideo} J. Huang et al. UnityVideo: Unified Multi-Modal Multi-Task Learning for Enhancing World-Aware Video Generation. arXiv:2512.07831, 2025.
+\bibitem{stan2023ldm3d} G. Stan et al. LDM3D: Latent Diffusion Model for 3D. arXiv:2305.10853, 2023.
+\bibitem{zhai2024idol} Y. Zhai et al. IDOL: Unified Dual-Modal Latent Diffusion for Human-Centric Joint Video-Depth Generation. \emph{ECCV}, 2024.
+\bibitem{wang2025svd} Z. Wang et al. Multi-identity Human Image Animation with Structural Video Diffusion. \emph{ICCV}, 2025.
+\bibitem{huang2025animax} Z. Huang et al. AnimaX: Animating the Inanimate in 3D with Joint Video-Pose Diffusion Models. \emph{SIGGRAPH Asia}, 2025.
+\bibitem{yu2024repa} S. Yu et al. Representation Alignment for Generation: Training Diffusion Transformers Is Easier Than You Think. \emph{ICLR}, 2025.
+\bibitem{lin2026vco} H. Lin et al. V-Co: A Closer Look at Visual Representation Alignment via Co-Denoising. arXiv:2603.16792, 2026.
+\bibitem{ross2011dagger} S. Ross, G. Gordon, and J. A. Bagnell. A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning. \emph{AISTATS}, 2011.
+\bibitem{hang2023minsnr} T. Hang et al. Efficient Diffusion Training via Min-SNR Weighting Strategy. \emph{ICCV}, 2023.
+\bibitem{choi2022p2} J. Choi et al. Perception Prioritized Training of Diffusion Models. \emph{CVPR}, 2022.
 \end{thebibliography}
 \end{document}
