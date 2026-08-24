@@ -72,3 +72,17 @@ def test_bone_lengths_from_rig_tokens_match_direct_computation():
     xy = rig.reshape(2, 12, 27, 2)
     manual = (xy[:, :, 5] - xy[:, :, RIG_PARENTS[5]]).norm(dim=-1)
     assert torch.allclose(bones[:, :, 4], manual, atol=1e-6)
+
+
+def test_fg_weighted_alpha_mse_ignores_background_agreement():
+    from train.latent_video_dit_ar_rig import fg_weighted_alpha_mse
+
+    # identical maps -> zero loss regardless of foreground size
+    a = torch.zeros(2, 4, 16, 16); a[:, :, 5, 5] = 1.0
+    assert float(fg_weighted_alpha_mse(a, a.clone())) == 0.0
+    # a misplaced small figure must not be washed out by empty background:
+    # plain MSE would be ~2/256, the fg-weighted loss stays near 1
+    b = torch.zeros_like(a); b[:, :, 10, 10] = 1.0
+    plain = float((a - b).square().mean())
+    weighted = float(fg_weighted_alpha_mse(a, b))
+    assert weighted > 0.2 and weighted > plain * 10

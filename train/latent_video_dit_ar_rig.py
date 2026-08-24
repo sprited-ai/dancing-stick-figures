@@ -59,6 +59,20 @@ RIG_PARENTS = (-1, 0, 1, 2, 3, 4, 5, 4, 7, 8, 9, 10, 10, 4, 13, 14, 15, 16, 16,
 V9_PROTOCOL = "m6_latent_block_ar_v9_rig_cogen"
 
 
+def fg_weighted_alpha_mse(a: torch.Tensor, b: torch.Tensor, bg_weight: float = 0.02) -> torch.Tensor:
+    """Alpha-map MSE weighted by the union foreground support.
+
+    The transparent background dominates the 64x64 frame, so a plain MSE lets
+    background-background agreement wash out the gradient (the same failure the
+    foreground-weighted flow loss fixed).  Pixels where EITHER map claims
+    foreground carry weight 1; empty-empty pixels carry bg_weight.  The weight
+    is detached so it gates the loss without being optimized itself.
+    """
+    weight = torch.maximum(a, b).detach().clamp(0, 1)
+    weight = weight + bg_weight * (1 - weight)
+    return ((a - b).square() * weight).sum() / weight.sum().clamp_min(1e-8)
+
+
 def rig_bone_lengths(rig_tokens: torch.Tensor, temporal: int) -> torch.Tensor:
     """[B, T_lat, temporal*27*2] rig tokens -> [B, T_video, 26] bone lengths."""
     batch, t_lat, _ = rig_tokens.shape
@@ -596,7 +610,7 @@ def main():
                 rendered_alpha = renderer(joints, target_depth)["alpha"].squeeze(2)
                 if args.rig_render_weight > 0:
                     gt_alpha = ((video[:, 3].float() + 1) / 2)[:, history * temporal:]
-                    render_loss = (rendered_alpha - gt_alpha).square().mean()
+                    render_loss = fg_weighted_alpha_mse(rendered_alpha, gt_alpha)
                     loss = loss + args.rig_render_weight * render_loss
                 if args.rig_pixel_consistency_weight > 0:
                     predicted_clean = flow_prediction_to_clean(
@@ -606,7 +620,7 @@ def main():
                     decoded = decode_full(codec, standardizer, predicted_clean,
                                           output_size=args.output_size)
                     decoded_alpha = decoded[:, 3][:, history * temporal:]
-                    consistency_loss = (rendered_alpha - decoded_alpha).square().mean()
+                    consistency_loss = fg_weighted_alpha_mse(rendered_alpha, decoded_alpha)
                     loss = loss + args.rig_pixel_consistency_weight * consistency_loss
         loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); optimizer.step()
         with torch.no_grad():
