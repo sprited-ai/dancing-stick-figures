@@ -144,14 +144,37 @@ seed replication (pending, shares runs with the flagship), rig-quality-vs-pixel-
 curves, comparison table.}
 
 \section{How tightly should the rig couple to the pixels?}
-\todoblock{Coupling study. Co-generation couples rig and pixels only through shared attention; a differentiable
-soft-capsule renderer can couple them explicitly (render the predicted rig, match it against the decoded predicted
-pixels; gradient flows both ways). Pilot: at weight 2.0 the coupling binds rig to pixels an order of magnitude faster
-than attention alone (on-figure .68 to .93 at 10k, matching what un-coupled needs 100k for) but taxes pixel quality
-(TVR .721 vs .538) and next-block divergence (.3091 vs .2966 teacher-forced). Weight sweep (0.25/0.5/1.0/2.0-warmup,
-protocols pre-declared) in progress: w0.25 keeps pixels (TVR .518, divergence .2959) but loses most binding
-(on-figure .724). Verdict rule declared in configs/m6\_protocol\_v9p3\_sweep\_*.json. To write: full sweep table +
-verdict.}
+Co-generation couples rig and pixels only through shared attention. A differentiable soft-capsule renderer can couple
+them explicitly: render the predicted clean rig, and match it (foreground-weighted, in premultiplied RGB so limb
+identity is visible) against both a soft-render of the ground-truth rig and the decoded predicted pixels, with
+gradient flowing into both streams. At constant weight this coupling is a strictly monotone trade: binding rises and
+pixel structure falls together (Table~\ref{tab:coupling}), with no weight satisfying both pre-declared gates
+(on-figure $\ge$ .85, TVR $\le$ the uncoupled control's .538). A 5k-step linear warmup of the full weight breaks the
+trade: applied after the pixel representation settles, full-strength coupling keeps essentially all of the binding
+gain (.912 versus the constant arm's .93) while \emph{improving} structure over the uncoupled control (TVR .493
+versus .538). Mechanistically this matches the constant arm's failure mode: early in training the decoded pixel
+$x_0$ is noise, so the consistency loss drags the pixel path toward an equally noisy rendered rig; ramping the weight
+lets attention-level co-generation establish the representation first. All verdicts follow the rule declared in the
+sweep protocols before any arm ran.
+
+\begin{table}[t]\centering\caption{Coupling-weight sweep (10k steps each, matched to the uncoupled control; gates
+declared before results: on-figure $\ge$ .85 and TVR $\le$ .538). Only the warmed-up arm passes both.}
+\label{tab:coupling}\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+arm & on-figure & TVR & TF div. & FR div. \\
+\midrule
+uncoupled (v9.0) & .54--.79 & .538 & .297 & .450 \\
+$w{=}0.25$ & .724 & \textbf{.518} & .296 & .451 \\
+$w{=}0.5$ & .799 & .563 & .295 & .452 \\
+$w{=}1.0$ & .876 & .597 & .299 & .463 \\
+$w{=}2.0$ constant & \textbf{.930} & .721 & .309 & .497 \\
+$w{=}2.0$, 5k warmup & .912 & \textbf{.493} & .298 & .452 \\
+\bottomrule
+\end{tabular}
+\end{table}
+% TODO: flagship 100k x 2 seeds of the warmup recipe (launched 2026-08-24) -- add convergence + endpoint.
 
 \section{Rig-space evaluation with a learned regressor (SRE)}
 \todoblock{SRE: a pixels-to-rig regressor supervised on the testbed's exact rig labels, validated on held-out
