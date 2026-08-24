@@ -47,14 +47,40 @@ binding while improving structure over the uncoupled control.
 \end{abstract}
 
 \section{Introduction}
-\todoblock{Write after evidence sections stabilize. Frame: (1) block-AR diffusion is the streaming recipe
-(MAGI-1, Diffusion/Self Forcing); (2) scale systems observe that multi-modal joint training helps generation
-(UnityVideo, CVPR 2026: skeleton/depth/flow co-training lowers RGB loss at 10B/1.3M pairs) but full-clip settings,
-uncontrolled scale, and shallow attribution leave the causal question open — and nothing measures continuation;
-(3) we answer it in a controlled block-AR testbed: explicit rig co-generation, matched controls, pre-declared
-protocols, AR-native next-block divergence; (4) contributions: causal evidence that rig co-generation improves
-next-block prediction; the divergence metric + SRE rig-space evaluation; the static-copy diagnosis/repair; the
-coupling-weight study.}
+Streaming video generation has converged on a recipe: block-autoregressive diffusion, in which the model denoises a
+bounded block of future frames conditioned on a clean, immutable history prefix, then feeds its output back as the
+next prefix. MAGI-1 runs it at production scale~\cite{magi2025}, Diffusion Forcing and Self Forcing supply its
+training theory~\cite{chen2024diffusionforcing,huang2025selfforcing}, and interactive world models are its deployment
+form~\cite{yin2026evoke}. The factorization buys bounded latency, per-block re-prompting, and unbounded rollout —
+but it also changes the learning problem: most of what the model sees is clean ground truth, and only a short
+future block carries loss.
+
+At the same time, large systems report that jointly learning auxiliary modalities improves the pixels themselves:
+UnityVideo co-trains skeletons, depth, and flow alongside RGB at 10B parameters and observes faster convergence and
+better generation~\cite{huang2025unityvideo}. The evidence, however, is observational. It comes from full-clip
+objectives rather than continuation, from systems whose data, capacity, and modality mix move together, and from
+benchmarks that never ask the autoregressive question — whether the model continues \emph{this specific world}
+better. Whether explicit structure \emph{causes} better block-autoregressive continuation, in the setting where the
+streaming recipe actually operates, is open.
+
+This report answers that question on a testbed built to make it answerable: Dancing Stick Figures~\cite{cho2026dsf},
+where every frame carries an exact 27-joint rig and a rule-based structural oracle. We make one change to a
+block-autoregressive latent-diffusion baseline — append one 2D-skeleton token per latent frame, denoised jointly
+with the pixels under a shared flow — at matched parameters, data, optimizer, and budget, and score both models with
+an AR-native metric: next-block divergence against the data's actual continuation, calibrated by a same-prompt
+real-pair floor. Co-generating the rig improves teacher-forced and free-running continuation at both a 10k and a
+100k budget; training the pixel-only model $10\times$ longer makes its continuation \emph{worse} while the rig
+model's improves; and a validated pixels-to-rig regressor (SRE) shows the ordering replicates in rig space, with the
+model's self-reported rig converging to instrument-noise agreement with its own pixels. Every comparison runs under
+protocols and verdict rules declared before results.
+
+Contributions: (1) causal, matched-control evidence that explicit rig co-generation improves next-block prediction
+in block-autoregressive video diffusion, in pixel space and in rig space; (2) the evaluation stack that makes the
+claim measurable — next-block divergence with a real-pair floor, and SRE, a validated rig-space instrument;
+(3) the diagnosis and repair of the static-copy shortcut, a training-time pathology of the block-autoregressive
+factorization itself, with matched full-clip controls for attribution; (4) a coupling-weight study showing that
+binding the rig to the pixels through a differentiable renderer is a monotone trade at constant weight — and that a
+short warmup of the same weight breaks the trade.
 
 % --- moved from testbed report (Pixel P1): full-clip vs block-AR motivation essay ---
 \paragraph{Why full-clip bidirectionality stops being enough.} Bidirectional temporal attention is useful inside the fixed 50-frame sample of K1, the testbed's pixel-space full-clip video DiT~\cite{cho2026dsf}, because every frame can coordinate with both earlier and later frames. The limitation
