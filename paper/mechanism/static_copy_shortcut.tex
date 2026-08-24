@@ -103,7 +103,34 @@ variant carries the model's own generated prefix instead, so the teacher-forced-
 exposure bias directly. A \emph{real floor} — the same distance between same-prompt, different-take real clips —
 calibrates the scale: it is the divergence of a legitimately different performance. All models score well below this
 floor, confirming the metric measures continuation fidelity rather than generic similarity.
-% TODO: definition equation + full per-block-position table from results/divergence/.
+Formally, for history $h_b$ ending at block position $b$ and the clip's true continuation $x_b$,
+\[
+D_{\mathrm{TF}}(b) \;=\; \mathrm{E}_{\mathrm{clips}}\Big[\min_{n\le N} d_{\mathrm{fg}}\big(G(h_b, c, z_n),\, x_b\big)\Big],
+\]
+where $G$ generates one block under prompt $c$ and noise $z_n$, and $d_{\mathrm{fg}}$ is the union-foreground-weighted
+RGBA MSE. $D_{\mathrm{FR}}$ replaces $h_b$ with the model's own rollout prefix. Table~\ref{tab:divergence} reports
+both for the pixel-only and rig-co-generating models.
+
+\begin{table}[t]\centering\caption{Teacher-forced next-block divergence (best-of-4) by block position; free-running
+(FR) and same-prompt real-pair floor averaged over positions. Lower is better. Matched parameters, codec, data,
+optimizer, and recipe; the rig row differs only by co-generated rig tokens.}\label{tab:divergence}\scriptsize
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{@{}lcccccc c c@{}}
+\toprule
+model & $b{=}0$ & 1 & 2 & 3 & 4 & 5 & TF avg & FR avg \\
+\midrule
+pixel-only, 10k & .393 & .369 & .368 & .337 & .232 & .105 & .301 & .465 \\
++rig tokens, 10k & .389 & .361 & .360 & .330 & .227 & .113 & \textbf{.297} & \textbf{.450} \\
+pixel-only, 100k & .389 & .370 & .372 & .332 & .251 & .170 & .314 & .458 \\
++rig tokens, 100k & .388 & .360 & .355 & .315 & .213 & .091 & \textbf{.287} & \textbf{.440} \\
+\midrule
+real-pair floor & .561 & .560 & .563 & .562 & .550 & .531 & .555 & — \\
+\bottomrule
+\end{tabular}
+\end{table}
+% NOTE: 10k rig row = canonical-caption v9.0; 100k rig row = varied-caption convergence run (captions are a null
+% treatment by the declared caption study, so the pairing is legitimate; state this in the final text).
+
 
 \section{Co-generating the rig improves next-block prediction}
 \todoblock{HEADLINE SECTION. Evidence already collected (results/divergence/, EXPERIMENT\_LOG 2026-08-24): at a
