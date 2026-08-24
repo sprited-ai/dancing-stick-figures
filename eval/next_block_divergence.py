@@ -79,7 +79,7 @@ def generate_block(model, codec, standardizer, args, history_rgba01, text, mask,
             model, history_latents, int(args["target_latents"]), steps=steps,
             size=model.S, text=text, text_mask=mask, null_text=null_text,
             null_mask=null_mask, cfg=cfg, shift=float(args["shift"]),
-            generator=generator, sample_clamp=None,
+            generator=generator, clamp=None,
         )
     full = torch.cat((history_latents, block), dim=2)
     rgba = decode_full(codec, standardizer, full, output_size=int(args["output_size"]))

@@ -401,6 +401,12 @@ def main():
              "gradient flows into BOTH the rig and pixel paths; ~1.6x step cost)",
     )
     parser.add_argument(
+        "--coupling-warmup-steps", type=int, default=0,
+        help="linearly ramp the render and consistency weights from 0 to their "
+             "declared values over this many steps (0 = constant from step 0); "
+             "lets pixels settle before the coupling gradient arrives",
+    )
+    parser.add_argument(
         "--bone-length-weight", type=float, default=0.0,
         help="weight of the bone-length preservation loss on the recovered clean "
              "rig (x0 = input - t*v) against the sample's ground-truth bone lengths",
@@ -458,6 +464,8 @@ def main():
                          ("rig_pixel_consistency_weight", args.rig_pixel_consistency_weight)):
         if float(protocol["frozen_model"].get(field, 0.0)) != value:
             raise ValueError(f"launch differs from predeclared {field}")
+    if int(protocol["frozen_model"].get("coupling_warmup_steps", 0)) != args.coupling_warmup_steps:
+        raise ValueError("launch differs from predeclared coupling_warmup_steps")
     variant_bank = {}
     if args.caption_variants:
         variant_bank = json.loads(Path(args.caption_variants).read_text())
@@ -655,6 +663,8 @@ def main():
                 rendered = renderer(joints, target_depth)
                 rendered_alpha = rendered["alpha"].squeeze(2)
                 rendered_rgb = rendered["rgb"]                   # premultiplied, like the data
+                coupling_scale = (1.0 if args.coupling_warmup_steps <= 0
+                                  else min(1.0, step / args.coupling_warmup_steps))
                 if args.rig_render_weight > 0:
                     # Target = the SAME soft renderer applied to the ground-truth
                     # rig, so the capsule-vs-procedural approximation cancels and
@@ -669,7 +679,7 @@ def main():
                         rendered_alpha, rendered_rgb,
                         gt_rendered["alpha"].squeeze(2), gt_rendered["rgb"],
                     )
-                    loss = loss + args.rig_render_weight * render_loss
+                    loss = loss + coupling_scale * args.rig_render_weight * render_loss
                 if args.rig_pixel_consistency_weight > 0:
                     predicted_clean = flow_prediction_to_clean(
                         model_input, prediction, timestep,
@@ -681,7 +691,7 @@ def main():
                         rendered_alpha, rendered_rgb,
                         decoded[:, 3], decoded[:, :3].transpose(1, 2),
                     )
-                    loss = loss + args.rig_pixel_consistency_weight * consistency_loss
+                    loss = loss + coupling_scale * args.rig_pixel_consistency_weight * consistency_loss
         loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); optimizer.step()
         with torch.no_grad():
             decay = min(0.999 if step < 5000 else 0.9995, (1+step)/(10+step))

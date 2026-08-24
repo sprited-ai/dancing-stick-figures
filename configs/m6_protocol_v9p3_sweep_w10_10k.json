@@ -1,0 +1,61 @@
+{
+  "version": 10,
+  "declared_before_training_results": true,
+  "declared_at": "2026-08-24",
+  "purpose": "v9.3 coupling-weight sweep arm 'w10': the coupled pilot (render 2.0 / consistency 2.0) proved the mechanism (on-figure .68->.93 at 10k, = what uncoupled v9.0 needs 100k for) but taxed pixels (TVR .721 vs v9.0's ~.75 at 10k with far worse structure trend). This sweep asks whether a lower weight (0.25/0.5/1.0) or a 5k-step linear warmup of the full 2.0 weight keeps the fast rig-pixel binding without the pixel tax. Declared before any arm result. Primary judgment (declared here): (1) next-block divergence (eval/next_block_divergence.py, 32 clips, best-of-4, 6 blocks, seed 20260824) \u2014 teacher-forced best-of-N average, lower is better; (2) on-figure rate >= .85 at 10k (coupling must retain its binding gain); (3) TVR at 10k not worse than v9.0 10k control (.75). Winner = lowest teacher-forced divergence among arms passing (2) and (3); if no arm passes both, coupling is judged net-negative at 10k and the flagship recipe falls back to v9.0 + rig-drop. Matched controls: v9.0 10k (no coupling) and the coupled 2.0 pilot.",
+  "task": {
+    "resolution": 64,
+    "fps": 20,
+    "generated_video_frames": 100,
+    "duration_seconds": 5,
+    "condition": "text prompt",
+    "split": "prompt-disjoint test"
+  },
+  "frozen_model": {
+    "codec_selection_protocol": "configs/codec_selection_f8t4d16_reference.json",
+    "backbone": "full spatiotemporal DiT with signed local temporal and spatial 3D RoPE",
+    "attention_mode": "full",
+    "training_mode": "block_ar",
+    "start_aligned": true,
+    "history_seconds": 1,
+    "target_video_frames_per_block": 16,
+    "teacher_forcing": "clean ground-truth history during training; generated history during rollout",
+    "variable_history": true,
+    "rectified_flow": true,
+    "text_encoder": "frozen google-t5/t5-small",
+    "primary_sampling_steps_per_block": 10,
+    "cfg": 2.0,
+    "training_seed": 0,
+    "planned_optimizer_steps": 10000,
+    "motion_weight_alpha": 1.0,
+    "fg_latent_weight": 4.0,
+    "rig_cogeneration": true,
+    "rig_loss_weight": 1.0,
+    "rig_render_weight": 1.0,
+    "rig_pixel_consistency_weight": 1.0,
+    "coupling_warmup_steps": 0
+  },
+  "milestones": [
+    0,
+    2000,
+    5000,
+    10000
+  ],
+  "milestone_evaluation": {
+    "n": 64,
+    "sensitivity_n": 8,
+    "sampler_steps": 10,
+    "cfg": 2.0,
+    "noise_seed": 20260824,
+    "split": "test",
+    "comparison_block_frames": 4,
+    "declared_before_any_milestone_result": true
+  },
+  "validation": {
+    "every_steps": 250,
+    "fixed_timestep_and_noise_seed": 20260822,
+    "first_block_definition": "true clip frames 0-15",
+    "claim_limit": "Single-seed combined-treatment run; attribution of any gain to individual components rests on the matched 2k pilots, not on this run."
+  },
+  "matched_control": "results/m6v9_rig_cogen_10k_s0 (v9.0, no render coupling)"
+}
