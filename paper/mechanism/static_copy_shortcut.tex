@@ -153,15 +153,34 @@ real-pair floor & .561 & .560 & .563 & .562 & .550 & .531 & .555 & — \\
 
 
 \section{Co-generating the rig improves next-block prediction}
-\todoblock{HEADLINE SECTION. Evidence already collected (results/divergence/, EXPERIMENT\_LOG 2026-08-24): at a
-matched 10k budget the rig-co-generating model improves teacher-forced best-of-4 divergence over the pixel-only v8
-recipe (.2947 vs .3007) and free-running divergence (.4471 vs .4653); at 100k the gap widens (.2870 vs .3139
-teacher-forced, .4399 vs .4584 free-running). Both models share parameters (39.8M), codec, data, optimizer, and the
-v8 loss recipe; the ONLY change is appending one rig token per latent frame, denoised jointly. Also striking:
-training the pixel-only model $10\times$ longer makes its teacher-forced divergence WORSE (.3007 to .3139) while the
-rig-co-generating model improves (.2947 to .2870) — structure tokens change what longer training buys. To write:
-seed replication (pending, shares runs with the flagship), rig-quality-vs-pixel-gain analysis, per-block-position
-curves, comparison table.}
+The comparison isolates one variable. Both models are the repaired block-autoregressive recipe whose derivation
+Section~\ref{sec:staticcopy} reports — the same 39.8M backbone, frozen codec, data, optimizer, loss weights, and
+schedule. The
+rig-co-generating model differs only in appending one rig token per latent frame (the block's 27-joint 2-D skeleton,
+$4{\times}27{\times}2$ values per token), denoised jointly with the pixel latents under the shared rectified flow
+with a unit-weight rig loss. Nothing about the pixel pathway, its capacity, or its supervision changes; the model
+simply also has to say where the figure is.
+
+Table~\ref{tab:divergence} gives the result. At a matched 10k budget the rig model improves teacher-forced best-of-4
+divergence (.297 vs .301) and free-running divergence (.450 vs .465); at 100k the gap widens on both (.287 vs .314
+teacher-forced, .440 vs .458 free-running), and the improvement holds at every block position. Both models sit far
+below the same-prompt real-pair floor (.555), so the metric is measuring continuation fidelity, not generic
+similarity. The most diagnostic cell, though, is what longer training buys. Trained $10\times$ longer, the
+\emph{pixel-only} model's teacher-forced divergence gets \emph{worse} (.301 to .314) — consistent with this
+factorization's bias toward sharpening frames rather than tracking trajectories — while the rig-co-generating
+model improves (.297 to .287). The explicit structure channel changes not just the score but the direction extended
+training moves it.
+
+The improvement is not confined to the metric's pixel view. Rescored in rig space with the SRE instrument of
+Section~\ref{sec:sre} (Table~\ref{tab:rigspace}), the ordering replicates: better teacher-forced and free-running rig-space
+divergence at 100k at every block position, a free-running advantage that grows toward late blocks, and lower
+bone-length drift — while the model's self-reported rig converges to near-instrument-noise agreement with its own
+pixels. Continuation improves in the space the auxiliary channel describes \emph{and} in the pixel space it was
+meant to help.
+
+\todoblock{Pending for this section: seed replication at 100k (the flagship pair, in flight);
+rig-quality-versus-pixel-gain analysis (do clips whose rig the model predicts well diverge less?);
+per-block-position curves as a figure.}
 
 \section{How tightly should the rig couple to the pixels?}
 Co-generation couples rig and pixels only through shared attention. A differentiable soft-capsule renderer can couple
@@ -196,7 +215,7 @@ $w{=}2.0$, 5k warmup & .912 & \textbf{.493} & .298 & .452 \\
 \end{table}
 % TODO: flagship 100k x 2 seeds of the warmup recipe (launched 2026-08-24) -- add convergence + endpoint.
 
-\section{Rig-space evaluation with a learned regressor (SRE)}
+\section{Rig-space evaluation with a learned regressor (SRE)}\label{sec:sre}
 The third layer of the evaluation stack scores any model — rig-free or rig-generating — in rig space. SRE is a
 deliberately small instrument: a 3.3M-parameter convolutional regressor mapping one premultiplied RGBA frame to the
 27 2-D joints, supervised on the testbed's exact rig labels (loss masked to joints inside the frame) and trained in
@@ -247,7 +266,7 @@ label-space floor & 4.99 & — & — & — \\
 \todoblock{Remaining: seed replication of the rig-space table alongside the flagship runs; per-position curves as a
 figure if space permits.}
 
-\section{Supporting study I: the static-copy shortcut}
+\section{Supporting study I: the static-copy shortcut}\label{sec:staticcopy}
 \subsection{The phenomenon}
 % --- moved from testbed report: horizon dial + milestone curve + 100k convergence (second half of the M6 paragraph) ---
 Small pre-runs expose a generation-horizon dial ($n{=}4$, 2k steps): a four-frame target
