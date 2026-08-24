@@ -1,0 +1,224 @@
+\documentclass[10pt,twocolumn]{article}
+\usepackage[letterpaper,top=0.64in,bottom=0.68in,left=0.66in,right=0.66in,columnsep=0.24in]{geometry}
+\usepackage[T1]{fontenc}\usepackage{lmodern}\usepackage{microtype}\usepackage{graphicx}\usepackage{booktabs}
+\usepackage{array}\usepackage{caption}\usepackage{xcolor}\usepackage{enumitem}
+\usepackage{balance}
+\usepackage[hidelinks]{hyperref}\usepackage{url}
+\definecolor{sprited}{HTML}{6337C7}\definecolor{teal}{HTML}{008C95}\definecolor{pale}{HTML}{F3F0FA}\definecolor{muted}{HTML}{555555}
+\hypersetup{colorlinks=true,linkcolor=sprited,citecolor=sprited,urlcolor=sprited,
+pdftitle={The Static-Copy Shortcut: Diagnosing and Repairing Motion Collapse in Block-Autoregressive Video Diffusion},
+pdfauthor={Jin Hyuk Cho}}
+\captionsetup{font=small,labelfont=bf,skip=4pt}\setlist{nosep,leftmargin=*}
+\setlength{\parindent}{1em}\setlength{\parskip}{0pt}\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{7pt plus 2pt minus 2pt}\setlength{\intextsep}{7pt plus 2pt minus 2pt}\renewcommand{\arraystretch}{1.08}
+
+% TODO-block helper: unresolved evidence slots are typeset loudly so a draft
+% compile can never silently pass for a finished paper.
+\newcommand{\todoblock}[1]{\begin{center}\fcolorbox{sprited}{pale}{\parbox{.94\columnwidth}{\small\textbf{TODO:} #1}}\end{center}}
+
+\title{\vspace{-1.5em}\textbf{The Static-Copy Shortcut: Diagnosing and Repairing\\Motion Collapse in Block-Autoregressive Video Diffusion}}
+\author{Jin Hyuk Cho\\Sprited\\\small\href{mailto:jin@sprited.ai}{jin@sprited.ai} $\cdot$
+\href{https://orcid.org/0009-0001-1896-8242}{ORCID 0009-0001-1896-8242}}
+\date{}
+
+\begin{document}\raggedbottom\maketitle\vspace{-1.25em}
+
+\begin{abstract}
+% TODO(final pass): tighten once the 32^2 generality and divergence sections land.
+Teacher-forced block-autoregressive video diffusion conditions the denoising of a short future block on a clean
+ground-truth history. On a fully traced synthetic testbed~\cite{cho2026dsf} we show that this factorization creates a
+\emph{static-copy shortcut}: as training proceeds, frame structure converges through the real reference while motion
+calibration collapses to a fraction of the real value and never recovers, even at $10\times$ the budget where the
+collapse first appears. Five matched single-variable interventions separate two competing explanations. Both
+history-side treatments (history noising, longer history) deepen the collapse; all three treatments that reallocate
+training signal toward moving foreground content (longer generation blocks, motion-weighted flow loss,
+foreground-weighted latent loss) revive motion. The combined reallocation reaches the structural real reference while
+holding 91\% of real motion at a matched budget, replicates across seeds to within $\pm.005$, and over-trains
+gracefully into a measured re-freeze that bounds the recipe's operating range. A matched full-clip control with
+identical parameters, objective, codec, and data does not freeze, attributing the collapse to the teacher-forced
+short-block factorization itself. % TODO: one sentence on 32^2 pixel-space generality; one on next-block divergence.
+\end{abstract}
+
+\section{Introduction}
+\todoblock{Write after evidence sections stabilize. Skeleton: (1) block-AR video diffusion is the practical recipe
+for long-horizon/streaming generation (MAGI-1, Diffusion/Self Forcing); (2) we document a failure mode of its
+teacher-forced training — motion collapse under converging structure; (3) contributions: phenomenon with pre-declared
+milestone evaluation, hypothesis-separating matched pilots, a matched-budget repair, causal attribution via full-clip
+control, generality beyond the frozen latent space, and an AR-native next-block divergence evaluation.}
+
+\section{Setup}
+The testbed, frozen $64^2$ 50-frame protocol, structural oracle (TVR/LIE), and motion diagnostics are those of the
+Dancing Stick Figures release~\cite{cho2026dsf}; all real-reference values below come from its motion-disjoint
+reference sets. % TODO: compress to ~1 column-inch; cite, don't restate.
+
+% --- moved from testbed report: frozen causal codec paragraph ---
+To make block-autoregressive training and 100-frame rollouts affordable we leave pixel space: a 3D causal video VAE
+(spatial stride 8, temporal stride 4, 16 latent channels) is trained for 40k steps on the released RGBA frames and
+then frozen, with checkpoint and latent statistics pinned by SHA-256. On held-out clips it reconstructs at alpha IoU
+$.952$ and $\approx$34\,dB PSNR, and a sliding-window decode audit over 100-frame clips shows no causal-prefix error
+or boundary flicker. The higher temporal compression was adopted over a conservative alternative (stride 2, 32
+channels) through a pre-declared reconstruction gate rather than throughput preference.
+
+% --- moved from testbed report: M6 architecture description (first half of the M6 paragraph) ---
+M6 is a 39.8M full-spatiotemporal latent DiT with 3D rotary embeddings: an immutable clean-history prefix of up to
+five latent blocks ($\approx$1\,s) conditions rectified-flow denoising of the next two-latent block (eight video
+frames), teacher-forced in training and rolled out to 100 frames at 20\,fps.
+
+\section{The phenomenon}
+% --- moved from testbed report: horizon dial + milestone curve + 100k convergence (second half of the M6 paragraph) ---
+Small pre-runs expose a generation-horizon dial ($n{=}4$, 2k steps): a four-frame target
+block nearly freezes (centroid speed $.120$ versus real $.314$), eight frames is balanced ($.294$), and forty frames
+overshoots motion ($.713$) with the worst topology (TVR $.797$). A decoded-RGBA auxiliary loss through the frozen
+decoder — differentiable end-to-end, at $1.6\times$ step cost — improved limb existence by 11\% but worsened topology,
+occupancy, and prompt sensitivity at $n{=}64$, and was rejected as the default objective. We then trained the balanced
+eight-frame model for 20k steps and, by a rule declared before results existed, evaluated every late milestone rather
+than the final checkpoint alone ($n{=}64$, paired prompts and noise; Figure~\ref{fig:m6}). Frame structure improves
+monotonically (TVR $.745{\to}.349$, LIE $.261{\to}.188$ against real floors of $.133$/$.110$) while motion calibration
+collapses early and then flatlines: by step 10k centroid speed falls from $.300$ to $.142$, motion fraction from
+$.403$ to $.155$, and pose height variance to one sixth of the real value. Per prompt the model is not uniformly
+static — locomotion prompts keep moving while gesture prompts complete one action and rest, echoing the
+action-then-rest profile of the data — but the aggregate statistics sit far below matched real clips, so the collapse
+is genuine. An independent 100k-step run of the same protocol, evaluated under a convergence rule declared before its
+results, settles the question of whether the collapse is under-training: frame structure converges through the real
+floors (TVR $.097$ and LIE $.075$ at 100k, below the real $.133$/$.110$) while centroid speed stays pinned near
+$.11$--$.13$ from step 10k onward — about a third of the real value — and never recovers (Figure~\ref{fig:m6},
+dotted). The model learns to draw ever-cleaner figures that barely move; the freeze is structural, not a budget
+artifact.
+
+\begin{figure*}[t]\centering
+\includegraphics[width=0.96\textwidth]{paper/figs/m6_milestone_tradeoff.pdf}
+\caption{Pre-declared milestone evaluation of the block-autoregressive latent model ($n{=}64$ per checkpoint, paired
+prompts and noise, values normalized by the real reference). Structure converges toward its occlusion floor while
+motion calibration collapses by step 10k and does not recover; later checkpoints trade motion for anatomy. Dotted
+squares show an independent 100k run of the same protocol: structure passes below the real floor while motion stays
+collapsed. Diamonds mark the matched full-clip control R0 at its 10k endpoint.}
+\label{fig:m6}\end{figure*}
+
+\section{Competing hypotheses and matched pilots}
+% --- moved from testbed report: "Breaking the freeze" + pilots table ---
+Guided by the collapse diagnosis, we ran five matched single-variable 2k-step pilots
+against the eight-frame control, each declared before its result (Table~\ref{tab:pilots}). Both history-side
+interventions failed — noising the teacher-forced history and extending it to $2.4$\,s both suppress motion further —
+while all three interventions that reallocate training signal toward moving figure content revived it:
+sixteen-frame generation blocks, a motion-weighted flow loss, and a foreground-alpha loss weight
+that upweights latent cells the figure touches (matching the real $.314$ centroid speed at control-level topology; the
+transparent background dominates the frame, so uniform latent MSE spends most of its gradient on cells that never
+move). The split is mechanistically coherent: the collapse is not a failure to understand history but a gradient
+allocation that makes copying rest profitable, so only treatments that change the allocation help.
+
+\begin{table}[t]\centering\caption{Matched single-variable fix pilots (2k steps, $n{=}64$; control: TVR $.745$,
+centroid speed $.300$, motion fraction $.403$; real floors $.133$/$.314$/$.371$). Verdicts were declared per
+pre-registered config before results existed.}\label{tab:pilots}\scriptsize
+\begin{tabular}{llccc c}
+\toprule
+pilot & treatment & speed & m.\,frac & TVR & verdict \\
+\midrule
+A & 16-frame generation blocks & .507 & .682 & .760 & pass (overshoots) \\
+B & history-noise augmentation $0.2$ & .213 & .276 & — & fail \\
+D & motion-weighted flow loss $\alpha{=}1$ & .383 & .523 & .738 & pass \\
+E & $2.4$\,s teacher-forced history & .187 & .232 & .748 & fail \\
+F & foreground-alpha loss weight $4$ & .327 & .455 & .757 & pass \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{The combined repair, replication, and over-training bound}
+% --- moved from testbed report: combined fix paragraph ---
+A combined run of the three winners at the same 100k budget as the baseline escapes the trade-off
+(Figure~\ref{fig:m6fix}): at 100k steps it reaches TVR $.122$ and LIE $.073$ — at the real floors — while holding
+centroid speed at $.286$ (91\% of real) and motion fraction at $.434$, where the baseline froze at a third of the
+real value. Residual gaps remain in pose height variance ($.028$ versus $.061$) and angular jerk ($1.6\times$ real).
+Component attribution rests on the matched pilots. A seed-1 replication of the full 100k run (prediction declared
+before results) reproduces the endpoint to within $\pm.005$ on every reported metric (TVR $.122$, speed $.282$), so
+the escape is not seed luck. A further $3\times$-budget run
+(300k steps, fresh cosine, dotted in Figure~\ref{fig:m6fix}) bounds what training time alone can buy: angular jerk
+nearly closes ($.069$ at 300k versus real $.059$) and structure holds below the floor, but centroid speed bleeds
+back ($.283$ at 100k to $.245$ at 300k) and the per-prompt motion correlation collapses toward zero while
+prompt-versus-noise sensitivity keeps rising — over-training slowly re-freezes the model into smooth, generic,
+prompt-agnostic motion. The practical operating range for this recipe is 40k--100k steps; the remaining gaps are
+levers for data and conditioning, not for longer schedules.
+
+\begin{figure*}[t]\centering
+\includegraphics[width=0.96\textwidth]{paper/figs/m6_fix_comparison.pdf}
+\caption{Matched 100k-step runs of the eight-frame baseline and the combined fix (sixteen-frame blocks,
+motion-weighted and foreground-weighted flow loss), values normalized by the real reference. Both converge to the
+structural floor (a); only the combined fix retains real-level motion (b).}
+\label{fig:m6fix}\end{figure*}
+
+\section{Attribution: matched full-clip controls}
+% --- moved from testbed report: R0 paragraph ---
+R0 keeps the frozen codec, backbone family, text encoder, flow objective,
+optimizer, and seed, and denoises the complete 25-latent (100-frame) clip jointly with no history prefix for a
+pre-declared 10k-step budget. Under the same evaluation it does not freeze: centroid speed is $.382$ and motion
+fraction $.540$ — mildly overshooting the real $.314$/$.371$ — with height variance at $.043$ versus M6's $.010$,
+while topology is worse than the 20k block-AR model ($.456$ versus $.349$ TVR) and angular jerk is high ($.220$
+versus $.059$ real). Since parameters, objective, codec, and data are shared, the motion collapse is attributable to
+the teacher-forced short-horizon block factorization rather than to model capacity or the latent flow loss itself,
+consistent with the horizon dial above: the shorter the denoised block relative to its clean history, the stronger the
+static shortcut. The comparison is diagnostic, not a ranking — R0 trades the collapse for jitter and overshoot, both
+runs are single-seed, and R0's budget follows its own declared endpoint. An independent 50k full-clip run under the
+same convergence rule confirms the profile at scale: motion stays calibrated throughout (centroid speed
+$.375{\to}.293$) but structure plateaus at TVR $\approx.22$ from 30k onward, well short of the $.133$ floor — so
+under these budgets the fixed block-autoregressive model above is the only configuration that reaches the structural
+floor while keeping real-level motion.
+
+\section{Generality: pixel space without a learned codec}
+\todoblock{$32^2$ pixel-space no-VAE block-AR pilot. Plan: same block-AR factorization and budget class directly on
+$32^2$ RGBA pixels (no learned latent space). Prediction to declare before results: the freeze reproduces (static-copy
+is a property of the factorization, not the frozen codec), and the signal-reallocation repair transfers. This section
+defuses the ``artifact of the frozen latent space'' objection. Protocol config to be declared before the run.}
+
+\section{AR-native evaluation: next-block divergence}
+\todoblock{Report the next-block divergence metric (teacher-forced best-of-$N$ and free-running divergence against
+the data's actual continuation, with a same-prompt real-pair floor): definition, then the repaired model versus the
+frozen baseline across block positions. The teacher-forced-versus-free-running gap measures exposure bias directly.
+First results exist (\texttt{results/divergence/}); table and analysis to be written once the matched-budget runs
+complete.}
+
+\section{Residual failure taxonomy}
+% --- moved from testbed report: "What remains broken" paragraph ---
+Per-prompt analysis of the repaired model splits its
+residual errors systematically. Undershoot concentrates on compound vertical motions — squats ($-.47$ centroid-speed
+error against matched real clips), burpees ($-.41$), lunges ($-.37$) — which localizes the height-variance deficit;
+these numbers are flat from 60k to 100k, so the gap is not a budget problem. Overshoot concentrates on hold-still
+prompts (balancing on one leg $+.23$, yoga poses ${\sim}{+}.16$): the model regresses toward mean motion instead of
+obeying "stay still". Semantic following saturates: the correlation between per-prompt generated and real motion
+statistics rises to ${\sim}.30$ by 40k and then plateaus, while prompt-versus-noise output sensitivity keeps rising
+($.46{\to}.79$) — with more training the model listens to the prompt more but does not understand it better. Two
+sampler-side diagnostics bound the remaining knobs: raising CFG from 2 to 4 lifts the per-prompt speed correlation
+monotonically ($.24{\to}.30$) at no structural cost (TVR improves to ${\sim}.105$), evidence that the conditioning
+signal survives the frozen latent space but is weak at the source; and doubling sampler steps to 20 removes about
+$40\%$ of the excess angular jerk ($.095{\to}.079$, real $.059$) at mild motion damping, so jerk is partly a sampler
+artifact and partly trained-in. A matched pair differing only in the frozen text encoder (t5-small versus t5-base at
+10k steps) shows no alignment gain from encoder scale, pointing at the templated one-sentence-per-action captions —
+and at conditioning architecture — rather than encoder capacity as the binding constraint. All values are $n{=}64$
+under the declared evaluation; per-item details are in the experiment log.
+
+\section{Related work}
+\todoblock{Write around: Diffusion Forcing~\cite{chen2024diffusionforcing}, Self Forcing~\cite{huang2025selfforcing}
+(exposure bias in AR video diffusion), MAGI-1~\cite{magi2025} (chunk-AR at scale), exposure bias / DAgger literature,
+and loss-weighting precedents (min-SNR, P2). Position: those works target the train--test gap at rollout time; the
+static-copy shortcut is a \emph{training-time} gradient-allocation failure that appears before any rollout drift, and
+history-side remedies do not touch it.}
+
+\section{Limitations}
+\todoblock{Single traced synthetic domain (defended, not hidden); single-seed pilots with seed-replicated main run;
+one backbone family and codec; metric suite is image-space diagnostics; alignment remains open (taxonomy section) —
+enumerate honestly, mirroring the testbed report's style.}
+
+\section{Conclusion}
+\todoblock{Write last.}
+
+\paragraph{AI assistance disclosure.} Pixel (\href{https://sprited.ai}{@pix-el}) and Claudia assisted; the author
+reviewed the work and is responsible for its claims.
+
+\balance
+\begin{thebibliography}{99}\small
+\bibitem{cho2026dsf} J. H. Cho. Dancing Stick Figures: A Traced Synthetic Testbed for Diagnosing Long-Horizon Video
+Generation. arXiv, 2026. % TODO: fill arXiv id after the testbed report is submitted.
+\bibitem{magi2025} Sand AI et al. MAGI-1: Autoregressive Video Generation at Scale. arXiv:2505.13211, 2025.
+\bibitem{chen2024diffusionforcing} B. Chen et al. Diffusion Forcing: Next-token Prediction Meets Full-Sequence Diffusion. \emph{NeurIPS}, 2024.
+\bibitem{huang2025selfforcing} X. Huang et al. Self Forcing: Bridging the Train-Test Gap in Autoregressive Video Diffusion. arXiv:2506.08009, 2025.
+\bibitem{zhao2026ardy} K. Zhao et al. ARDY: Autoregressive Diffusion with Hybrid Representation for Interactive Human Motion Generation. arXiv:2607.08741, 2026.
+\end{thebibliography}
+\end{document}

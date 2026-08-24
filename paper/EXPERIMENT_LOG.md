@@ -388,3 +388,30 @@ attributed:
 - Purpose: test whether the winner combination escapes the h8 structure-motion
   Pareto front (no h8 checkpoint approaches both floors). Single seed;
   component attribution rests on the matched pilots above.
+
+## Next-block divergence: first common-judge scores (2026-08-24)
+
+- New metric `eval/next_block_divergence.py` (declared in
+  `paper/refs/v02_direction_next_token.md` idea #4 before implementation):
+  teacher-force GT history from held-out test clips, generate the next
+  16-frame block (best-of-4), score fg-union weighted RGBA MSE against the
+  clip's ACTUAL continuation; free-running variant carries the model's own
+  prefix (exposure gap); real floor = same-prompt different-clip pairs.
+  32 clips, 6 block positions, 10 steps, CFG 2, seed 20260824.
+- 100k-budget scores (TF best-of-4 avg / free-running avg; floor .5545):
+  v8 100k .3139/.4584 | v9.0 conv 100k .2870/.4399 | v9.3 coupled 10k
+  .3091/.4968.
+- Matched 10k-budget scores: v8 .3007/.4653 | v9.0 varied-captions .2947/.4471
+  | v9.0 rig-cogen (canon) .2966/.4504 | v9.3 coupled .3091/.4968.
+- Readings: (1) v9.0 beats v8 on BOTH teacher-forced and free-running at both
+  budgets -- first quantitative evidence that rig co-generation improves pixel
+  prediction for free. (2) v9.3 coupled w2.0 is the WORST arm at matched 10k
+  (pixel tax visible in the common judge), so the earlier "coupled 10k ~= v8
+  100k" framing is retired; the weight sweep (declared
+  configs/m6_protocol_v9p3_sweep_*.json with judgment rule) must show a
+  weight that keeps the binding gain without this tax. (3) v8's TF divergence
+  WORSENS 10k->100k (.3007->.3139) while v9.0's improves (.2947->.2870) --
+  training v8 longer buys structure but not continuation fidelity.
+- All models sit well below the real floor: they track the specific
+  continuation better than a legitimately different real take (metric sane).
+- Artifacts: `results/divergence/*.json` (local + gin).
