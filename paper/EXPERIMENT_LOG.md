@@ -481,3 +481,16 @@ attributed:
   learned instrument catches a corruption class the rule-based oracle cannot.
 - Artifacts: gin `results/sre_v1/` (ckpt_final.pt, validation_{val,test}.json);
   mirrored `paper/results/sre_v1_validation_{val,test,corruptions}.json`.
+
+## SRE v1 -- trained and G1-passed (2026-08-24)
+
+- Single-frame pixels -> cskel27 regressor per the declared design
+  (`paper/refs/sre_design.md`): 2.1M-param conv encoder + MLP, masked L2
+  excluding off-screen joints (gate G3 by construction), train split only.
+- 20k steps, batch 256, ~3 minutes on gin ALONGSIDE the running flagship
+  (no visible slowdown; flagship held 0.17s/it).
+- Held-out test split (4096 frames): mean joint error 0.796 px at 64^2
+  (gate G1: < 1.6 px -- PASS), PCK@2px .915, PCK@4px .970.
+- Gate G2 (corruption sanity: swapped-limb / extra-arm renders must raise
+  error) still owed before SRE-based claims enter the paper.
+- Artifacts: gin `results/sre_v1/` (checkpoints + history.json + log).
