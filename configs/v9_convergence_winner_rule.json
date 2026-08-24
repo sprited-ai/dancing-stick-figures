@@ -1,0 +1,6 @@
+{
+  "declared_at": "2026-08-23",
+  "declared_before_pair_results": true,
+  "rule": "winner arm = higher retrieval_top5 in eval_n64_040000/rig_alignment.json; tie -> canon",
+  "then": "launch the matching m6_protocol_v9_convergence_*_100k.json run automatically"
+}
