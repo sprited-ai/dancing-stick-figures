@@ -1,0 +1,92 @@
+{
+  "ckpt": "/data/dancing-stick-figure-paper/results/m6v9_convergence_varied_100k_s0/ckpt_100000.pt",
+  "protocol": "m6_latent_block_ar_v9_rig_cogen",
+  "clips": 32,
+  "samples": 4,
+  "blocks": 6,
+  "steps": 10,
+  "cfg": 2.0,
+  "seed": 20260824,
+  "block_video_frames": 16,
+  "history_video_frames": 20,
+  "teacher_forced_best_of_n": {
+    "0": 0.38807651223032735,
+    "1": 0.36016769921116065,
+    "2": 0.3552465941174887,
+    "3": 0.3146420913908514,
+    "4": 0.21255602672681562,
+    "5": 0.09132694391155383
+  },
+  "teacher_forced_mean": {
+    "0": 0.4288444081266789,
+    "1": 0.40597716224692704,
+    "2": 0.408371585624991,
+    "3": 0.3704757314262679,
+    "4": 0.29331201277727814,
+    "5": 0.2136226538750634
+  },
+  "free_running_mean": {
+    "0": 0.4241405998109258,
+    "1": 0.47970238464768045,
+    "2": 0.44791254872689024,
+    "3": 0.4344812696799636,
+    "4": 0.4298789409804158,
+    "5": 0.42326233099447563
+  },
+  "real_floor_mean": {
+    "0": 0.5614649816416204,
+    "1": 0.5597582240588963,
+    "2": 0.5634994488209486,
+    "3": 0.5616687526926398,
+    "4": 0.5497268561739475,
+    "5": 0.530998079571873
+  },
+  "note": "fg-union weighted RGBA MSE vs the clip's actual continuation; v9 free-running carries its own generated rig history after block 0",
+  "rig_space": {
+    "sre_ckpt": "/data/dancing-stick-figure-paper/results/sre_v1/ckpt_final.pt",
+    "teacher_forced_best_of_n_px": {
+      "0": 2.4209498916752636,
+      "1": 2.1294008158147335,
+      "2": 2.198729596566409,
+      "3": 1.8256109049543738,
+      "4": 1.1510812756605446,
+      "5": 0.5301576741039753
+    },
+    "teacher_forced_mean_px": {
+      "0": 2.7062797361286357,
+      "1": 2.4453248244244605,
+      "2": 2.5979551821947098,
+      "3": 2.366881885449402,
+      "4": 1.6559526963392273,
+      "5": 1.2036366504617035
+    },
+    "free_running_mean_px": {
+      "0": 2.5463952999562025,
+      "1": 3.126920006237924,
+      "2": 2.8939466709271073,
+      "3": 2.808325589168817,
+      "4": 2.266991921700537,
+      "5": 1.9261923925951123
+    },
+    "real_floor_label_space_px": {
+      "0": 5.454410467296839,
+      "1": 5.531719658523798,
+      "2": 5.360182646661997,
+      "3": 5.020774714648724,
+      "4": 4.5685477666556835,
+      "5": 3.975854519754648
+    },
+    "sre_noise_real_px": 0.3162485765836512,
+    "bone_rel_error_free_running": {
+      "0": 0.1246829602168873,
+      "1": 0.12625651503913105,
+      "2": 0.14553717232774943,
+      "3": 0.14431158651132137,
+      "4": 0.12752203398849815,
+      "5": 0.12258956395089626
+    },
+    "self_consistency_tf_px": 0.7616163513933619,
+    "self_consistency_free_px": 0.7616922208108008,
+    "note": "SRE joints of generated blocks vs EXACT rig labels of the true continuation (mean joint distance, px at output size); the floor is computed purely in label space; bone error is relative to the clip's exact history bone lengths; self-consistency compares SRE of generated pixels with the model's own rig tokens"
+  }
+}

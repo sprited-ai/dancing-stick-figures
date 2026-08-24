@@ -494,3 +494,30 @@ attributed:
 - Gate G2 (corruption sanity: swapped-limb / extra-arm renders must raise
   error) still owed before SRE-based claims enter the paper.
 - Artifacts: gin `results/sre_v1/` (checkpoints + history.json + log).
+
+## Rig-space next-block divergence: first table (2026-08-24, autonomous session)
+
+- `eval/next_block_divergence.py --sre`: same generation protocol/seeds as the
+  pixel metric (32 test clips, 6 positions, best-of-4, 10 steps, CFG 2, seed
+  20260824); adds SRE joints of every generated block scored against the true
+  continuation's EXACT rig labels (px at 64), label-space real floor, SRE
+  instrument noise on real renders, free-running bone-length drift, and v9
+  self-consistency (SRE of generated pixels vs the model's own rig tokens).
+- Averages over positions (TF best-of-4 px / FR px; label floor 4.99, SRE
+  noise on real renders 0.316):
+  v8 10k 1.900/2.791 | v9-canon 10k 1.930/2.626 |
+  v8 100k 1.921/2.903 | v9-varied 100k 1.709/2.595.
+- Readings: (1) at 100k the pixel-space ordering REPLICATES in rig space at
+  every block position (TF and FR); (2) at matched 10k teacher-forced is a
+  wash (1.90 vs 1.93) but free-running already favours the rig model
+  (2.63 vs 2.79); (3) v8's free-running rig divergence WORSENS with 10x
+  training (2.79 -> 2.90) while v9's improves — the pixel-space "what longer
+  training buys" asymmetry holds in rig space; (4) the v9 FR advantage grows
+  with block position (100k b=5: 1.93 vs 2.65 px) — structural drift, not
+  early-block noise, is where the rig channel pays; (5) free-running bone
+  drift is lower for v9 at both budgets (.154/.132 vs .166/.158);
+  (6) self-consistency tightens from 1.79 px (10k) to 0.76 px (100k),
+  approaching the 0.32 px instrument noise: the co-generated rig converges to
+  a faithful description of the model's own pixels.
+- Artifacts: gin `results/divergence/rigspace_{v8_10k,v9rigcogen_10k,
+  v8_100k,v9conv_100k}.json`, mirrored to `paper/results/`.

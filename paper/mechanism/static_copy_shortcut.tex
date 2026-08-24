@@ -193,9 +193,38 @@ same harness shows the learned instrument complements the rule-based oracle: a f
 constructed to preserve adjacency so the oracle cannot flag it, moves SRE's affected joints by $12.8\times$
 baseline. One declared gate is vacuous on this data — no released frame carries a joint outside $[-0.5,1.5]$, so
 far-off-screen stability is untested; frames with edge-clipped joints degrade gracefully (0.96\,px on test).
-\todoblock{Remaining: rig-space next-block divergence table (pixel-only vs rig-co-generating, via SRE on generated
-blocks); v9 self-consistency (SRE of decoded pixels vs the model's own rig tokens, at flagship milestones);
-bone-length stability under free-running rollout.}
+With the instrument validated, the divergence protocol of Table~\ref{tab:divergence} is rescored in rig space: every
+generated block's SRE joints against the \emph{exact} rig labels of the clip's true continuation
+(Table~\ref{tab:rigspace}; generation seeds and the pixel metric are untouched). Three pixel-space findings replicate.
+At 100k the rig-co-generating model is better at every block position, teacher-forced and free-running; at the matched
+10k budget teacher-forced is a wash (1.90 vs 1.93\,px) but free-running already favours the rig model; and training
+the pixel-only model $10\times$ longer \emph{worsens} its free-running rig divergence ($2.79{\to}2.90$\,px) while the
+rig model improves. The free-running gap also widens with block position ($1.93$ vs $2.65$\,px at the last block,
+100k) — the rig channel pays where drift accumulates, not in early blocks — and free-running bone-length drift is
+lower for the rig model at both budgets ($.132$ vs $.158$ relative at 100k). Finally, the co-generated rig converges
+to a faithful description of the model's own output: SRE of the generated pixels agrees with the model's own rig
+tokens to $0.76$\,px at 100k (from $1.79$\,px at 10k), approaching the $0.32$\,px instrument noise measured on real
+renders — the drawn rig and the rendered figure are one object, not a decorative side channel.
+
+\begin{table}[t]\centering\caption{Rig-space next-block divergence (SRE joints vs exact continuation labels, px at
+$64^2$; same generated blocks as Table~\ref{tab:divergence}). Self-cons.\ = agreement of the model's own rig tokens
+with SRE of its own pixels; SRE noise on real renders is $0.32$\,px.}\label{tab:rigspace}\scriptsize
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+model & TF (best-of-4) & FR & bone drift & self-cons. \\
+\midrule
+pixel-only, 10k & \textbf{1.90} & 2.79 & .166 & — \\
++rig tokens, 10k & 1.93 & \textbf{2.63} & \textbf{.154} & 1.79 \\
+pixel-only, 100k & 1.92 & 2.90 & .158 & — \\
++rig tokens, 100k & \textbf{1.71} & \textbf{2.60} & \textbf{.132} & 0.76 \\
+\midrule
+label-space floor & 4.99 & — & — & — \\
+\bottomrule
+\end{tabular}
+\end{table}
+\todoblock{Remaining: seed replication of the rig-space table alongside the flagship runs; per-position curves as a
+figure if space permits.}
 
 \section{Supporting study I: the static-copy shortcut}
 \subsection{The phenomenon}
