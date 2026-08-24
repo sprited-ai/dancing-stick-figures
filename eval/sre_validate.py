@@ -58,31 +58,39 @@ def gate_real_and_offscreen(model, cache, split, size, device, batch=256):
     loader = torch.utils.data.DataLoader(ds, batch_size=batch, num_workers=4)
     per_joint_sum = np.zeros(RIG_JOINTS); per_joint_n = np.zeros(RIG_JOINTS)
     pck2 = pck4 = 0.0
-    on_sum = on_n = off_sum = off_n = 0.0     # gate 3: all-visible frames vs frames w/ off-screen joints
-    off_frames = 0
+    # gate 3 buckets by worst joint excursion: A = all joints in [0,1]; B = outside [0,1] but
+    # within [-0.5,1.5] (ordinary edge clipping); C = outside [-0.5,1.5] (the design's criterion).
+    # The declared gate is on C; B is reported for information.
+    bucket_sum = np.zeros(3); bucket_n = np.zeros(3); bucket_frames = np.zeros(3, int)
     for x, rig, visible in loader:
         d = (model(x.to(device)) - rig.to(device)).norm(dim=-1) * size   # [B,27] px
         m = visible.to(device).float()
         dm = (d * m).cpu().numpy(); mc = m.cpu().numpy()
         per_joint_sum += dm.sum(0); per_joint_n += mc.sum(0)
         pck2 += ((d <= 2.0) * m).sum().item(); pck4 += ((d <= 4.0) * m).sum().item()
-        allvis = mc.all(1)
-        off_frames += int((~allvis).sum())
-        on_sum += dm[allvis].sum(); on_n += mc[allvis].sum()
-        off_sum += dm[~allvis].sum(); off_n += mc[~allvis].sum()
+        r = rig.numpy()
+        far = ((r < -0.5) | (r > 1.5)).any((1, 2))
+        mild = (~far) & (((r < 0.0) | (r > 1.0)).any((1, 2)))
+        bucket = np.where(far, 2, np.where(mild, 1, 0))
+        for b in range(3):
+            sel = bucket == b
+            bucket_sum[b] += dm[sel].sum(); bucket_n[b] += mc[sel].sum()
+            bucket_frames[b] += int(sel.sum())
     n = max(per_joint_n.sum(), 1.0)
     per_joint = {NAMES[i]: round(per_joint_sum[i] / max(per_joint_n[i], 1.0), 4)
                  for i in range(RIG_JOINTS)}
     mean_px = per_joint_sum.sum() / n
-    on = on_sum / max(on_n, 1.0); off = off_sum / max(off_n, 1.0)
+    px = [bucket_sum[b] / max(bucket_n[b], 1.0) for b in range(3)]
+    base = max(px[0], 1e-8)
     return {
         "split": split, "frames": len(ds), "mean_px": round(mean_px, 4),
         "pck2": round(pck2 / n, 4), "pck4": round(pck4 / n, 4), "per_joint_px": per_joint,
         "gate1_pass": bool(mean_px < 1.6),
-        "offscreen": {"all_visible_px": round(on, 4), "offscreen_frames_px": round(off, 4),
-                      "offscreen_frames": off_frames,
-                      "ratio": round(off / max(on, 1e-8), 3) if off_n else None,
-                      "gate3_pass": bool(off_n == 0 or off / max(on, 1e-8) <= 1.5)},
+        "offscreen": {"all_in_frame_px": round(px[0], 4), "all_in_frame_frames": int(bucket_frames[0]),
+                      "edge_clipped_px": round(px[1], 4), "edge_clipped_frames": int(bucket_frames[1]),
+                      "far_offscreen_px": round(px[2], 4), "far_offscreen_frames": int(bucket_frames[2]),
+                      "far_ratio": round(px[2] / base, 3) if bucket_n[2] else None,
+                      "gate3_pass": bool(bucket_n[2] == 0 or px[2] / base <= 1.5)},
     }
 
 
@@ -126,7 +134,7 @@ def gate_corruptions(model, model_size, data, n, seed, device):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", required=True)
-    ap.add_argument("--cache", required=True)
+    ap.add_argument("--cache", default=None, help="frame cache for gates 1+3; omit to run gate 2 only")
     ap.add_argument("--split", default="val")
     ap.add_argument("--data", default=None, help="parquet dir for the corruption gate")
     ap.add_argument("--corrupt-n", type=int, default=128)
@@ -138,14 +146,17 @@ def main():
     model, size = load_model(args.ckpt, device)
 
     report = {"ckpt": args.ckpt, "gates": {}}
-    g13 = gate_real_and_offscreen(model, args.cache, args.split, size, device)
-    report["gates"]["real_renders"] = g13
-    print(f"[gate 1] {args.split}: mean {g13['mean_px']:.3f} px, PCK@2 {g13['pck2']:.4f}, "
-          f"PCK@4 {g13['pck4']:.4f}  -> {'PASS' if g13['gate1_pass'] else 'FAIL'} (target < 1.6 px)")
-    o = g13["offscreen"]
-    print(f"[gate 3] off-screen frames: {o['offscreen_frames_px']} px vs all-visible "
-          f"{o['all_visible_px']} px (ratio {o['ratio']}) -> "
-          f"{'PASS' if o['gate3_pass'] else 'FAIL'} (target <= 1.5x)")
+    if args.cache:
+        g13 = gate_real_and_offscreen(model, args.cache, args.split, size, device)
+        report["gates"]["real_renders"] = g13
+        print(f"[gate 1] {args.split}: mean {g13['mean_px']:.3f} px, PCK@2 {g13['pck2']:.4f}, "
+              f"PCK@4 {g13['pck4']:.4f}  -> {'PASS' if g13['gate1_pass'] else 'FAIL'} (target < 1.6 px)")
+        o = g13["offscreen"]
+        print(f"[gate 3] visible-joint px by excursion: in-frame {o['all_in_frame_px']} "
+              f"({o['all_in_frame_frames']}f) | edge-clipped {o['edge_clipped_px']} "
+              f"({o['edge_clipped_frames']}f) | far-offscreen {o['far_offscreen_px']} "
+              f"({o['far_offscreen_frames']}f, ratio {o['far_ratio']}) -> "
+              f"{'PASS' if o['gate3_pass'] else 'FAIL'} (design gate: far bucket <= 1.5x in-frame)")
 
     if args.data:
         g2 = gate_corruptions(model, size, args.data, args.corrupt_n, args.seed, device)

@@ -1,0 +1,52 @@
+{
+  "ckpt": "results/sre_v1/ckpt_final.pt",
+  "gates": {
+    "real_renders": {
+      "split": "test",
+      "frames": 133200,
+      "mean_px": 0.6573,
+      "pck2": 0.9341,
+      "pck4": 0.9764,
+      "per_joint_px": {
+        "Hips": 0.4664,
+        "Spine": 0.4991,
+        "Spine1": 0.5111,
+        "Spine2": 0.5175,
+        "Spine3": 0.4818,
+        "Neck": 0.4363,
+        "Head": 0.4204,
+        "RightShoulder": 0.4199,
+        "RightArm": 0.5981,
+        "RightForeArm": 0.7733,
+        "RightHand": 0.8004,
+        "RightHandEnd": 0.988,
+        "RightHandThumb1": 0.9343,
+        "LeftShoulder": 0.414,
+        "LeftArm": 0.5948,
+        "LeftForeArm": 0.7839,
+        "LeftHand": 0.8654,
+        "LeftHandEnd": 1.0563,
+        "LeftHandThumb1": 1.0217,
+        "RightUpLeg": 0.5395,
+        "RightLeg": 0.6901,
+        "RightFoot": 0.6553,
+        "RightToeBase": 0.6255,
+        "LeftUpLeg": 0.5326,
+        "LeftLeg": 0.6992,
+        "LeftFoot": 0.7217,
+        "LeftToeBase": 0.6996
+      },
+      "gate1_pass": true,
+      "offscreen": {
+        "all_in_frame_px": 0.6528,
+        "all_in_frame_frames": 131124,
+        "edge_clipped_px": 0.964,
+        "edge_clipped_frames": 2076,
+        "far_offscreen_px": 0.0,
+        "far_offscreen_frames": 0,
+        "far_ratio": null,
+        "gate3_pass": true
+      }
+    }
+  }
+}

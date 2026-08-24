@@ -1,0 +1,65 @@
+{
+  "ckpt": "/private/tmp/claude-501/-Users-jin-dev-dancing-stick-figure/50f1bacc-0e59-4643-a41e-d26d04dabda0/scratchpad/sre_ckpt_final.pt",
+  "gates": {
+    "corruptions": {
+      "n_frames": 128,
+      "real_baseline_px": 0.6568,
+      "conditions": {
+        "swap_LR_partial": {
+          "affected_px": 5.0894,
+          "unaffected_px": 1.6399,
+          "affected_joints": [
+            "LeftForeArm",
+            "RightForeArm"
+          ],
+          "gate2_pass": false
+        },
+        "swap_LR_full": {
+          "affected_px": 8.3812,
+          "unaffected_px": 2.9485,
+          "affected_joints": [
+            "LeftForeArm",
+            "LeftHand",
+            "LeftHandEnd",
+            "RightForeArm",
+            "RightHand",
+            "RightHandEnd",
+            "LeftLeg",
+            "LeftFoot",
+            "LeftToeBase",
+            "RightLeg",
+            "RightFoot",
+            "RightToeBase"
+          ]
+        },
+        "stretch_bone": {
+          "affected_px": 1.6381,
+          "unaffected_px": 0.6645,
+          "affected_joints": [
+            "LeftHand",
+            "LeftHandEnd",
+            "LeftHandThumb1"
+          ]
+        },
+        "delete_hand": {
+          "affected_px": 1.6905,
+          "unaffected_px": 0.7062,
+          "affected_joints": [
+            "RightHandEnd"
+          ]
+        },
+        "extra_arm": {
+          "affected_px": 2.7652,
+          "unaffected_px": 0.8911,
+          "affected_joints": [
+            "LeftForeArm",
+            "LeftHand",
+            "LeftHandEnd"
+          ],
+          "gate2_pass": true
+        }
+      },
+      "gate2_pass": false
+    }
+  }
+}

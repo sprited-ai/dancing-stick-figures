@@ -445,3 +445,39 @@ attributed:
   v9.3-warmup at 100k x 2 seeds.
 - Artifacts: gin `results/m6v9p3_sweep_*`, divergence jsons mirrored to
   `results/divergence/`.
+
+## SRE v1 trained + validation gates run (2026-08-24, autonomous session)
+
+- Implemented per the pre-declared design (`paper/refs/sre_design.md`, commit
+  79853a8): `train/sre.py` (3.30M-param conv regressor, single premultiplied
+  RGBA frame -> 27x2 sigmoid joints, L2 masked to joints inside [0,1]) and
+  `eval/sre_validate.py` (three gates; numeric thresholds written into the
+  script before training). Unit tests `tests/test_sre.py`.
+- Training: gin, cache/mini, 20k steps batch 256 (~3 min as a nice-15 second
+  job beside the flagship; 360k train / 18k val frames).
+- Gate 1 (held-out real renders) PASS: val 0.711 px mean, PCK@2 .914,
+  PCK@4 .975; test 0.657 px, PCK@2 .934, PCK@4 .976. Well under the 1.6 px
+  capsule radius target.
+- Gate 3 (off-screen stability) PASS but VACUOUS at the declared tier: no
+  frame in cache/mini has any joint outside [-0.5,1.5] (actual rig range
+  [-0.494, 1.157]), so the design's sit-up premise does not occur in mini.
+  Informative tier instead: frames with edge-clipped joints (outside [0,1])
+  degrade visible-joint error to 0.96 px on test (2076 frames, 1.48x
+  in-frame) and 2.48 px on val (98 frames, 3.5x — small sample, flagged).
+- Gate 2 (corruption localization, 128 val/test frames, seed 20260824):
+  extra_arm PASS (affected 2.77 px = 4.2x baseline, unaffected 0.89 px =
+  1.35x). swap_LR_partial FAIL under the v1 rule (affected {fore-arms only}
+  5.09 px = 7.7x; "unaffected" 1.64 px = 2.5x > 2x limit). Per-joint
+  diagnosis: the entire bleed is the arm chains (hands +2.8, upper arms
+  +2.65, hand-ends +2.6, thumbs +2.1; non-arm joints unmoved) — the
+  mechanistically expected response of a colour-identity regressor to an
+  arm-colour swap, i.e. a too-narrow affected set in MY gate implementation,
+  not skeleton hallucination. v1 verdict recorded as-run, not relitigated.
+- PROPOSED for sign-off (Jin): gate2 v2 with chain-complete affected sets
+  (swap_LR_partial -> full left+right arm chains incl. shoulders/thumbs);
+  rerun only after the rule is blessed.
+- Notable extra: swap_LR_full — invisible to the oracle by design (adjacency
+  preserved) — moves SRE affected joints to 8.38 px (12.8x baseline): the
+  learned instrument catches a corruption class the rule-based oracle cannot.
+- Artifacts: gin `results/sre_v1/` (ckpt_final.pt, validation_{val,test}.json);
+  mirrored `paper/results/sre_v1_validation_{val,test,corruptions}.json`.
