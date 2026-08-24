@@ -1,8 +1,8 @@
 {
-  "version": 10,
+  "version": 8,
   "declared_before_training_results": true,
-  "declared_at": "2026-08-24",
-  "purpose": "v9.3-warmup FLAGSHIP: the sweep winner recipe (render 2.0 / consistency 2.0, 5k linear coupling warmup) at the 100k operating budget, two seeds (0, 1). Winner selection followed the pre-declared sweep rule: only arm passing on-figure >= .85 AND TVR <= .538 (scored .912 / .493; TF divergence .2977). Purpose: (a) the released reference flagship of the testbed, (b) seed replication for the paper's rig-co-generation headline (v9 family currently single-seed at 100k), (c) convergence check that the warmup advantage persists at 10x budget (the constant-coupling failure and the v8 300k re-freeze both warn that 10k verdicts can invert at scale). Milestones evaluated under the standing convergence rule; judgment: flagship claim requires 100k TVR at or below the v9.0 conv run (.126 at 100k... to be scored by the same eval), motion within the v8 operating band, on-figure >= .85 sustained, and TF divergence <= v9.0 100k .2870 within noise. Divergence scored per checkpoint at 10k/40k/100k.",
+  "declared_at": "2026-08-23",
+  "purpose": "Extended-budget run of the v8 winner combination (16-frame blocks + motion-weighted + foreground-weighted flow loss) at 3x the previous budget on Jin's directive (2026-08-23). Fresh 300k cosine run, not a resume. Questions: does structure hold below the real floor without motion decay at 3x budget; do the residual gaps (height variance .028 vs real .061, angle jerk 1.6x) close with training alone. Predeclared n=64 milestone evaluations at 10k/20k/40k/100k/150k/200k/250k/300k.",
   "task": {
     "resolution": 64,
     "fps": 20,
@@ -25,26 +25,22 @@
     "text_encoder": "frozen google-t5/t5-small",
     "primary_sampling_steps_per_block": 10,
     "cfg": 2.0,
-    "training_seed": "0 and 1 (two matched runs)",
-    "planned_optimizer_steps": 100000,
+    "training_seed": 0,
+    "planned_optimizer_steps": 300000,
     "motion_weight_alpha": 1.0,
-    "fg_latent_weight": 4.0,
-    "rig_cogeneration": true,
-    "rig_loss_weight": 1.0,
-    "rig_render_weight": 2.0,
-    "rig_pixel_consistency_weight": 2.0,
-    "coupling_warmup_steps": 5000
+    "fg_latent_weight": 4.0
   },
   "milestones": [
     0,
     2000,
-    5000,
     10000,
     20000,
     40000,
-    60000,
-    80000,
-    100000
+    100000,
+    150000,
+    200000,
+    250000,
+    300000
   ],
   "milestone_evaluation": {
     "n": 64,
@@ -62,5 +58,5 @@
     "first_block_definition": "true clip frames 0-15",
     "claim_limit": "Single-seed combined-treatment run; attribution of any gain to individual components rests on the matched 2k pilots, not on this run."
   },
-  "matched_control": "results/m6v9_rig_cogen_10k_s0 (v9.0, no render coupling)"
+  "matched_control": "configs/m6_protocol_v3_start_aligned_h8_100k.json"
 }
