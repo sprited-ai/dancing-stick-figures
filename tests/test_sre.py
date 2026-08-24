@@ -92,3 +92,14 @@ def test_to_model_input_downsamples():
     x = to_model_input(img, 16, "cpu")
     assert x.shape == (1, 4, 16, 16)
     assert torch.allclose(x, torch.ones_like(x))
+
+
+def test_divergence_rig_helpers():
+    from eval.next_block_divergence import joint_px, bone_rel_error
+    a = torch.zeros(8, RIG_JOINTS, 2)
+    b = torch.full((8, RIG_JOINTS, 2), 1 / 64.0)
+    assert abs(joint_px(a, b, 64) - 2 ** 0.5) < 1e-5      # one diagonal pixel everywhere
+    ref = torch.full((26,), 0.5)
+    pred = torch.zeros(8, RIG_JOINTS, 2)
+    pred[:, 1:, 0] = 0.25                                  # every bone .25 against reference .5
+    assert abs(bone_rel_error(pred, ref, [0] * RIG_JOINTS) - 0.5) < 1e-6

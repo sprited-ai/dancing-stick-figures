@@ -13,6 +13,14 @@ Reported per checkpoint:
   free_running:  the same comparison with the model's OWN prefix (exposure gap)
   real_floor:    same-prompt different-clip real blocks scored the same way
                  (the irreducible divergence of a legitimately different take)
+
+With --sre CKPT the same generated blocks are also scored in RIG SPACE (the
+third evaluation layer): SRE joints of the generated block vs the true
+continuation's EXACT rig labels (px at output size), the label-space real
+floor, SRE's own instrument noise on real renders, free-running bone-length
+drift, and — for rig-co-generating models — self-consistency between SRE of
+the generated pixels and the model's own rig tokens. Generation seeds and the
+pixel metric are unchanged by --sre.
 """
 import argparse
 import json
@@ -24,6 +32,25 @@ import torch
 from eval.eval_m6 import build, build_text_cache
 from train.latent_video_dit_ar import decode_full, encode_video
 from train.video_dit_ar import euler_sample_block
+
+
+# ------------------------------------------------------------- rig space (--sre)
+@torch.no_grad()
+def sre_joints(sre_model, rgba01: torch.Tensor, device) -> torch.Tensor:
+    """[4,T,H,W] premultiplied [0,1] -> [T,27,2] normalized joints (cpu)."""
+    return sre_model(rgba01.permute(1, 0, 2, 3).to(device)).cpu()
+
+
+def joint_px(a: torch.Tensor, b: torch.Tensor, size: int) -> float:
+    """Mean joint distance in px between two [T,27,2] normalized joint arrays."""
+    return float((a - b).norm(dim=-1).mean() * size)
+
+
+def bone_rel_error(pred: torch.Tensor, ref_lengths: torch.Tensor, parents) -> float:
+    """Mean relative bone-length error of pred [T,27,2] against per-bone reference lengths [26]."""
+    child = torch.arange(1, pred.shape[1])
+    lengths = (pred[:, child] - pred[:, list(parents[1:])]).norm(dim=-1)      # [T,26]
+    return float(((lengths - ref_lengths).abs() / ref_lengths.clamp_min(1e-6)).mean())
 
 
 def fg_weighted_rgba_distance(a: torch.Tensor, b: torch.Tensor, bg_weight: float = 0.02) -> float:
@@ -99,6 +126,7 @@ def main():
     parser.add_argument("--cfg", type=float, default=2.0)
     parser.add_argument("--seed", type=int, default=20260824)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--sre", default=None, help="SRE checkpoint: also score blocks in rig space")
     args_cli = parser.parse_args()
 
     checkpoint = torch.load(args_cli.ckpt, map_location=args_cli.device, weights_only=False)
@@ -114,8 +142,15 @@ def main():
     if not rows:
         raise SystemExit("no test clips long enough")
     rig = None
-    if hasattr(model, "rig_dim"):
+    if hasattr(model, "rig_dim") or args_cli.sre:
         rig = np.load(cache / "rig.npy", mmap_mode="r")
+    sre = None
+    if args_cli.sre:
+        from eval.sre_validate import load_model as load_sre
+        from train.latent_video_dit_ar_rig import RIG_PARENTS
+        sre, sre_size = load_sre(args_cli.sre, args_cli.device)
+        if sre_size != size:
+            raise SystemExit(f"SRE trained at {sre_size}, checkpoint decodes at {size}")
 
     prompts = [row["text"] for _, row in rows]
     text_cache = build_text_cache(prompts, args, args_cli.device)
@@ -128,30 +163,60 @@ def main():
             1, int(args["history_max"]), temporal * 27 * 2)
         return tokens.to(args_cli.device)
 
+    def own_rig_xy(rig_block_tokens):
+        """[1,T_lat,temporal*27*2] in [-1,1] -> [T,27,2] normalized, cpu."""
+        t_lat = rig_block_tokens.shape[1]
+        return ((rig_block_tokens.cpu().float().reshape(t_lat * temporal, 27, 2) + 1) / 2)
+
     teacher = {b: {"best": [], "mean": []} for b in range(args_cli.blocks)}
     free = {b: [] for b in range(args_cli.blocks)}
-    by_prompt_gt = {}
+    rig_teacher = {b: {"best": [], "mean": []} for b in range(args_cli.blocks)}
+    rig_free = {b: [] for b in range(args_cli.blocks)}
+    bone_free = {b: [] for b in range(args_cli.blocks)}
+    sre_noise, selfcons_tf, selfcons_free = [], [], []
+    by_prompt_gt, by_prompt_rig = {}, {}
     for (cid, row), prompt in zip(rows, prompts):
         start = int(row["start"])
         text, mask = text_cache[prompt]
         null_text, null_mask = text_cache[""]
         gt_all = to_video(np.asarray(frames[start:start + frames_needed]), size)
         by_prompt_gt.setdefault(prompt, []).append(gt_all)
+        gt_rig_all = ref_bones = None
+        if sre is not None:
+            gt_rig_all = torch.from_numpy(
+                np.asarray(rig[start:start + frames_needed], np.float32))
+            by_prompt_rig.setdefault(prompt, []).append(gt_rig_all)
+            child = torch.arange(1, 27)
+            hist_len = (gt_rig_all[:history_frames, child]
+                        - gt_rig_all[:history_frames, list(RIG_PARENTS[1:])]).norm(dim=-1)
+            ref_bones = hist_len.mean(0)                                  # [26] exact-label reference
         # teacher-forced: GT prefix at every block position
         for b in range(args_cli.blocks):
             offset = history_frames + b * block_frames
             history = gt_all[:, offset - history_frames: offset]
             gt_block = gt_all[:, offset: offset + block_frames]
-            distances = []
+            gt_rig_block = None if sre is None else gt_rig_all[offset: offset + block_frames]
+            if sre is not None:
+                sre_noise.append(joint_px(sre_joints(sre, gt_block, args_cli.device),
+                                          gt_rig_block, size))
+            distances, rig_distances = [], []
             for n in range(args_cli.samples):
-                gen, _ = generate_block(model, codec, standardizer, args, history,
-                                        text, mask, null_text, null_mask,
-                                        args_cli.steps, args_cli.cfg,
-                                        args_cli.seed + 1000 * b + n, args_cli.device,
-                                        rig_history=rig_hist(start, offset))
+                gen, rig_block = generate_block(model, codec, standardizer, args, history,
+                                                text, mask, null_text, null_mask,
+                                                args_cli.steps, args_cli.cfg,
+                                                args_cli.seed + 1000 * b + n, args_cli.device,
+                                                rig_history=rig_hist(start, offset))
                 distances.append(fg_weighted_rgba_distance(gen, gt_block))
+                if sre is not None:
+                    rj = sre_joints(sre, gen, args_cli.device)
+                    rig_distances.append(joint_px(rj, gt_rig_block, size))
+                    if rig_block is not None:
+                        selfcons_tf.append(joint_px(rj, own_rig_xy(rig_block), size))
             teacher[b]["best"].append(min(distances))
             teacher[b]["mean"].append(float(np.mean(distances)))
+            if rig_distances:
+                rig_teacher[b]["best"].append(min(rig_distances))
+                rig_teacher[b]["mean"].append(float(np.mean(rig_distances)))
         # free-running: model's own prefix from the GT start
         rollout = gt_all[:, :history_frames].clone()
         rig_state = rig_hist(start, history_frames)
@@ -167,6 +232,12 @@ def main():
                 rig_state = torch.cat((rig_state, rig_block), dim=1)[:, -history_latents_count:]
             offset = history_frames + b * block_frames
             free[b].append(fg_weighted_rgba_distance(gen, gt_all[:, offset: offset + block_frames]))
+            if sre is not None:
+                rj = sre_joints(sre, gen, args_cli.device)
+                rig_free[b].append(joint_px(rj, gt_rig_all[offset: offset + block_frames], size))
+                bone_free[b].append(bone_rel_error(rj, ref_bones, RIG_PARENTS))
+                if rig_block is not None:
+                    selfcons_free.append(joint_px(rj, own_rig_xy(rig_block), size))
             rollout = torch.cat((rollout, gen), dim=1)
 
     # real floor: for prompts with >=2 clips, score clip B's block against clip A's
@@ -199,11 +270,41 @@ def main():
         "note": "fg-union weighted RGBA MSE vs the clip's actual continuation; "
                 "v9 free-running carries its own generated rig history after block 0",
     }
+    if sre is not None:
+        rig_floor = {b: [] for b in range(args_cli.blocks)}
+        for prompt, gts in by_prompt_rig.items():
+            if len(gts) < 2:
+                continue
+            for a in range(len(gts)):
+                other = gts[(a + 1) % len(gts)]
+                for b in range(args_cli.blocks):
+                    offset = history_frames + b * block_frames
+                    rig_floor[b].append(joint_px(gts[a][offset: offset + block_frames],
+                                                 other[offset: offset + block_frames], size))
+        report["rig_space"] = {
+            "sre_ckpt": str(Path(args_cli.sre).resolve()),
+            "teacher_forced_best_of_n_px": summary(rig_teacher, "best"),
+            "teacher_forced_mean_px": summary(rig_teacher, "mean"),
+            "free_running_mean_px": summary(rig_free),
+            "real_floor_label_space_px": summary(rig_floor),
+            "sre_noise_real_px": float(np.mean(sre_noise)),
+            "bone_rel_error_free_running": summary(bone_free),
+            "self_consistency_tf_px": float(np.mean(selfcons_tf)) if selfcons_tf else None,
+            "self_consistency_free_px": float(np.mean(selfcons_free)) if selfcons_free else None,
+            "note": "SRE joints of generated blocks vs EXACT rig labels of the true "
+                    "continuation (mean joint distance, px at output size); the floor is "
+                    "computed purely in label space; bone error is relative to the clip's "
+                    "exact history bone lengths; self-consistency compares SRE of generated "
+                    "pixels with the model's own rig tokens",
+        }
     out = Path(args_cli.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2) + "\n")
-    print(json.dumps({k: report[k] for k in
-                      ("teacher_forced_best_of_n", "free_running_mean", "real_floor_mean")}, indent=2))
+    keys = ["teacher_forced_best_of_n", "free_running_mean", "real_floor_mean"]
+    print(json.dumps({k: report[k] for k in keys}, indent=2))
+    if "rig_space" in report:
+        print(json.dumps({k: v for k, v in report["rig_space"].items()
+                          if k not in ("sre_ckpt", "note")}, indent=2))
 
 
 if __name__ == "__main__":
