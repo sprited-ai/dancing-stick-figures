@@ -86,3 +86,19 @@ def test_fg_weighted_alpha_mse_ignores_background_agreement():
     plain = float((a - b).square().mean())
     weighted = float(fg_weighted_alpha_mse(a, b))
     assert weighted > 0.2 and weighted > plain * 10
+
+
+def test_palette_renderer_matches_drawn_geometry():
+    from train.latent_video_dit_ar_rig import RIG_NAMES, build_rig_renderer
+
+    renderer = build_rig_renderer(64)
+    # 26 child bones minus the two undrawn thumbs
+    assert renderer.num_bones == 24
+    # thumb joints are re-rooted: no edge may end at a thumb
+    thumb_ids = {RIG_NAMES.index("RightHandThumb1"), RIG_NAMES.index("LeftHandThumb1")}
+    assert not (set(renderer.edges[:, 1].tolist()) & thumb_ids)
+    # head capsule thicker than limbs; left forearm carries the red palette
+    head_edge = (renderer.edges[:, 1] == RIG_NAMES.index("Head")).nonzero().item()
+    assert float(renderer.bone_radii[head_edge]) > 3.0
+    lfa_edge = (renderer.edges[:, 1] == RIG_NAMES.index("LeftForeArm")).nonzero().item()
+    assert abs(float(renderer.bone_colors[lfa_edge][0]) - 232 / 255) < 1e-6

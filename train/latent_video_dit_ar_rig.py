@@ -56,7 +56,39 @@ from train.soft_skeleton_renderer import SoftSkeletonRenderer
 RIG_JOINTS = 27
 RIG_PARENTS = (-1, 0, 1, 2, 3, 4, 5, 4, 7, 8, 9, 10, 10, 4, 13, 14, 15, 16, 16,
                0, 19, 20, 21, 0, 23, 24, 25)
+RIG_NAMES = (
+    "Hips", "Spine", "Spine1", "Spine2", "Spine3", "Neck", "Head",
+    "RightShoulder", "RightArm", "RightForeArm", "RightHand", "RightHandEnd", "RightHandThumb1",
+    "LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand", "LeftHandEnd", "LeftHandThumb1",
+    "RightUpLeg", "RightLeg", "RightFoot", "RightToeBase",
+    "LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase",
+)
+# dataset limb palette (generator/render.py PALETTE; unlisted bones = ink)
+RIG_INK = (40, 40, 40)
+RIG_PALETTE = {
+    "LeftForeArm": (232, 64, 48), "LeftHand": (255, 150, 40), "LeftHandEnd": (255, 150, 40),
+    "RightForeArm": (40, 110, 230), "RightHand": (80, 200, 240), "RightHandEnd": (80, 200, 240),
+    "LeftLeg": (200, 50, 160), "LeftFoot": (255, 120, 200), "LeftToeBase": (255, 120, 200),
+    "RightLeg": (30, 150, 90), "RightFoot": (120, 220, 90), "RightToeBase": (120, 220, 90),
+}
 V9_PROTOCOL = "m6_latent_block_ar_v9_rig_cogen"
+
+
+def build_rig_renderer(output_size: int) -> "SoftSkeletonRenderer":
+    """Palette-faithful soft renderer matched to the dataset's drawn geometry.
+
+    Thumb bones are undrawn in the data (dropped by re-rooting the thumb
+    joints); the head sphere is approximated by a thick Neck-Head capsule.
+    Radii approximate the median body (stroke 4 px, head_r 0.125 m at 128 px,
+    halved for the 64 px cache).
+    """
+    parents = list(RIG_PARENTS)
+    for name in ("RightHandThumb1", "LeftHandThumb1"):
+        parents[RIG_NAMES.index(name)] = -1
+    colors = [[c / 255 for c in RIG_PALETTE.get(name, RIG_INK)] for name in RIG_NAMES]
+    radii = [3.4 if name == "Head" else 1.6 for name in RIG_NAMES]
+    return SoftSkeletonRenderer(parents, bone_colors=colors, body_radius=radii,
+                                image_size=output_size, normalized_coordinates=True)
 
 
 def fg_weighted_alpha_mse(a: torch.Tensor, b: torch.Tensor, bg_weight: float = 0.02) -> torch.Tensor:
@@ -71,6 +103,22 @@ def fg_weighted_alpha_mse(a: torch.Tensor, b: torch.Tensor, bg_weight: float = 0
     weight = torch.maximum(a, b).detach().clamp(0, 1)
     weight = weight + bg_weight * (1 - weight)
     return ((a - b).square() * weight).sum() / weight.sum().clamp_min(1e-8)
+
+
+def fg_weighted_rgba_mse(
+    alpha_a: torch.Tensor, rgb_a: torch.Tensor,
+    alpha_b: torch.Tensor, rgb_b: torch.Tensor, bg_weight: float = 0.02,
+) -> torch.Tensor:
+    """Alpha plus premultiplied-RGB error under the union-foreground weight.
+
+    RGB carries limb identity (the dataset's colour-coded limbs): a rig with
+    swapped arms explains the silhouette but not the colours. Both error maps
+    share the same detached union support so background agreement stays inert.
+    """
+    weight = torch.maximum(alpha_a, alpha_b).detach().clamp(0, 1)
+    weight = weight + bg_weight * (1 - weight)
+    err = (alpha_a - alpha_b).square() + (rgb_a - rgb_b).square().mean(dim=-3)
+    return (err * weight).sum() / weight.sum().clamp_min(1e-8)
 
 
 def rig_bone_lengths(rig_tokens: torch.Tensor, temporal: int) -> torch.Tensor:
@@ -459,10 +507,7 @@ def main():
 
     renderer = None
     if args.rig_render_weight > 0 or args.rig_pixel_consistency_weight > 0:
-        renderer = SoftSkeletonRenderer(
-            RIG_PARENTS, body_radius=1.3, image_size=args.output_size,
-            normalized_coordinates=True,
-        ).to(args.device)
+        renderer = build_rig_renderer(args.output_size).to(args.device)
     model = RigFullSTARVideoDiT(
         temporal_compression=temporal, size=latent_size, patch=args.patch, in_ch=channels,
         dim=args.dim, depth=args.depth, heads=args.heads, cond_ch=channels + 1, text_dim=text_dim,
@@ -607,10 +652,16 @@ def main():
                 joints = rig_x0[:, history:].reshape(
                     video.shape[0], -1, RIG_JOINTS, 2)          # [-1,1], target frames
                 target_depth = depth[:, history * temporal:].float()
-                rendered_alpha = renderer(joints, target_depth)["alpha"].squeeze(2)
+                rendered = renderer(joints, target_depth)
+                rendered_alpha = rendered["alpha"].squeeze(2)
+                rendered_rgb = rendered["rgb"]                   # premultiplied, like the data
                 if args.rig_render_weight > 0:
-                    gt_alpha = ((video[:, 3].float() + 1) / 2)[:, history * temporal:]
-                    render_loss = fg_weighted_alpha_mse(rendered_alpha, gt_alpha)
+                    target_slice = slice(history * temporal, None)
+                    gt = ((video.float() + 1) / 2)[:, :, target_slice]
+                    render_loss = fg_weighted_rgba_mse(
+                        rendered_alpha, rendered_rgb,
+                        gt[:, 3], gt[:, :3].transpose(1, 2),
+                    )
                     loss = loss + args.rig_render_weight * render_loss
                 if args.rig_pixel_consistency_weight > 0:
                     predicted_clean = flow_prediction_to_clean(
@@ -618,9 +669,11 @@ def main():
                         clean_history=clean[:, :, :history] if history else None,
                     )
                     decoded = decode_full(codec, standardizer, predicted_clean,
-                                          output_size=args.output_size)
-                    decoded_alpha = decoded[:, 3][:, history * temporal:]
-                    consistency_loss = fg_weighted_alpha_mse(rendered_alpha, decoded_alpha)
+                                          output_size=args.output_size)[:, :, history * temporal:]
+                    consistency_loss = fg_weighted_rgba_mse(
+                        rendered_alpha, rendered_rgb,
+                        decoded[:, 3], decoded[:, :3].transpose(1, 2),
+                    )
                     loss = loss + args.rig_pixel_consistency_weight * consistency_loss
         loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); optimizer.step()
         with torch.no_grad():
