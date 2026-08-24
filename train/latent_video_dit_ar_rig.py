@@ -317,6 +317,12 @@ def main():
     parser.add_argument("--fg-latent-weight", type=float, default=4.0)
     parser.add_argument("--rig-loss-weight", type=float, default=1.0)
     parser.add_argument(
+        "--caption-variants", default="",
+        help="JSON {canonical: [variants]} -- when set, each training sample "
+             "draws a uniform random surface variant of its caption "
+             "(validation and previews keep canonical captions)",
+    )
+    parser.add_argument(
         "--bone-length-weight", type=float, default=0.0,
         help="weight of the bone-length preservation loss on the recovered clean "
              "rig (x0 = input - t*v) against the sample's ground-truth bone lengths",
@@ -368,6 +374,11 @@ def main():
         raise ValueError("launch differs from predeclared rig_loss_weight")
     if float(protocol["frozen_model"].get("bone_length_weight", 0.0)) != args.bone_length_weight:
         raise ValueError("launch differs from predeclared bone_length_weight")
+    if bool(protocol["frozen_model"].get("caption_variants", False)) != bool(args.caption_variants):
+        raise ValueError("launch differs from predeclared caption_variants treatment")
+    variant_bank = {}
+    if args.caption_variants:
+        variant_bank = json.loads(Path(args.caption_variants).read_text())
     temporal = codec.temporal_compression
     video_frames = (args.history_max + args.target_latents) * temporal
     latent_size = args.output_size // codec.spatial_compression
@@ -391,7 +402,9 @@ def main():
     encoder = T5EncoderModel.from_pretrained(args.text_encoder).to(args.device).eval().requires_grad_(False)
     prompt_set = sorted({row["text"] for row in train_set.clips} | {""} |
                         set(_default_preview_prompts()) |
-                        {prompt for pair in M6_SWITCH_PAIRS for prompt in pair})
+                        {prompt for pair in M6_SWITCH_PAIRS for prompt in pair} |
+                        {variant for row in train_set.clips
+                         for variant in variant_bank.get(row["text"], [])})
     text_cache = {}
     for start in range(0, len(prompt_set), 32):
         prompts = prompt_set[start:start+32]
@@ -433,6 +446,11 @@ def main():
         "base_recipe": "v8 combined (16f blocks + motion weight + fg weight)",
         "rig_loss_weight": args.rig_loss_weight,
         "bone_length_weight": args.bone_length_weight,
+        "caption_variants": {
+            "enabled": bool(args.caption_variants),
+            "path": str(Path(args.caption_variants).resolve()) if args.caption_variants else None,
+            "sha256": file_sha256(Path(args.caption_variants)) if args.caption_variants else None,
+        },
         "rig_dim_per_token": temporal * RIG_JOINTS * 2,
         "rig_meta_sha256": file_sha256(rig_meta_path),
         "model_parameters": sum(p.numel() for p in model.parameters()),
@@ -488,6 +506,8 @@ def main():
         rig_clean = rig_tokens_from_frames(rig, temporal)
         if clean.shape[2] != history + args.target_latents or rig_clean.shape[1] != clean.shape[2]:
             raise RuntimeError("latent/rig temporal misalignment")
+        if variant_bank:
+            labels = [random.choice(variant_bank.get(label, [label])) for label in labels]
         text, text_mask = text_batch(labels)
         null_text, null_mask = text_batch([""] * clean.shape[0])
         dropped = torch.rand(clean.shape[0], device=args.device) < args.cfg_drop
