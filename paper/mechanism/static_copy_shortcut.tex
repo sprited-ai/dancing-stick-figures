@@ -6,7 +6,7 @@
 \usepackage[hidelinks]{hyperref}\usepackage{url}
 \definecolor{sprited}{HTML}{6337C7}\definecolor{teal}{HTML}{008C95}\definecolor{pale}{HTML}{F3F0FA}\definecolor{muted}{HTML}{555555}
 \hypersetup{colorlinks=true,linkcolor=sprited,citecolor=sprited,urlcolor=sprited,
-pdftitle={The Static-Copy Shortcut: Diagnosing and Repairing Motion Collapse in Block-Autoregressive Video Diffusion},
+pdftitle={Co-Generating the Rig: Structure Tokens Improve Block-Autoregressive Video Diffusion},
 pdfauthor={Jin Hyuk Cho}}
 \captionsetup{font=small,labelfont=bf,skip=4pt}\setlist{nosep,leftmargin=*}
 \setlength{\parindent}{1em}\setlength{\parskip}{0pt}\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
@@ -16,7 +16,7 @@ pdfauthor={Jin Hyuk Cho}}
 % compile can never silently pass for a finished paper.
 \newcommand{\todoblock}[1]{\begin{center}\fcolorbox{sprited}{pale}{\parbox{.94\columnwidth}{\small\textbf{TODO:} #1}}\end{center}}
 
-\title{\vspace{-1.5em}\textbf{The Static-Copy Shortcut: Diagnosing and Repairing\\Motion Collapse in Block-Autoregressive Video Diffusion}}
+\title{\vspace{-1.5em}\textbf{Co-Generating the Rig: Structure Tokens Improve\\Block-Autoregressive Video Diffusion}}
 \author{Jin Hyuk Cho\\Sprited\\\small\href{mailto:jin@sprited.ai}{jin@sprited.ai} $\cdot$
 \href{https://orcid.org/0009-0001-1896-8242}{ORCID 0009-0001-1896-8242}}
 \date{}
@@ -24,27 +24,34 @@ pdfauthor={Jin Hyuk Cho}}
 \begin{document}\raggedbottom\maketitle\vspace{-1.25em}
 
 \begin{abstract}
-% TODO(final pass): tighten once the 32^2 generality and divergence sections land.
-Teacher-forced block-autoregressive video diffusion conditions the denoising of a short future block on a clean
-ground-truth history. On a fully traced synthetic testbed~\cite{cho2026dsf} we show that this factorization creates a
-\emph{static-copy shortcut}: as training proceeds, frame structure converges through the real reference while motion
-calibration collapses to a fraction of the real value and never recovers, even at $10\times$ the budget where the
-collapse first appears. Five matched single-variable interventions separate two competing explanations. Both
-history-side treatments (history noising, longer history) deepen the collapse; all three treatments that reallocate
-training signal toward moving foreground content (longer generation blocks, motion-weighted flow loss,
-foreground-weighted latent loss) revive motion. The combined reallocation reaches the structural real reference while
-holding 91\% of real motion at a matched budget, replicates across seeds to within $\pm.005$, and over-trains
-gracefully into a measured re-freeze that bounds the recipe's operating range. A matched full-clip control with
-identical parameters, objective, codec, and data does not freeze, attributing the collapse to the teacher-forced
-short-block factorization itself. % TODO: one sentence on 32^2 pixel-space generality; one on next-block divergence.
+% TODO(final pass): tighten once SRE and the sweep verdict land.
+Block-autoregressive diffusion is the practical recipe for streaming video generation, and recent large-scale systems
+report that jointly learning auxiliary modalities improves generation. We study this question causally, in the
+setting where it matters most — teacher-forced block-autoregressive continuation — on a fully traced synthetic
+testbed~\cite{cho2026dsf} whose ground-truth rig is exact. Our headline result: making the model \emph{co-generate an
+explicit rig} (one 2D-skeleton token per latent frame, denoised jointly with the pixels under a shared flow) improves
+pixel-space next-block prediction at matched parameters, data, and budget, on both teacher-forced and free-running
+rollouts, at two training budgets. % TODO: exact divergence numbers once the sweep verdict freezes the table.
+We measure this with an AR-native evaluation — next-block divergence against the data's actual continuation, with a
+same-prompt real-pair floor — and, via a rig-space regressor (SRE), score rig-free and rig-generating models in the
+same structural space. % TODO: SRE results.
+Two supporting studies complete the report. First, we diagnose and repair a training pathology of this factorization:
+a \emph{static-copy shortcut} where motion collapses while structure converges; history-side remedies fail while
+signal-reallocation remedies fix it, and a matched full-clip control attributes the collapse to the factorization
+itself. Second, we chart how tightly the rig should be coupled to the pixels: a differentiable soft-render coupling
+binds rig to pixels an order of magnitude faster than co-generation alone, but its weight trades directly against
+pixel quality. % TODO: sweep verdict sentence.
 \end{abstract}
 
 \section{Introduction}
-\todoblock{Write after evidence sections stabilize. Skeleton: (1) block-AR video diffusion is the practical recipe
-for long-horizon/streaming generation (MAGI-1, Diffusion/Self Forcing); (2) we document a failure mode of its
-teacher-forced training — motion collapse under converging structure; (3) contributions: phenomenon with pre-declared
-milestone evaluation, hypothesis-separating matched pilots, a matched-budget repair, causal attribution via full-clip
-control, generality beyond the frozen latent space, and an AR-native next-block divergence evaluation.}
+\todoblock{Write after evidence sections stabilize. Frame: (1) block-AR diffusion is the streaming recipe
+(MAGI-1, Diffusion/Self Forcing); (2) scale systems observe that multi-modal joint training helps generation
+(UnityVideo, CVPR 2026: skeleton/depth/flow co-training lowers RGB loss at 10B/1.3M pairs) but full-clip settings,
+uncontrolled scale, and shallow attribution leave the causal question open — and nothing measures continuation;
+(3) we answer it in a controlled block-AR testbed: explicit rig co-generation, matched controls, pre-declared
+protocols, AR-native next-block divergence; (4) contributions: causal evidence that rig co-generation improves
+next-block prediction; the divergence metric + SRE rig-space evaluation; the static-copy diagnosis/repair; the
+coupling-weight study.}
 
 % --- moved from testbed report (Pixel P1): full-clip vs block-AR motivation essay ---
 \paragraph{Why full-clip bidirectionality stops being enough.} Bidirectional temporal attention is useful inside the fixed 50-frame sample of K1, the testbed's pixel-space full-clip video DiT~\cite{cho2026dsf}, because every frame can coordinate with both earlier and later frames. The limitation
@@ -87,7 +94,46 @@ M6 is a 39.8M full-spatiotemporal latent DiT with 3D rotary embeddings: an immut
 five latent blocks ($\approx$1\,s) conditions rectified-flow denoising of the next two-latent block (eight video
 frames), teacher-forced in training and rolled out to 100 frames at 20\,fps.
 
-\section{The phenomenon}
+\section{Next-block divergence: an AR-native evaluation}
+The metric asks the autoregressive question directly: given the data's own history, how far is the model's next block
+from the data's actual next block? For each held-out test clip we teacher-force the ground-truth history, generate the
+next 16-frame block $N{=}4$ times, and report the best-of-$N$ foreground-weighted RGBA distance to the clip's true
+continuation, per block position (32 clips, 6 positions, 10 sampling steps, CFG 2, fixed seed). A \emph{free-running}
+variant carries the model's own generated prefix instead, so the teacher-forced-versus-free-running gap measures
+exposure bias directly. A \emph{real floor} — the same distance between same-prompt, different-take real clips —
+calibrates the scale: it is the divergence of a legitimately different performance. All models score well below this
+floor, confirming the metric measures continuation fidelity rather than generic similarity.
+% TODO: definition equation + full per-block-position table from results/divergence/.
+
+\section{Co-generating the rig improves next-block prediction}
+\todoblock{HEADLINE SECTION. Evidence already collected (results/divergence/, EXPERIMENT\_LOG 2026-08-24): at a
+matched 10k budget the rig-co-generating model improves teacher-forced best-of-4 divergence over the pixel-only v8
+recipe (.2947 vs .3007) and free-running divergence (.4471 vs .4653); at 100k the gap widens (.2870 vs .3139
+teacher-forced, .4399 vs .4584 free-running). Both models share parameters (39.8M), codec, data, optimizer, and the
+v8 loss recipe; the ONLY change is appending one rig token per latent frame, denoised jointly. Also striking:
+training the pixel-only model $10\times$ longer makes its teacher-forced divergence WORSE (.3007 to .3139) while the
+rig-co-generating model improves (.2947 to .2870) — structure tokens change what longer training buys. To write:
+seed replication (pending, shares runs with the flagship), rig-quality-vs-pixel-gain analysis, per-block-position
+curves, comparison table.}
+
+\section{How tightly should the rig couple to the pixels?}
+\todoblock{Coupling study. Co-generation couples rig and pixels only through shared attention; a differentiable
+soft-capsule renderer can couple them explicitly (render the predicted rig, match it against the decoded predicted
+pixels; gradient flows both ways). Pilot: at weight 2.0 the coupling binds rig to pixels an order of magnitude faster
+than attention alone (on-figure .68 to .93 at 10k, matching what un-coupled needs 100k for) but taxes pixel quality
+(TVR .721 vs .538) and next-block divergence (.3091 vs .2966 teacher-forced). Weight sweep (0.25/0.5/1.0/2.0-warmup,
+protocols pre-declared) in progress: w0.25 keeps pixels (TVR .518, divergence .2959) but loses most binding
+(on-figure .724). Verdict rule declared in configs/m6\_protocol\_v9p3\_sweep\_*.json. To write: full sweep table +
+verdict.}
+
+\section{Rig-space evaluation with a learned regressor (SRE)}
+\todoblock{SRE: a pixels-to-rig regressor supervised on the testbed's exact rig labels, validated on held-out
+renders. It scores ANY model — rig-free or rig-generating — in rig space (per-joint error, bone-length stability,
+motion semantics), completing a three-layer evaluation stack: latent flow-NLL, pixel next-block divergence, rig-space
+divergence. Also validates the co-generating model's self-reported rig against its own pixels. To build and report.}
+
+\section{Supporting study I: the static-copy shortcut}
+\subsection{The phenomenon}
 % --- moved from testbed report: horizon dial + milestone curve + 100k convergence (second half of the M6 paragraph) ---
 Small pre-runs expose a generation-horizon dial ($n{=}4$, 2k steps): a four-frame target
 block nearly freezes (centroid speed $.120$ versus real $.314$), eight frames is balanced ($.294$), and forty frames
@@ -117,7 +163,7 @@ squares show an independent 100k run of the same protocol: structure passes belo
 collapsed. Diamonds mark the matched full-clip control R0 at its 10k endpoint.}
 \label{fig:m6}\end{figure*}
 
-\section{Competing hypotheses and matched pilots}
+\subsection{Competing hypotheses and matched pilots}
 % --- moved from testbed report: "Breaking the freeze" + pilots table ---
 Guided by the collapse diagnosis, we ran five matched single-variable 2k-step pilots
 against the eight-frame control, each declared before its result (Table~\ref{tab:pilots}). Both history-side
@@ -146,7 +192,7 @@ F & foreground-alpha loss weight $4$ & .327 & .455 & .757 & pass \\
 \end{tabular}
 \end{table}
 
-\section{The combined repair, replication, and over-training bound}
+\subsection{The combined repair, replication, and over-training bound}
 % --- moved from testbed report: combined fix paragraph ---
 A combined run of the three winners at the same 100k budget as the baseline escapes the trade-off
 (Figure~\ref{fig:m6fix}): at 100k steps it reaches TVR $.122$ and LIE $.073$ — at the real floors — while holding
@@ -169,7 +215,7 @@ motion-weighted and foreground-weighted flow loss), values normalized by the rea
 structural floor (a); only the combined fix retains real-level motion (b).}
 \label{fig:m6fix}\end{figure*}
 
-\section{Attribution: matched full-clip controls}
+\subsection{Attribution: matched full-clip controls}
 % --- moved from testbed report: R0 paragraph ---
 R0 keeps the frozen codec, backbone family, text encoder, flow objective,
 optimizer, and seed, and denoises the complete 25-latent (100-frame) clip jointly with no history prefix for a
@@ -186,20 +232,13 @@ $.375{\to}.293$) but structure plateaus at TVR $\approx.22$ from 30k onward, wel
 under these budgets the fixed block-autoregressive model above is the only configuration that reaches the structural
 floor while keeping real-level motion.
 
-\section{Generality: pixel space without a learned codec}
+\subsection{Generality: pixel space without a learned codec}
 \todoblock{$32^2$ pixel-space no-VAE block-AR pilot. Plan: same block-AR factorization and budget class directly on
 $32^2$ RGBA pixels (no learned latent space). Prediction to declare before results: the freeze reproduces (static-copy
 is a property of the factorization, not the frozen codec), and the signal-reallocation repair transfers. This section
 defuses the ``artifact of the frozen latent space'' objection. Protocol config to be declared before the run.}
 
-\section{AR-native evaluation: next-block divergence}
-\todoblock{Report the next-block divergence metric (teacher-forced best-of-$N$ and free-running divergence against
-the data's actual continuation, with a same-prompt real-pair floor): definition, then the repaired model versus the
-frozen baseline across block positions. The teacher-forced-versus-free-running gap measures exposure bias directly.
-First results exist (\texttt{results/divergence/}); table and analysis to be written once the matched-budget runs
-complete.}
-
-\section{Residual failure taxonomy}
+\subsection{Residual failure taxonomy}
 % --- moved from testbed report: "What remains broken" paragraph ---
 Per-prompt analysis of the repaired model splits its
 residual errors systematically. Undershoot concentrates on compound vertical motions — squats ($-.47$ centroid-speed
@@ -219,7 +258,7 @@ and at conditioning architecture — rather than encoder capacity as the binding
 under the declared evaluation; per-item details are in the experiment log.
 
 \section{Related work}
-\todoblock{Write around: Diffusion Forcing~\cite{chen2024diffusionforcing}, Self Forcing~\cite{huang2025selfforcing}
+\todoblock{Write around: UnityVideo (CVPR 2026, joint multi-modal co-training/co-generation at 10B scale — our scale precedent; full-clip, no continuation measurement, no controlled attribution), LDM3D/IDOL/Structural Video Diffusion (joint RGB+depth/normal), AnimaX (joint video-pose for 3D animation transfer), REPA/V-Co (auxiliary representation alignment/co-denoising), Diffusion Forcing~\cite{chen2024diffusionforcing}, Self Forcing~\cite{huang2025selfforcing}
 (exposure bias in AR video diffusion), MAGI-1~\cite{magi2025} (chunk-AR at scale), exposure bias / DAgger literature,
 and loss-weighting precedents (min-SNR, P2). Position: those works target the train--test gap at rollout time; the
 static-copy shortcut is a \emph{training-time} gradient-allocation failure that appears before any rollout drift, and
