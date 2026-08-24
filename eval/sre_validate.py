@@ -21,15 +21,24 @@ import torch
 from train.sre import SRE, RigFrames, RIG_JOINTS
 from generator.skeleton import NAMES, project
 
+# Rule v2 (chain-complete): affected = every joint on the kinematic chain(s) whose colour or
+# geometry the corruption alters, from the first altered bone's parent joint to the chain's
+# leaves. v1 used only the directly altered bones' child joints; its narrower sets counted the
+# corrupted chains' own downstream joints as "unaffected" and failed swap_LR_partial on exactly
+# that spillover (per-joint diagnosis in EXPERIMENT_LOG 2026-08-24; the v1 verdict is preserved
+# in paper/results/sre_v1_validation_corruptions.json).
+ARM_L = ["LeftArm", "LeftForeArm", "LeftHand", "LeftHandEnd", "LeftHandThumb1"]
+ARM_R = ["RightArm", "RightForeArm", "RightHand", "RightHandEnd", "RightHandThumb1"]
+LEG_L = ["LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase"]
+LEG_R = ["RightUpLeg", "RightLeg", "RightFoot", "RightToeBase"]
 AFFECTED = {
-    "swap_LR_partial": ["LeftForeArm", "RightForeArm"],
-    "swap_LR_full": ["LeftForeArm", "LeftHand", "LeftHandEnd", "RightForeArm", "RightHand",
-                     "RightHandEnd", "LeftLeg", "LeftFoot", "LeftToeBase", "RightLeg",
-                     "RightFoot", "RightToeBase"],
+    "swap_LR_partial": ARM_L + ARM_R,
+    "swap_LR_full": ARM_L + ARM_R + LEG_L + LEG_R,
     "stretch_bone": ["LeftHand", "LeftHandEnd", "LeftHandThumb1"],
     "delete_hand": ["RightHandEnd"],
-    "extra_arm": ["LeftForeArm", "LeftHand", "LeftHandEnd"],
+    "extra_arm": ARM_L,
 }
+RULE_VERSION = "v2-chain-complete"
 GATED = ("swap_LR_partial", "extra_arm")   # the two corruptions the design gates on
 
 
@@ -116,7 +125,8 @@ def gate_corruptions(model, model_size, data, n, seed, device):
             s[0] += d[aff].sum(); s[1] += aff.sum()
             s[2] += d[unaff].sum(); s[3] += unaff.sum()
     base = sums["real"][2] / max(sums["real"][3], 1)                     # real, all joints ~ unaffected set
-    out = {"n_frames": len(rows), "real_baseline_px": round(base, 4), "conditions": {}}
+    out = {"rule": RULE_VERSION, "n_frames": len(rows),
+           "real_baseline_px": round(base, 4), "conditions": {}}
     for cond, (asum, an, usum, un) in sums.items():
         if cond == "real":
             continue

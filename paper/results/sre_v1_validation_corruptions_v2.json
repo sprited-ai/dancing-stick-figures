@@ -1,0 +1,82 @@
+{
+  "ckpt": "/private/tmp/claude-501/-Users-jin-dev-dancing-stick-figure/50f1bacc-0e59-4643-a41e-d26d04dabda0/scratchpad/sre_ckpt_final.pt",
+  "gates": {
+    "corruptions": {
+      "rule": "v2-chain-complete",
+      "n_frames": 128,
+      "real_baseline_px": 0.6568,
+      "conditions": {
+        "swap_LR_partial": {
+          "affected_px": 3.6555,
+          "unaffected_px": 0.8665,
+          "affected_joints": [
+            "LeftArm",
+            "LeftForeArm",
+            "LeftHand",
+            "LeftHandEnd",
+            "LeftHandThumb1",
+            "RightArm",
+            "RightForeArm",
+            "RightHand",
+            "RightHandEnd",
+            "RightHandThumb1"
+          ],
+          "gate2_pass": true
+        },
+        "swap_LR_full": {
+          "affected_px": 7.6586,
+          "unaffected_px": 0.7818,
+          "affected_joints": [
+            "LeftArm",
+            "LeftForeArm",
+            "LeftHand",
+            "LeftHandEnd",
+            "LeftHandThumb1",
+            "RightArm",
+            "RightForeArm",
+            "RightHand",
+            "RightHandEnd",
+            "RightHandThumb1",
+            "LeftUpLeg",
+            "LeftLeg",
+            "LeftFoot",
+            "LeftToeBase",
+            "RightUpLeg",
+            "RightLeg",
+            "RightFoot",
+            "RightToeBase"
+          ]
+        },
+        "stretch_bone": {
+          "affected_px": 1.6381,
+          "unaffected_px": 0.6645,
+          "affected_joints": [
+            "LeftHand",
+            "LeftHandEnd",
+            "LeftHandThumb1"
+          ]
+        },
+        "delete_hand": {
+          "affected_px": 1.6905,
+          "unaffected_px": 0.7062,
+          "affected_joints": [
+            "RightHandEnd"
+          ]
+        },
+        "extra_arm": {
+          "affected_px": 2.349,
+          "unaffected_px": 0.8156,
+          "affected_joints": [
+            "LeftArm",
+            "LeftForeArm",
+            "LeftHand",
+            "LeftHandEnd",
+            "LeftHandThumb1"
+          ],
+          "gate2_pass": true
+        }
+      },
+      "gate2_pass": true
+    }
+  }
+}

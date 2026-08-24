@@ -521,3 +521,19 @@ attributed:
   a faithful description of the model's own pixels.
 - Artifacts: gin `results/divergence/rigspace_{v8_10k,v9rigcogen_10k,
   v8_100k,v9conv_100k}.json`, mirrored to `paper/results/`.
+
+## Gate 2 rule v2 (chain-complete) declared and run (2026-08-24)
+
+- Boundary decision (Jin): instrument-QA rule fixes proceed without sign-off
+  when transparently logged; only changes that could flip a model-comparison
+  verdict need approval. Applied here.
+- Rule v2: affected = every joint on the kinematic chain(s) the corruption
+  alters, from the first altered bone's parent to the leaves (mechanical
+  definition, not fitted to results). v1 verdict preserved in
+  `paper/results/sre_v1_validation_corruptions.json`.
+- Results (128 frames, seed 20260824, baseline 0.657 px):
+  swap_LR_partial affected 3.66 px (5.6x) / unaffected 0.87 px (1.3x) PASS;
+  extra_arm 2.35 px (3.6x) / 0.82 px (1.2x) PASS; swap_LR_full 7.66 px
+  (11.7x) / 0.78 px localized. GATE 2 PASS -> SRE v1 passes all three gates
+  (gate 3 far tier vacuous as logged).
+- Artifact: `paper/results/sre_v1_validation_corruptions_v2.json`.
