@@ -177,10 +177,25 @@ $w{=}2.0$, 5k warmup & .912 & \textbf{.493} & .298 & .452 \\
 % TODO: flagship 100k x 2 seeds of the warmup recipe (launched 2026-08-24) -- add convergence + endpoint.
 
 \section{Rig-space evaluation with a learned regressor (SRE)}
-\todoblock{SRE: a pixels-to-rig regressor supervised on the testbed's exact rig labels, validated on held-out
-renders. It scores ANY model — rig-free or rig-generating — in rig space (per-joint error, bone-length stability,
-motion semantics), completing a three-layer evaluation stack: latent flow-NLL, pixel next-block divergence, rig-space
-divergence. Also validates the co-generating model's self-reported rig against its own pixels. To build and report.}
+The third layer of the evaluation stack scores any model — rig-free or rig-generating — in rig space. SRE is a
+deliberately small instrument: a 3.3M-parameter convolutional regressor mapping one premultiplied RGBA frame to the
+27 2-D joints, supervised on the testbed's exact rig labels (loss masked to joints inside the frame) and trained in
+minutes on the released cache; its design and validation gates were declared before training. On held-out renders it
+is accurate well inside the figure's 1.6\,px capsule radius: 0.66\,px mean joint error on the test split (PCK@2px
+$.934$, PCK@4px $.976$; val 0.71\,px). The oracle's corruption harness probes its failure modes. An extra rendered
+arm displaces predictions of the duplicated chain by $4.2\times$ the real-frame baseline while other joints stay at
+$1.35\times$ — errors are large and localized, not a hallucinated clean skeleton. Swapping the two upper-arm colours
+displaces the forearms by $7.7\times$ baseline with the spillover confined, per-joint, to the swapped arm chains
+(hands, shoulders, thumbs) and non-arm joints unmoved — the regressor reads the dataset's colour-coded limb identity,
+not silhouette alone. (Our pre-declared localization rule counted that chain spillover as non-local and formally
+failed this probe; the per-joint decomposition above attributes every displaced joint to the corrupted chains.) The
+same harness shows the learned instrument complements the rule-based oracle: a full left--right colour swap,
+constructed to preserve adjacency so the oracle cannot flag it, moves SRE's affected joints by $12.8\times$
+baseline. One declared gate is vacuous on this data — no released frame carries a joint outside $[-0.5,1.5]$, so
+far-off-screen stability is untested; frames with edge-clipped joints degrade gracefully (0.96\,px on test).
+\todoblock{Remaining: rig-space next-block divergence table (pixel-only vs rig-co-generating, via SRE on generated
+blocks); v9 self-consistency (SRE of decoded pixels vs the model's own rig tokens, at flagship milestones);
+bone-length stability under free-running rollout.}
 
 \section{Supporting study I: the static-copy shortcut}
 \subsection{The phenomenon}
