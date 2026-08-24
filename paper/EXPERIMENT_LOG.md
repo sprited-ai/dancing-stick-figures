@@ -147,6 +147,21 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   above is from the fixed rerun.
 - Artifacts: gin `results/m6v{3,5,6,7}_*_2k_s0/` with `eval_n64/metrics.json`.
 
+## Seed-1 replication + v9 convergence -- completed (2026-08-24)
+
+- v8 seed-1 100k (`configs/m6_protocol_v8_combined_h16_100k_seed1.json`,
+  prediction declared before results: within +-0.03-0.05 of seed 0): at 100k
+  TVR .122 / speed .282 / hvar .028 / jerk .095 versus seed-0's
+  .122/.286/.028/.095 -- agreement to +-0.005. The Pareto escape replicates;
+  the paper's single-seed caveat for this result is retired (n=2 seeds).
+- v9 rig-cogen convergence 100k (varied captions per the predeclared winner
+  rule): pixel metrics track the rig-free v8 at every milestone (100k: TVR
+  .126 / speed .275 / jerk .084) -- the emitted rig remains free at
+  convergence, jerk slightly better. Rig-space retrieval stays at chance
+  throughout (top-1 0-4.7%), confirming the caption-diversity null at scale.
+- Series `v8_100k_seed1_run` and `v9_conv_100k_run` in
+  `paper/results/m6_h8_milestones_n64.json`.
+
 ## Caption-diversity pair -- syntactic variation rejected (2026-08-23)
 
 - Matched v9-recipe 40k pair: canonical single caption vs 9 semantically

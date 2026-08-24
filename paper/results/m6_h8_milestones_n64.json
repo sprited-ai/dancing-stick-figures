@@ -467,5 +467,133 @@
     "pearson_centroid_speed": 0.06999091638136706
    }
   }
+ },
+ "v9_conv_100k_run": {
+  "run": "m6v9_convergence_varied_100k_s0",
+  "n": 64,
+  "sampler_steps": 10,
+  "cfg": 2.0,
+  "seed": 20260824,
+  "milestones": {
+   "10000": {
+    "tvr": 0.47498046875,
+    "lie": 0.19150390625000002,
+    "cpe": 0.07623912991705732,
+    "fg": 0.06083423614501953,
+    "centroid_speed": 0.3382812870178503,
+    "centroid_accel": 0.4126314334515041,
+    "motion_fraction": 0.4842171717171717,
+    "height_var": 0.03141771518077999,
+    "angle_jerk": 0.19508798548551312,
+    "prompt_noise_ratio": 0.6237918348196431
+   },
+   "20000": {
+    "tvr": 0.2844921875,
+    "lie": 0.11,
+    "cpe": 0.05917007775046725,
+    "fg": 0.06059116363525391,
+    "centroid_speed": 0.2887497848323766,
+    "centroid_accel": 0.3640250678727238,
+    "motion_fraction": 0.42313762626262624,
+    "height_var": 0.025089720532007902,
+    "angle_jerk": 0.14773264162984878,
+    "prompt_noise_ratio": 0.6587474729040886
+   },
+   "40000": {
+    "tvr": 0.15138671874999998,
+    "lie": 0.0691796875,
+    "cpe": 0.03779250180217927,
+    "fg": 0.06207927703857422,
+    "centroid_speed": 0.27334680279943324,
+    "centroid_accel": 0.3436438765371512,
+    "motion_fraction": 0.4010416666666667,
+    "height_var": 0.02283510610010602,
+    "angle_jerk": 0.10482413766160632,
+    "prompt_noise_ratio": 0.6118180537365318
+   },
+   "60000": {
+    "tvr": 0.1441796875,
+    "lie": 0.07533203125,
+    "cpe": 0.036899229179622434,
+    "fg": 0.060492630004882815,
+    "centroid_speed": 0.26843109886828376,
+    "centroid_accel": 0.33997367276550927,
+    "motion_fraction": 0.40183080808080807,
+    "height_var": 0.024975772811443385,
+    "angle_jerk": 0.09578146987659827,
+    "prompt_noise_ratio": 0.6525981105316969
+   },
+   "80000": {
+    "tvr": 0.11322265625,
+    "lie": 0.065859375,
+    "cpe": 0.034592067151591716,
+    "fg": 0.05863323211669921,
+    "centroid_speed": 0.2566674274365758,
+    "centroid_accel": 0.329951681726561,
+    "motion_fraction": 0.3712121212121212,
+    "height_var": 0.0241302025644883,
+    "angle_jerk": 0.08343250164853543,
+    "prompt_noise_ratio": 0.7395575439233826
+   },
+   "100000": {
+    "tvr": 0.1258203125,
+    "lie": 0.07880859374999999,
+    "cpe": 0.035480917257169016,
+    "fg": 0.057495002746582036,
+    "centroid_speed": 0.27475652915379867,
+    "centroid_accel": 0.3522721673871214,
+    "motion_fraction": 0.40909090909090906,
+    "height_var": 0.024798093091275848,
+    "angle_jerk": 0.08355342863212553,
+    "prompt_noise_ratio": 0.7722289052254332
+   }
+  },
+  "note": "v9 rig-cogen convergence run (varied captions per predeclared winner rule); pixel metrics match the rig-free v8 at every milestone"
+ },
+ "v8_100k_seed1_run": {
+  "run": "m6v8_combined_h16_100k_s1",
+  "n": 64,
+  "sampler_steps": 10,
+  "cfg": 2.0,
+  "seed": 20260824,
+  "milestones": {
+   "10000": {
+    "tvr": 0.4694140625,
+    "lie": 0.18923828125,
+    "cpe": 0.08446837852803596,
+    "fg": 0.0626548385620117,
+    "centroid_speed": 0.3199155003336104,
+    "centroid_accel": 0.3746333889362895,
+    "motion_fraction": 0.4756944444444445,
+    "height_var": 0.03111177100307122,
+    "angle_jerk": 0.196125125177542,
+    "prompt_noise_ratio": 0.699229999911731
+   },
+   "40000": {
+    "tvr": 0.21169921875,
+    "lie": 0.1094921875,
+    "cpe": 0.05270500848398962,
+    "fg": 0.06074447631835937,
+    "centroid_speed": 0.2675304003541658,
+    "centroid_accel": 0.3361953666841646,
+    "motion_fraction": 0.3868371212121212,
+    "height_var": 0.02908117664130086,
+    "angle_jerk": 0.11089941808557252,
+    "prompt_noise_ratio": 0.7535995762307697
+   },
+   "100000": {
+    "tvr": 0.1216015625,
+    "lie": 0.07576171875,
+    "cpe": 0.03581358935890741,
+    "fg": 0.05996932983398437,
+    "centroid_speed": 0.2823014768361498,
+    "centroid_accel": 0.35304371378057553,
+    "motion_fraction": 0.4266098484848485,
+    "height_var": 0.027898203662746545,
+    "angle_jerk": 0.09460748530430581,
+    "prompt_noise_ratio": 0.8344269934569168
+   }
+  },
+  "note": "seed-1 replication of the v8 100k run; prediction (declared) of +-0.03-0.05 vs seed 0 confirmed to +-0.005"
  }
 }
