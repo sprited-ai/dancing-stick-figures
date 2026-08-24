@@ -59,6 +59,17 @@ note is the canonical record; treat it as the north star for v0.2 decisions.
   2) is the only strong open path; semantically rich captions remain
   untested.
 
+## Future study (Jin, deferred by design)
+
+- **ARDY feedback cycle as an OOD probe**: feed our model's generated
+  motion (rig, via the exact projection chain inverted or directly in
+  joint space) back into ARDY as history and observe its continuation.
+  If ARDY continues naturally, our motion is in-distribution for the
+  motion prior; degenerate continuations flag OOD output. A free
+  realism/OOD detector (no training), and potentially a training signal
+  later (cycle-consistency). Explicitly future work — not in the current
+  cycle.
+
 ## Claudia's assessment (recorded at Jin's request)
 
 - **Best idea of the day: #4 (next-block divergence).** Highest
