@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "declared_before_training_results": true,
+  "declared_at": "2026-08-24",
+  "purpose": "32^2 pixel-space no-VAE block-AR generality pilot for the paper's static-copy study. Question: is the motion freeze (and its signal-reallocation repair) a property of the teacher-forced short-block factorization itself, or an artifact of the frozen latent codec? Two matched arms, directly on 32^2 RGBA pixels via train/video_dit_ar.py (no learned latent space, patch 2): arm A 'baseline' = 8-frame generation blocks, 20-frame history (1 s), fg-weight 2 (trainer default); arm B 'reallocated' = 16-frame generation blocks, fg-weight 4, same history. Both: 20 fps stride-1 windows, start-aligned equivalents unavailable in the pixel trainer are noted as a difference from the latent protocol. NOTE the pixel pilot carries two of the three latent-recipe treatments (block length, foreground weight); the motion-weighted flow loss is not implemented in the pixel trainer and is deliberately omitted rather than newly implemented mid-study.",
+  "prediction_declared_before_results": "A: motion collapses toward the frozen profile while frame structure improves (centroid speed trending well below the real .314-equivalent at this resolution and falling with steps). B: motion revives substantially relative to A at comparable structure. If A does NOT freeze, the latent codec is implicated and the paper's generality section must say so. If A freezes and B does not repair, the repair story is latent-specific and the paper's claim narrows to the diagnosis.",
+  "task": {
+    "resolution": 32,
+    "fps": 20,
+    "training_steps": 6000,
+    "seeds": [0],
+    "budget_note": "6k steps per arm, matched; pilot-scale (the latent pilots separated the same treatments at 2k)."
+  },
+  "evaluation": {
+    "n": 64,
+    "sampler_steps": 10,
+    "cfg": 2.0,
+    "noise_seed": 20260824,
+    "milestones": [2000, 4000, 6000],
+    "metrics": "centroid speed, motion fraction, height variance, TVR/LIE via oracle at 32^2 (oracle palette parsing verified at this scale before any verdict; if the oracle is unreliable at 32^2, structure verdicts fall back to alpha-occupancy and the limitation is recorded)",
+    "declared_before_any_result": true
+  },
+  "verdict_rule": "Freeze reproduced if arm A centroid speed at 6k < 60% of the matched real reference at 32^2 AND flat-or-falling from 2k to 6k. Repair transferred if arm B centroid speed at 6k >= 1.5x arm A's at matched-or-better structure. Both judged from the declared milestones only.",
+  "scheduling": "runs after FLAGSHIP_PAIR_DONE (GPU held by the flagship pair until then)."
+}
