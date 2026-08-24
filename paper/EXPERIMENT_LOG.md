@@ -147,6 +147,23 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   above is from the fixed rerun.
 - Artifacts: gin `results/m6v{3,5,6,7}_*_2k_s0/` with `eval_n64/metrics.json`.
 
+## Caption-diversity pair -- syntactic variation rejected (2026-08-23)
+
+- Matched v9-recipe 40k pair: canonical single caption vs 9 semantically
+  identical syntactic variants per action drawn per sample
+  (`configs/m6_protocol_v9_captions_{canon,varied}_40k.json`).
+- Result: no meaningful alignment gain. At 40k, retrieval top-1/5 = 4.7%/15.6%
+  (canon) vs 6.2%/17.2% (varied), both near chance (2.7%/13.5%); speed
+  pearson .18 vs .15; pixel metrics equivalent. The winner rule (declared
+  before results) selects varied on the top-5 tie-break, and the 100k
+  convergence run proceeds with it, but the honest verdict is a null result.
+- Reading: the alignment floor is not caused by surface-form memorization.
+  Rejected levers so far: encoder scale (t5-base), rig-loss strength (v9.1),
+  training budget (300k), syntactic caption diversity. Remaining hypotheses:
+  semantically richer captions (describing motion content/phases), goal/
+  keyframe conditioning (ARDY Sec 3.3), model/data scale.
+- Artifacts: gin `results/m6v9_captions_{canon,varied}_40k_s0/`.
+
 ## v8 300k extended-budget run -- completed (2026-08-23)
 
 - Fresh 300k cosine run of the v8 recipe (3x budget, Jin's directive),
