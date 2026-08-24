@@ -71,3 +71,19 @@ paper (removed from the testbed arXiv bundle).
    arXiv, could be balanced later.
 5. arXiv bundle regenerated as DRAFT (`output/arxiv_bundle_testbed_draft.tar.gz`,
    compile-verified standalone) — NOT submitted, per instruction.
+
+## Pixel review round 1 (2026-08-24) — resolved
+
+- **P0** mechanism Table 1 overflow into the right column: fixed (narrow
+  treatment column, tabcolsep 3pt, verdict abbreviated; overshoot note moved
+  to the caption). All 4 pages re-QA'd visually; 0 overfull warnings.
+- **P1** title overclaim: renamed to "Dancing Stick Figures: A Traced
+  Synthetic Testbed for Video Generation Diagnostics" (title, pdftitle,
+  pdfsubject, mechanism \cite{cho2026dsf}); abstract "long-horizon sampling"
+  -> "video sampling". Resolves unresolved decision #1.
+- **P1** boundary: "Why full-clip bidirectionality stops being enough" essay
+  moved to the mechanism paper's Introduction (K1 now introduced via
+  \cite{cho2026dsf}); testbed keeps a 4-sentence "Beyond fixed-length
+  clips" interface rationale. Resolves unresolved decision #2.
+- Testbed still 6 pp; mechanism still 4 pp; both compile clean (0 overfull).
+  arXiv draft bundle regenerated (still NOT submitted).

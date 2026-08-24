@@ -46,6 +46,29 @@ teacher-forced training — motion collapse under converging structure; (3) cont
 milestone evaluation, hypothesis-separating matched pilots, a matched-budget repair, causal attribution via full-clip
 control, generality beyond the frozen latent space, and an AR-native next-block divergence evaluation.}
 
+% --- moved from testbed report (Pixel P1): full-clip vs block-AR motivation essay ---
+\paragraph{Why full-clip bidirectionality stops being enough.} Bidirectional temporal attention is useful inside the fixed 50-frame sample of K1, the testbed's pixel-space full-clip video DiT~\cite{cho2026dsf}, because every frame can coordinate with both earlier and later frames. The limitation
+appears first in training cost. Every update must materialize and backpropagate through all 50 noisy output frames;
+increasing the trained horizon grows activation memory across the network and the temporal-attention work
+quadratically. In our uncompressed pixel setting, a longer horizon therefore quickly reduces batch size and makes each
+optimization step substantially slower. The same interface also does not support native sliding-window continuation:
+K1 jointly noises and predicts the entire window, rather than freezing an overlapping clean prefix and applying noise
+and loss only to newly generated frames. For motion-dominated video, the latter is also an easier teacher-forced
+learning problem: clean history already constrains identity, position, pose, velocity, and action phase, leaving the
+model to denoise a smaller and less ambiguous future block rather than invent the full trajectory jointly. This
+training advantage does not guarantee easier rollout, because generated history introduces exposure bias and error
+accumulation. Independently sampled windows can reset pose or action phase, whereas treating overlap as ordinary noisy
+output can rewrite already played history. A single prompt conditions the entire 50-frame
+sample, so it also cannot be changed during playback while preserving the completed prefix and regenerating only the
+remaining future; the system must wait for the next clip or discard and regenerate the joint sample. Real-time serving
+is consequently awkward: playback cannot begin until the joint sample is sufficiently denoised, generation cannot be
+naturally pipelined behind playback in bounded blocks, and a prompt update invalidates the prefetched future. Finally,
+fixed 50-frame evaluation cannot reveal drift, repetition, or recovery after later continuation boundaries. This is a
+task mismatch, not evidence that causal attention is universally superior. Our long-horizon track will instead test a
+variable-history block-autoregressive model: completed history is immutable, the prompt may change at each new block,
+and frames inside that block still interact bidirectionally, following the windowed distinction used by interactive
+motion and chunked-video systems~\cite{zhao2026ardy,magi2025}.
+
 \section{Setup}
 The testbed, frozen $64^2$ 50-frame protocol, structural oracle (TVR/LIE), and motion diagnostics are those of the
 Dancing Stick Figures release~\cite{cho2026dsf}; all real-reference values below come from its motion-disjoint
@@ -108,12 +131,13 @@ allocation that makes copying rest profitable, so only treatments that change th
 
 \begin{table}[t]\centering\caption{Matched single-variable fix pilots (2k steps, $n{=}64$; control: TVR $.745$,
 centroid speed $.300$, motion fraction $.403$; real floors $.133$/$.314$/$.371$). Verdicts were declared per
-pre-registered config before results existed.}\label{tab:pilots}\scriptsize
-\begin{tabular}{llccc c}
+pre-registered config before results existed. Pilot A passes with motion overshoot.}\label{tab:pilots}\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lp{.42\columnwidth}cccc@{}}
 \toprule
 pilot & treatment & speed & m.\,frac & TVR & verdict \\
 \midrule
-A & 16-frame generation blocks & .507 & .682 & .760 & pass (overshoots) \\
+A & 16-frame generation blocks & .507 & .682 & .760 & pass \\
 B & history-noise augmentation $0.2$ & .213 & .276 & — & fail \\
 D & motion-weighted flow loss $\alpha{=}1$ & .383 & .523 & .738 & pass \\
 E & $2.4$\,s teacher-forced history & .187 & .232 & .748 & fail \\
@@ -214,8 +238,8 @@ reviewed the work and is responsible for its claims.
 
 \balance
 \begin{thebibliography}{99}\small
-\bibitem{cho2026dsf} J. H. Cho. Dancing Stick Figures: A Traced Synthetic Testbed for Diagnosing Long-Horizon Video
-Generation. arXiv, 2026. % TODO: fill arXiv id after the testbed report is submitted.
+\bibitem{cho2026dsf} J. H. Cho. Dancing Stick Figures: A Traced Synthetic Testbed for Video Generation
+Diagnostics. arXiv, 2026. % TODO: fill arXiv id after the testbed report is submitted.
 \bibitem{magi2025} Sand AI et al. MAGI-1: Autoregressive Video Generation at Scale. arXiv:2505.13211, 2025.
 \bibitem{chen2024diffusionforcing} B. Chen et al. Diffusion Forcing: Next-token Prediction Meets Full-Sequence Diffusion. \emph{NeurIPS}, 2024.
 \bibitem{huang2025selfforcing} X. Huang et al. Self Forcing: Bridging the Train-Test Gap in Autoregressive Video Diffusion. arXiv:2506.08009, 2025.

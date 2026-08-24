@@ -7,14 +7,14 @@
 \usepackage[hidelinks]{hyperref}\usepackage{url}
 \definecolor{sprited}{HTML}{6337C7}\definecolor{teal}{HTML}{008C95}\definecolor{pale}{HTML}{F3F0FA}\definecolor{muted}{HTML}{555555}
 \hypersetup{colorlinks=true,linkcolor=sprited,citecolor=sprited,urlcolor=sprited,
-pdftitle={Dancing Stick Figures: A Traced Synthetic Testbed for Diagnosing Long-Horizon Video Generation},
-pdfauthor={Jin Hyuk Cho},pdfsubject={Traced synthetic testbed for long-horizon video generation diagnostics},
+pdftitle={Dancing Stick Figures: A Traced Synthetic Testbed for Video Generation Diagnostics},
+pdfauthor={Jin Hyuk Cho},pdfsubject={Traced synthetic testbed for video generation diagnostics},
 pdfkeywords={video generation, benchmark, synthetic dataset, structural evaluation, education}}
 \captionsetup{font=small,labelfont=bf,skip=4pt}\setlist{nosep,leftmargin=*}
 \setlength{\parindent}{1em}\setlength{\parskip}{0pt}\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
 \setlength{\floatsep}{7pt plus 2pt minus 2pt}\setlength{\intextsep}{7pt plus 2pt minus 2pt}\renewcommand{\arraystretch}{1.08}
 
-\title{\vspace{-1.5em}\textbf{Dancing Stick Figures: A Traced Synthetic Testbed\\for Diagnosing Long-Horizon Video Generation}}
+\title{\vspace{-1.5em}\textbf{Dancing Stick Figures: A Traced Synthetic Testbed\\for Video Generation Diagnostics}}
 \author{Jin Hyuk Cho\\Sprited\\\small\href{mailto:jin@sprited.ai}{jin@sprited.ai} $\cdot$
 \href{https://orcid.org/0009-0001-1896-8242}{ORCID 0009-0001-1896-8242}\\[-2pt]
 \small\href{https://huggingface.co/datasets/sprited/dancing-stick-figures}{Dataset} $\cdot$
@@ -27,7 +27,7 @@ pdfkeywords={video generation, benchmark, synthetic dataset, structural evaluati
 \begin{abstract}
 Video-generation research has a steep entry cost: real video is large, generating factors are hidden, and a single
 distributional score does not explain temporal failure. We introduce \textbf{Dancing Stick Figures}, a fully traced
-synthetic testbed that packages generation, training, long-horizon sampling, and diagnosis for consumer GPUs and
+synthetic testbed that packages generation, training, video sampling, and diagnosis for consumer GPUs and
 hosted notebooks. The release contains 1,430 six-second motions rendered from three cameras (4,290 videos, 514,800
 frames) with joints, camera state, depth, normals, segmentation, and raw motion. We freeze a primary $64^2$, 50-frame,
 10-fps protocol whose two real-reference sets contain 128 source-motion-disjoint videos each. Controlled baselines
@@ -240,28 +240,7 @@ The ladder is intentionally cumulative rather than a leaderboard. M0 validates t
 learning; M2 introduces the full temporal task; and M3 changes only initialization. Students can therefore connect a
 visible failure to the additional machinery introduced at the next stage without mistaking model scale for insight.
 
-\paragraph{Why full-clip bidirectionality stops being enough.} Bidirectional temporal attention is useful inside
-K1's fixed 50-frame sample because every frame can coordinate with both earlier and later frames. The limitation
-appears first in training cost. Every update must materialize and backpropagate through all 50 noisy output frames;
-increasing the trained horizon grows activation memory across the network and the temporal-attention work
-quadratically. In our uncompressed pixel setting, a longer horizon therefore quickly reduces batch size and makes each
-optimization step substantially slower. The same interface also does not support native sliding-window continuation:
-K1 jointly noises and predicts the entire window, rather than freezing an overlapping clean prefix and applying noise
-and loss only to newly generated frames. For motion-dominated video, the latter is also an easier teacher-forced
-learning problem: clean history already constrains identity, position, pose, velocity, and action phase, leaving the
-model to denoise a smaller and less ambiguous future block rather than invent the full trajectory jointly. This
-training advantage does not guarantee easier rollout, because generated history introduces exposure bias and error
-accumulation. Independently sampled windows can reset pose or action phase, whereas treating overlap as ordinary noisy
-output can rewrite already played history. A single prompt conditions the entire 50-frame
-sample, so it also cannot be changed during playback while preserving the completed prefix and regenerating only the
-remaining future; the system must wait for the next clip or discard and regenerate the joint sample. Real-time serving
-is consequently awkward: playback cannot begin until the joint sample is sufficiently denoised, generation cannot be
-naturally pipelined behind playback in bounded blocks, and a prompt update invalidates the prefetched future. Finally,
-fixed 50-frame evaluation cannot reveal drift, repetition, or recovery after later continuation boundaries. This is a
-task mismatch, not evidence that causal attention is universally superior. Our long-horizon track will instead test a
-variable-history block-autoregressive model: completed history is immutable, the prompt may change at each new block,
-and frames inside that block still interact bidirectionally, following the windowed distinction used by interactive
-motion and chunked-video systems~\cite{zhao2026ardy,magi2025}.
+\paragraph{Beyond fixed-length clips.} K1's joint 50-frame sample cannot natively continue past its window, change prompt mid-playback, or be pipelined behind playback in bounded blocks; scaling its trained horizon also grows temporal-attention cost quadratically in our uncompressed pixel setting. The release therefore includes a block-autoregressive track whose interface is: completed history is immutable, the prompt may change at each new block, and frames inside a block interact bidirectionally~\cite{zhao2026ardy,magi2025}.
 
 \paragraph{Latent long-horizon track: released, evaluated separately.} The release includes the long-horizon
 infrastructure this motivates: a frozen 3D causal video VAE (spatial stride 8, temporal stride 4; checkpoint and
