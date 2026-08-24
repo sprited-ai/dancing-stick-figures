@@ -147,6 +147,23 @@ identical n=64 evaluation (seed 20260824, 10-step, CFG 2).
   above is from the fixed rerun.
 - Artifacts: gin `results/m6v{3,5,6,7}_*_2k_s0/` with `eval_n64/metrics.json`.
 
+## v8 300k extended-budget run -- completed (2026-08-23)
+
+- Fresh 300k cosine run of the v8 recipe (3x budget, Jin's directive),
+  milestones per the predeclared protocol config, n=64 each.
+- Predictions (written before results): TVR/speed match the 100k run;
+  hvar/jerk do not close. Outcome: half right. Angular jerk NEARLY CLOSES
+  (.107@40k -> .069@300k, real .059) and TVR holds below floor (.089-.105),
+  but centroid speed bleeds back (.283@100k -> .245@300k, mfrac .424->.351)
+  and height variance worsens (.026->.022). Per-prompt motion pearson
+  collapses (.27@20k -> ~.06 beyond 100k) while prompt/noise sensitivity
+  rises to .86: over-training re-freezes the model into smooth, generic,
+  prompt-agnostic motion. val_first upticked from ~212k, consistent.
+- Answer to "does longer training teach prompt following": no -- it degrades
+  past ~40k. Practical operating range for the recipe: 40k-100k steps.
+- Series `v8_300k_run` in `paper/results/m6_h8_milestones_n64.json`; dotted
+  extension in fig m6_fix_comparison; paper paragraph updated.
+
 ## v9.1 rig-strengthening pilot -- rejected (2026-08-23)
 
 - Single-variable pair vs the v9.0 pilot: rig flow weight 1->4 plus a

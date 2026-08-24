@@ -273,6 +273,8 @@ def m6_fix_comparison():
     v8 = data["v8_100k_run"]["milestones"]
     h8_steps = sorted(int(s) for s in h8)
     v8_steps = sorted(int(s) for s in v8)
+    long_run = data.get("v8_300k_run")
+    long_steps = sorted(int(s) for s in long_run["milestones"]) if long_run else []
     panels = [
         ("a  Frame structure (TVR)", "tvr"),
         ("b  Motion (centroid speed)", "centroid_speed"),
@@ -283,6 +285,10 @@ def m6_fix_comparison():
                 marker="o", ms=3, lw=1.2, color=PURPLE, label="h8 baseline")
         ax.plot(v8_steps, [v8[str(s)][key] / real[key] for s in v8_steps],
                 marker="s", ms=3, lw=1.4, color=TEAL, label="v8 combined fix")
+        if long_run:
+            ax.plot(long_steps, [long_run["milestones"][str(s)][key] / real[key] for s in long_steps],
+                    marker="^", ms=3, lw=1.2, ls=":", color=TEAL, mfc="white",
+                    label="v8 at 3x budget" if key == "tvr" else None)
         ax.axhline(1, color="#222222", lw=.8, ls="--")
         ax.set_xscale("log")
         ax.set_xlabel("training step")

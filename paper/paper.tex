@@ -332,7 +332,13 @@ A combined run of the three winners at the same 100k budget as the baseline esca
 (Figure~\ref{fig:m6fix}): at 100k steps it reaches TVR $.122$ and LIE $.073$ — at the real floors — while holding
 centroid speed at $.286$ (91\% of real) and motion fraction at $.434$, where the baseline froze at a third of the
 real value. Residual gaps remain in pose height variance ($.028$ versus $.061$) and angular jerk ($1.6\times$ real).
-Component attribution rests on the matched pilots; the combined run is single-seed.
+Component attribution rests on the matched pilots; the combined run is single-seed. A further $3\times$-budget run
+(300k steps, fresh cosine, dotted in Figure~\ref{fig:m6fix}) bounds what training time alone can buy: angular jerk
+nearly closes ($.069$ at 300k versus real $.059$) and structure holds below the floor, but centroid speed bleeds
+back ($.283$ at 100k to $.245$ at 300k) and the per-prompt motion correlation collapses toward zero while
+prompt-versus-noise sensitivity keeps rising — over-training slowly re-freezes the model into smooth, generic,
+prompt-agnostic motion. The practical operating range for this recipe is 40k--100k steps; the remaining gaps are
+levers for data and conditioning, not for longer schedules.
 
 \paragraph{What remains broken, and what each failure is.} Per-prompt analysis of the repaired model splits its
 residual errors systematically. Undershoot concentrates on compound vertical motions — squats ($-.47$ centroid-speed
