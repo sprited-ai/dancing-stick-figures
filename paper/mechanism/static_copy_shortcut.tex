@@ -24,23 +24,26 @@ pdfauthor={Jin Hyuk Cho}}
 \begin{document}\raggedbottom\maketitle\vspace{-1.25em}
 
 \begin{abstract}
-% TODO(final pass): tighten once SRE and the sweep verdict land.
+% TODO(final pass): tighten after the flagship 100k x 2-seed pair lands.
 Block-autoregressive diffusion is the practical recipe for streaming video generation, and recent large-scale systems
 report that jointly learning auxiliary modalities improves generation. We study this question causally, in the
 setting where it matters most — teacher-forced block-autoregressive continuation — on a fully traced synthetic
 testbed~\cite{cho2026dsf} whose ground-truth rig is exact. Our headline result: making the model \emph{co-generate an
 explicit rig} (one 2D-skeleton token per latent frame, denoised jointly with the pixels under a shared flow) improves
 pixel-space next-block prediction at matched parameters, data, and budget, on both teacher-forced and free-running
-rollouts, at two training budgets. % TODO: exact divergence numbers once the sweep verdict freezes the table.
+rollouts, at two training budgets — and training longer widens the gap, because the pixel-only model's continuation
+degrades with extended training while the rig-co-generating model's improves.
 We measure this with an AR-native evaluation — next-block divergence against the data's actual continuation, with a
-same-prompt real-pair floor — and, via a rig-space regressor (SRE), score rig-free and rig-generating models in the
-same structural space. % TODO: SRE results.
+same-prompt real-pair floor — and, via a validated rig-space regressor (SRE), score rig-free and rig-generating
+models in the same structural space, where the ordering replicates and the co-generated rig agrees with the model's
+own pixels nearly to instrument noise: the drawn rig describes the rendered figure.
 Two supporting studies complete the report. First, we diagnose and repair a training pathology of this factorization:
 a \emph{static-copy shortcut} where motion collapses while structure converges; history-side remedies fail while
 signal-reallocation remedies fix it, and a matched full-clip control attributes the collapse to the factorization
 itself. Second, we chart how tightly the rig should be coupled to the pixels: a differentiable soft-render coupling
-binds rig to pixels an order of magnitude faster than co-generation alone, but its weight trades directly against
-pixel quality. % TODO: sweep verdict sentence.
+binds rig to pixels an order of magnitude faster than co-generation alone, but at constant weight the coupling is a
+strictly monotone trade against pixel quality — which a 5k-step warmup of the same weight breaks, keeping the
+binding while improving structure over the uncoupled control.
 \end{abstract}
 
 \section{Introduction}
