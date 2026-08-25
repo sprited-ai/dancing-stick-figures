@@ -35,7 +35,8 @@
     "rig_pixel_consistency_weight": 2.0,
     "coupling_warmup_steps": 2000,
     "post_training_init": "results/m6v9_convergence_varied_100k_s0/ckpt_100000.pt (v9.0 varied 100k seed 0)",
-    "learning_rate": "5e-5 cosine, warmup 200"
+    "learning_rate": "5e-5 cosine, warmup 200",
+    "caption_variants": true
   },
   "milestones": [
     0,
