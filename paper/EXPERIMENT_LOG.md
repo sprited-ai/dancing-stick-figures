@@ -632,3 +632,20 @@ attributed:
   second). All killed, partial outputs deleted, messy log preserved as
   p32_v9s1_supervisor.log.messy, single clean chain relaunched and verified
   training (arm A 0.13s/it, 2.3GB).
+
+## v9.0 varied 100k seed-1 replication -- completed (2026-08-24 night)
+
+- Release-candidate seed replication per
+  `configs/m6_protocol_v9_convergence_varied_100k_s1.json` (supersedes the
+  stopped flagship seed-1 arm). 100k steps in 1.9 h (0.068 s/it -- no
+  coupling decode in the loop).
+- Endpoint vs seed 0: TVR .129 (s0 .126), LIE .084, centroid speed .253
+  (s0 .275; both ~80-88% of real .314), motion fraction .365 (real .371),
+  angle jerk .091. TF divergence .2917 (s0 .2870), FR .4387 (s0 .4399).
+- Headline replication: seed 1 still beats v8 100k decisively on the common
+  judge (TF .2917 vs .3139; FR .4387 vs .4584) -- the rig-co-generation
+  advantage is not seed luck. The paper's headline table can now carry
+  two seeds per family arm at 100k.
+- Release candidate status: both seeds pass the structural and motion bands;
+  either seed serves as the released reference checkpoint (pick s0 --
+  slightly better speed calibration -- and disclose both).
