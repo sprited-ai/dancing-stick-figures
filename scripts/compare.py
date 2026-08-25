@@ -3,7 +3,8 @@
     python scripts/compare.py --ckpt runs/img64/ckpt.pt --cache data/cache [--ref unet_img64] [--n 128]
 
 Downloads the reference checkpoint from sprited/dancing-stick-figures-baselines, scores both (same noise seeds, same
-number of samples) plus the real-frame floor, prints a table. Image checkpoints only (T=1); for video use eval/run_ckpt.py.
+number of samples) plus a real-frame reference, and prints a table. Image checkpoints only (T=1); for video use
+eval/run_ckpt.py.
 """
 from __future__ import annotations
 import argparse, json, os, subprocess, sys
@@ -29,9 +30,10 @@ def main():
     rows = [("yours  (step %d)" % mine["step"], mine), ("%s (step %d)" % (a.ref, ref["step"]), ref)]
     print(f"\n{'':32s} {'lie↓':>7s} {'tvr↓':>7s} {'cpe↓':>7s} {'clean↑':>7s}")
     for name, m in rows: print(f"{name:32s} {m['lie']:7.3f} {m['tvr']:7.3f} {m['cpe']:7.3f} {m['clean_frac']:7.2f}")
-    f = ref["floor"]; print(f"{'real frames (floor)':32s} {f['lie']:7.3f} {f['tvr']:7.3f} {f['cpe']:7.3f} {f['clean_frac']:7.2f}")
-    print("\nlie = missing/extra limbs, tvr = detached/fragmented limbs, cpe = smeared colours, clean = frames with zero errors.")
-    print("Real frames are not 0 because occluded limbs look missing to a pixel parser; being at the floor is the goal.")
+    f = ref["floor"]; print(f"{'real-frame reference':32s} {f['lie']:7.3f} {f['tvr']:7.3f} {f['cpe']:7.3f} {f['clean_frac']:7.2f}")
+    print("\nlie = expected colour connections that fail to touch; tvr = missing or fragmented limb colours;")
+    print("cpe = impure colours; clean = frames with zero lie/tvr errors.")
+    print("Occlusion makes real-reference scores non-zero. Lower is not automatically more realistic: read the metrics together.")
 
 
 if __name__ == "__main__":

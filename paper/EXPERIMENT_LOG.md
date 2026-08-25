@@ -649,3 +649,23 @@ attributed:
 - Release candidate status: both seeds pass the structural and motion bands;
   either seed serves as the released reference checkpoint (pick s0 --
   slightly better speed calibration -- and disclose both).
+
+## 32^2 pixel-space pilot, arm A verdict: FREEZE REPRODUCED (2026-08-25 01:15)
+
+- Arm A (baseline: 8-frame blocks, 42-frame teacher-forced history, fg-weight
+  2, NO VAE, direct 32^2 RGBA pixels) at 100k: alpha-mask centroid speed
+  0.069 vs the real 32^2 reference 0.248 measured identically = 28% of real
+  (v4 rule threshold: < 60%). GIF-based milestone trend .36 (50k) -> .175
+  (76k) -> .172 (100k) = falling-then-flat. Samples are clean humanoid
+  figures that hold one pose for the full 5-second rollout.
+- Per-prompt pattern REPLICATES the latent model's failure taxonomy:
+  locomotion keeps partial motion (walks .208, dances .144) while gesture
+  prompts freeze near zero (waves .016, squats .018, balance .031) -- the
+  same action-then-rest profile, now with no learned codec anywhere in the
+  pipeline. The static-copy shortcut is a property of the teacher-forced
+  short-block factorization, not a frozen-latent artifact.
+- Measurement: scripts/p32_motion_eval.py (alpha>0.15 mask centroid, 8
+  prompts x 100-frame rollouts, 10 steps CFG 2 seed 20260824), identical
+  computation applied to real 32^2 downscaled test clips (.2477).
+- Repair-transfer half (arm B: 16-frame blocks, fg-weight 4; needs >=
+  1.5x arm A = .104) pending, training ETA ~04:00.
