@@ -401,6 +401,11 @@ def main():
              "gradient flows into BOTH the rig and pixel paths; ~1.6x step cost)",
     )
     parser.add_argument(
+        "--init-checkpoint", default="",
+        help="initialize model+EMA weights from a prior v9 checkpoint (fresh optimizer "
+             "and schedule) -- the post-training path; empty = train from scratch",
+    )
+    parser.add_argument(
         "--coupling-warmup-steps", type=int, default=0,
         help="linearly ramp the render and consistency weights from 0 to their "
              "declared values over this many steps (0 = constant from step 0); "
@@ -520,7 +525,13 @@ def main():
         temporal_compression=temporal, size=latent_size, patch=args.patch, in_ch=channels,
         dim=args.dim, depth=args.depth, heads=args.heads, cond_ch=channels + 1, text_dim=text_dim,
     ).to(args.device)
+    if args.init_checkpoint:
+        init_data = torch.load(args.init_checkpoint, map_location=args.device, weights_only=False)
+        model.load_state_dict(init_data["model"])
+        print(f"post-training init from {args.init_checkpoint} (step {init_data.get('step')})", flush=True)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
+    if args.init_checkpoint and "ema" in init_data:
+        ema.load_state_dict(init_data["ema"])
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, betas=(0.9, 0.95),
                                   weight_decay=0.01, fused=args.fast)
     train_model = torch.compile(model) if args.compile else model
