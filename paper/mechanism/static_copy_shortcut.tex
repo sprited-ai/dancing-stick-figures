@@ -113,6 +113,9 @@ boundary flicker in a 100-frame sliding-decode audit), adopted over a more conse
 reconstruction gate and pinned by SHA-256. The generator, M6, is a 39.8M full-spatiotemporal latent DiT with 3D
 rotary embeddings: an immutable clean-history prefix of up to five latent blocks ($\approx$1\,s) conditions
 rectified-flow denoising of the next block, teacher-forced in training and rolled out to 100 frames at 20\,fps.
+% NOTE(cross-paper, 2026-08-24): the dataset paper's headline protocol moved to native 120f/20fps;
+% this paper's real-reference constants derive from the 50-frame-era reference sets. Before submission, either
+% recompute floors under this paper's own declared protocol or state the constants as self-contained here.
 
 \section{Next-block divergence: an AR-native evaluation}
 The metric asks the autoregressive question directly: given the data's own history, how far is the model's next block
