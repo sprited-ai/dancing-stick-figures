@@ -607,3 +607,28 @@ attributed:
 - Operating-range implication (interpretation, not a declared verdict): the
   coupled recipe's usable window sits near 40k, left of v8's 40k-100k.
 - Artifacts: paper/results/rigspace_flagship_s0_{010000,040000,100000}.json.
+
+## Flagship operating-point search + GPU reallocation (2026-08-24 evening)
+
+- Mid-milestone evals of flagship seed 0 (40k/60k/80k): centroid speed
+  .229/.211/.222 (100k .212), TVR .180/.128/.116. NO milestone reaches the
+  ~.28+ motion band -- the damping is a property of the coupled recipe at
+  this scale, not over-training. Combined with divergence (TF .2923 vs
+  v9.0's .2870; FR .4674 vs .4399), the pre-declared fallback rule fires:
+  RELEASE CANDIDATE = v9.0conv (varied captions) 100k.
+- Sweep-gate lesson recorded: the 10k sweep gates (on-figure/TVR/divergence)
+  did not gate MOTION; the warmup arm's motion tax only appears at 10x
+  budget. Paper2 coupling section must carry this boundary.
+- GPU reallocation (protocol supersession recorded in
+  m6_protocol_v9p3_flagship_warmup_100k_s1.json): flagship seed 1 stopped at
+  ~8k steps; replaced by (a) the 32^2 pixel generality pilot (protocol v2:
+  50-frame window constraint, from-scratch init; batch 2/accum 16 after two
+  OOMs -- masked SDPA materializes N^2 at 12,800 tokens) and (b)
+  m6v9_convergence_varied_100k_s1: seed-1 replication of the ACTUAL release
+  candidate and the rig-co-generation headline
+  (configs/m6_protocol_v9_convergence_varied_100k_s1.json).
+- Ops note: three supervisor instances briefly overlapped during the OOM
+  debugging (pkill matched the invoking ssh shell; first relaunch raced the
+  second). All killed, partial outputs deleted, messy log preserved as
+  p32_v9s1_supervisor.log.messy, single clean chain relaunched and verified
+  training (arm A 0.13s/it, 2.3GB).
