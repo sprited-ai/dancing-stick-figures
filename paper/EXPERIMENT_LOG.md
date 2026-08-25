@@ -588,3 +588,22 @@ attributed:
   recipe at 100k; v9.3-warmup is the binding recipe. Release framing belongs
   to Jin.
 - rig-space (--sre) runs launched for s0 10k/40k/100k milestones.
+
+## Flagship s0 rig-space milestones (2026-08-24 ~18:00)
+
+- --sre reruns of the declared 10k/40k/100k checkpoints (same protocol/seeds;
+  pixel numbers match the supervisor's to the reported digits):
+  10k rigTF 1.897 / rigFR 2.542 / bone .1678 / selfTF 1.389
+  40k rigTF 1.764 / rigFR 2.504 / bone .1374 / selfTF 0.869
+  100k rigTF 1.769 / rigFR 3.025 / bone .1485 / selfTF 0.828
+- Readings: (1) 40k is the coupled recipe's operating point -- best
+  free-running rig tracking measured across ALL models (2.504 px; v9.0-conv
+  100k is 2.595); by 100k rigFR degrades to 3.025 as motion erodes, echoing
+  the v8 300k over-training re-freeze arriving earlier under coupling.
+  (2) Binding consolidates ~2.5x faster than uncoupled: selfTF 1.39 at 10k
+  (v9.0: 1.79) and 0.87 by 40k (v9.0 needs 100k for 0.76). (3) At 100k
+  self-consistency keeps tightening while continuation worsens -- the model
+  stays honest about pixels that move less and drift more.
+- Operating-range implication (interpretation, not a declared verdict): the
+  coupled recipe's usable window sits near 40k, left of v8's 40k-100k.
+- Artifacts: paper/results/rigspace_flagship_s0_{010000,040000,100000}.json.
