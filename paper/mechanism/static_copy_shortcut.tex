@@ -196,6 +196,16 @@ $x_0$ is noise, so the consistency loss drags the pixel path toward an equally n
 lets attention-level co-generation establish the representation first. All verdicts follow the rule declared in the
 sweep protocols before any arm ran.
 
+A declared 100k flagship of the warmup recipe sharpens the picture at $10\times$ the sweep budget (seed 0; a second
+seed is training). Binding consolidates (on-figure $.99$) and frame structure converges through the real floor (TVR
+$.103$) — but the trade the warmup removed at 10k reappears on other axes: centroid speed falls to $.212$ against
+the repaired pixel-only recipe's $.286$ (real $.314$), and teacher-forced divergence settles at $.292$, $.005$ above
+the uncoupled control. Under the four-criteria judgment declared before training, the flagship claim does not hold.
+The coupling weight does not become free at scale; it relocates its cost from the structure axis to motion
+calibration — consistent with the constant-weight arms' failure mode, only slower and milder. Uncoupled
+co-generation remains the best continuation recipe at this budget; the warmed-up coupling is the recipe for a
+faithful, bound rig. % TODO: s1 endpoint when the pair completes.
+
 \begin{table}[t]\centering\caption{Coupling-weight sweep (10k steps each, matched to the uncoupled control; gates
 declared before results: on-figure $\ge$ .85 and TVR $\le$ .538). Only the warmed-up arm passes both.}
 \label{tab:coupling}\scriptsize
