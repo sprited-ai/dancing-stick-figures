@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "declared_before_training_results": true,
   "declared_at": "2026-08-24",
   "purpose": "32^2 pixel-space no-VAE block-AR generality pilot for the paper's static-copy study. Question: is the motion freeze (and its signal-reallocation repair) a property of the teacher-forced short-block factorization itself, or an artifact of the frozen latent codec? Two matched arms, directly on 32^2 RGBA pixels via train/video_dit_ar.py (no learned latent space, patch 2): arm A 'baseline' = 8-frame generation blocks, 20-frame history (1 s), fg-weight 2 (trainer default); arm B 'reallocated' = 16-frame generation blocks, fg-weight 4, same history. Both: 20 fps stride-1 windows, start-aligned equivalents unavailable in the pixel trainer are noted as a difference from the latent protocol. NOTE the pixel pilot carries two of the three latent-recipe treatments (block length, foreground weight); the motion-weighted flow loss is not implemented in the pixel trainer and is deliberately omitted rather than newly implemented mid-study.",
@@ -7,7 +7,7 @@
   "task": {
     "resolution": 32,
     "fps": 20,
-    "training_steps": 30000,
+    "training_steps": 100000,
     "seeds": [
       0
     ],
@@ -19,9 +19,10 @@
     "cfg": 2.0,
     "noise_seed": 20260824,
     "milestones": [
-      10000,
-      20000,
-      30000
+      25000,
+      50000,
+      75000,
+      100000
     ],
     "metrics": "centroid speed, motion fraction, height variance, TVR/LIE via oracle at 32^2 (oracle palette parsing verified at this scale before any verdict; if the oracle is unreliable at 32^2, structure verdicts fall back to alpha-occupancy and the limitation is recorded)",
     "declared_before_any_result": true
@@ -29,5 +30,6 @@
   "verdict_rule": "Freeze reproduced if arm A centroid speed at 6k < 60% of the matched real reference at 32^2 AND flat-or-falling from 2k to 6k. Repair transferred if arm B centroid speed at 6k >= 1.5x arm A's at matched-or-better structure. Both judged from the declared milestones only.",
   "scheduling": "runs after FLAGSHIP_PAIR_DONE (GPU held by the flagship pair until then).",
   "revision_note_before_any_result": "v2 (declared 2026-08-24, still before any run): the pixel trainer fixes history+target to a 50-frame window and previously required an image warm-start. Arms revised to fit: A baseline = 42-frame history / 8-frame blocks, fg-weight 2; B reallocated = 34-frame history / 16-frame blocks, fg-weight 4. Both from scratch (--init made optional; additive trainer change). Longer teacher-forced history in A strengthens the expected shortcut (consistent with pilot E), which biases toward freeze reproduction and is acknowledged. Predictions and verdict rule unchanged.",
-  "revision_v3_before_any_verdict": "2026-08-24 evening, before any verdict: the 6k arms completed but rollout previews are pure noise at every milestone -- from-scratch pixel block-AR needs a longer schedule (train loss 1.48->0.06 and val 1.03->0.55 still falling steeply at 6k; the 6k budget was miscalibrated from the latent 2k pilots, which start from a far easier optimization). Arms rerun at 30k steps, fresh cosine, milestones 10k/20k/30k, all other settings unchanged. The 6k runs are kept as the calibration record, judged on nothing. Verdict rule unchanged, now applied at 30k."
+  "revision_v3_before_any_verdict": "2026-08-24 evening, before any verdict: the 6k arms completed but rollout previews are pure noise at every milestone -- from-scratch pixel block-AR needs a longer schedule (train loss 1.48->0.06 and val 1.03->0.55 still falling steeply at 6k; the 6k budget was miscalibrated from the latent 2k pilots, which start from a far easier optimization). Arms rerun at 30k steps, fresh cosine, milestones 10k/20k/30k, all other settings unchanged. The 6k runs are kept as the calibration record, judged on nothing. Verdict rule unchanged, now applied at 30k.",
+  "revision_v4_before_any_verdict": "2026-08-24 22:00, before any verdict: at 30k arm A shows faint humanoid blobs but val (first .172 / cont .127) is still falling linearly -- samples are not yet measurable by the oracle or centroid analysis. Final budget revision: 100k steps per arm, fresh cosine, milestones 25k/50k/75k/100k. The 6k and 30k runs stand as calibration records; arm B's 30k run was stopped mid-training (absorbed into its 100k rerun). If samples remain unmeasurable at 100k, the pixel-space generality question ships as honestly OPEN in the paper -- no further extensions. Verdict rule unchanged, applied at 100k."
 }
