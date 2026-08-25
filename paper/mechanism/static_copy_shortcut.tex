@@ -202,9 +202,15 @@ $.103$) — but the trade the warmup removed at 10k reappears on other axes: cen
 the repaired pixel-only recipe's $.286$ (real $.314$), and teacher-forced divergence settles at $.292$, $.005$ above
 the uncoupled control. Under the four-criteria judgment declared before training, the flagship claim does not hold.
 The coupling weight does not become free at scale; it relocates its cost from the structure axis to motion
-calibration — consistent with the constant-weight arms' failure mode, only slower and milder. Uncoupled
-co-generation remains the best continuation recipe at this budget; the warmed-up coupling is the recipe for a
-faithful, bound rig. % TODO: s1 endpoint when the pair completes.
+calibration — consistent with the constant-weight arms' failure mode, only slower and milder. The rig-space
+milestones locate the erosion in time and show what the coupling buys: at 40k the coupled model is the best
+free-running rig tracker we measure anywhere ($2.50$\,px, versus the uncoupled control's $2.60$ at 100k), and its
+rig--pixel self-consistency reaches $0.87$\,px by 40k — a level the uncoupled model needs 100k to approach — before
+free-running divergence degrades to $3.03$\,px at 100k while self-consistency keeps tightening: the model stays
+honest about pixels that move less and drift more. The coupled recipe's operating point therefore sits near 40k,
+left of the pixel-only recipe's 40k--100k window. Uncoupled co-generation remains the best continuation recipe at
+the full budget; the warmed-up coupling is the recipe for a faithful, bound rig, and it gets there
+$2.5\times$ sooner. % TODO: s1 endpoint when the pair completes.
 
 \begin{table}[t]\centering\caption{Coupling-weight sweep (10k steps each, matched to the uncoupled control; gates
 declared before results: on-figure $\ge$ .85 and TVR $\le$ .538). Only the warmed-up arm passes both.}
