@@ -1,0 +1,45 @@
+{
+  "ckpt": "/data/dancing-stick-figure-paper/results/m6v9p3_flagship_warmup_100k_s0/ckpt_100000.pt",
+  "protocol": "m6_latent_block_ar_v9_rig_cogen",
+  "clips": 32,
+  "samples": 4,
+  "blocks": 6,
+  "steps": 10,
+  "cfg": 2.0,
+  "seed": 20260824,
+  "block_video_frames": 16,
+  "history_video_frames": 20,
+  "teacher_forced_best_of_n": {
+    "0": 0.402864388510352,
+    "1": 0.36693675455171615,
+    "2": 0.3776008276036009,
+    "3": 0.3123414686706383,
+    "4": 0.19503285092650913,
+    "5": 0.09909232772770338
+  },
+  "teacher_forced_mean": {
+    "0": 0.443169103578839,
+    "1": 0.414545616680698,
+    "2": 0.4296494474983774,
+    "3": 0.3615179027765407,
+    "4": 0.2662874098168686,
+    "5": 0.17534771013015416
+  },
+  "free_running_mean": {
+    "0": 0.42448635897017084,
+    "1": 0.48433813208248466,
+    "2": 0.48757343366742134,
+    "3": 0.49091144325211644,
+    "4": 0.45703835552558303,
+    "5": 0.46032973378896713
+  },
+  "real_floor_mean": {
+    "0": 0.5614649816416204,
+    "1": 0.5597582240588963,
+    "2": 0.5634994488209486,
+    "3": 0.5616687526926398,
+    "4": 0.5497268561739475,
+    "5": 0.530998079571873
+  },
+  "note": "fg-union weighted RGBA MSE vs the clip's actual continuation; v9 free-running carries its own generated rig history after block 0"
+}

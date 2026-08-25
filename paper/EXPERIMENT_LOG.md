@@ -537,3 +537,18 @@ attributed:
   (11.7x) / 0.78 px localized. GATE 2 PASS -> SRE v1 passes all three gates
   (gate 3 far tier vacuous as logged).
 - Artifact: `paper/results/sre_v1_validation_corruptions_v2.json`.
+
+## Flagship s0 training complete; divergence scored (2026-08-24 17:02)
+
+- Training exit 0 at 100k. Supervisor divergence (pixel protocol, no SRE):
+  10k TF .3031/FR .4559 | 40k .2936/.4533 | 100k .2923/.4674 (floor .5545).
+- Against the declared judgment: TF improves monotonically with training
+  (no v8-style reversal), but 100k TF .2923 vs the declared gate "<= .2870
+  (v9.0-conv) within noise" is +.0053 — outside the +-.005 replication band
+  seen on v8 eval metrics; FR .4674 is worse than v9.0-conv .4399. Same
+  structure as the 10k sweep (warmup arm .2977 vs uncoupled .2947): coupling
+  costs a little TF divergence. VERDICT PENDING the remaining three criteria
+  (TVR / motion band / on-figure sustained) from eval_n64, running now.
+  No relitigation: the declared rule decides; interpretation goes to the
+  coupling section either way.
+- Artifacts mirrored: paper/results/m6v9p3_flagship_warmup_100k_s0_*.json.
