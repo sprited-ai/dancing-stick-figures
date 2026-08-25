@@ -1,0 +1,10 @@
+# Five prompts represented in the training distribution.
+A person does the running man dance.
+A person gallops sideways.
+A person sits down on a chair.
+A person walks like a zombie.
+A person wipes sweat from their brow.
+# Three sport prompts held out from generator training by the dataset split.
+A person does jumping jacks.
+A person does a high kick.
+A person does a yoga tree pose.

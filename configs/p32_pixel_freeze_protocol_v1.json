@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "declared_before_training_results": true,
   "declared_at": "2026-08-24",
   "purpose": "32^2 pixel-space no-VAE block-AR generality pilot for the paper's static-copy study. Question: is the motion freeze (and its signal-reallocation repair) a property of the teacher-forced short-block factorization itself, or an artifact of the frozen latent codec? Two matched arms, directly on 32^2 RGBA pixels via train/video_dit_ar.py (no learned latent space, patch 2): arm A 'baseline' = 8-frame generation blocks, 20-frame history (1 s), fg-weight 2 (trainer default); arm B 'reallocated' = 16-frame generation blocks, fg-weight 4, same history. Both: 20 fps stride-1 windows, start-aligned equivalents unavailable in the pixel trainer are noted as a difference from the latent protocol. NOTE the pixel pilot carries two of the three latent-recipe treatments (block length, foreground weight); the motion-weighted flow loss is not implemented in the pixel trainer and is deliberately omitted rather than newly implemented mid-study.",
@@ -8,7 +8,9 @@
     "resolution": 32,
     "fps": 20,
     "training_steps": 6000,
-    "seeds": [0],
+    "seeds": [
+      0
+    ],
     "budget_note": "6k steps per arm, matched; pilot-scale (the latent pilots separated the same treatments at 2k)."
   },
   "evaluation": {
@@ -16,10 +18,15 @@
     "sampler_steps": 10,
     "cfg": 2.0,
     "noise_seed": 20260824,
-    "milestones": [2000, 4000, 6000],
+    "milestones": [
+      2000,
+      4000,
+      6000
+    ],
     "metrics": "centroid speed, motion fraction, height variance, TVR/LIE via oracle at 32^2 (oracle palette parsing verified at this scale before any verdict; if the oracle is unreliable at 32^2, structure verdicts fall back to alpha-occupancy and the limitation is recorded)",
     "declared_before_any_result": true
   },
   "verdict_rule": "Freeze reproduced if arm A centroid speed at 6k < 60% of the matched real reference at 32^2 AND flat-or-falling from 2k to 6k. Repair transferred if arm B centroid speed at 6k >= 1.5x arm A's at matched-or-better structure. Both judged from the declared milestones only.",
-  "scheduling": "runs after FLAGSHIP_PAIR_DONE (GPU held by the flagship pair until then)."
+  "scheduling": "runs after FLAGSHIP_PAIR_DONE (GPU held by the flagship pair until then).",
+  "revision_note_before_any_result": "v2 (declared 2026-08-24, still before any run): the pixel trainer fixes history+target to a 50-frame window and previously required an image warm-start. Arms revised to fit: A baseline = 42-frame history / 8-frame blocks, fg-weight 2; B reallocated = 34-frame history / 16-frame blocks, fg-weight 4. Both from scratch (--init made optional; additive trainer change). Longer teacher-forced history in A strengthens the expected shortcut (consistent with pilot E), which biases toward freeze reproduction and is acknowledged. Predictions and verdict rule unchanged."
 }

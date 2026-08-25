@@ -738,7 +738,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache", required=True)
     parser.add_argument("--out", required=True)
-    parser.add_argument("--init", required=True, help="M3 full or EMA checkpoint")
+    parser.add_argument("--init", default="", help="M3 full or EMA checkpoint; empty = train from scratch")
     parser.add_argument("--resume", default="")
     parser.add_argument("--size", type=int, default=64)
     parser.add_argument("--stride", type=int, default=1)
@@ -846,7 +846,7 @@ def main() -> None:
         ema.load_state_dict(checkpoint_data["ema"])
         optimizer.load_state_dict(checkpoint_data["opt"])
         step = int(checkpoint_data["step"])
-    else:
+    elif args.init:
         checkpoint_data = torch.load(args.init, map_location=args.device, weights_only=False)
         for destination, key in ((model, "model"), (ema, "ema")):
             source = checkpoint_data.get(key) or checkpoint_data["ema"]
