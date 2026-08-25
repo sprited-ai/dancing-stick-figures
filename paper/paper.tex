@@ -318,10 +318,11 @@ complete prompt tokens through cross-attention. With $T{=}1$ the same network is
 it jointly generates the complete two-second-scale training window rather than rolling short chunks forward.
 
 The ladder starts from the image model (spatial structure and text conditioning alone), then trains the 64-frame
-video model from random initialisation (what joint temporal training must learn by itself), then trains an
-identically configured video model whose compatible spatial and text weights are copied from the image checkpoint
-(what spatial transfer contributes; temporal positions and temporal attention still learn from video). Two design
-contrasts complete the ladder under the same trainer, data view, and step budget. The first varies the mechanism
+video model both from random initialisation and warm-started from the image checkpoint's compatible spatial and
+text weights. Image-first initialisation is established practice~\cite{ho2022vdm,singer2023makeavideo}, so we make
+no novelty claim for that contrast; the two rows serve as reference points---the random-initialised model is also
+the matched comparator for the latent rows below---and confirm that the benchmark resolves the expected effect.
+Two design contrasts complete the ladder under the same trainer, data view, and step budget. The first varies the mechanism
 that carries motion across patch boundaries, in increasing order of direct connectivity and cost: the factorised
 baseline (a two-hop relay through per-cell temporal summaries), a zero-initialised local $3{\times}3{\times}3$
 convolutional mixer added to every block (a direct path for neighbouring cells at negligible cost), and joint
@@ -496,6 +497,8 @@ learning and diagnosable experimentation within this narrow synthetic domain.
 \bibitem{ho2020ddpm} J. Ho et al. Denoising Diffusion Probabilistic Models. \emph{NeurIPS}, 2020.
 \bibitem{peebles2023dit} W. Peebles and S. Xie. Scalable Diffusion Models with Transformers. \emph{ICCV}, 2023.
 \bibitem{lipman2023flow} Y. Lipman et al. Flow Matching for Generative Modeling. \emph{ICLR}, 2023.
+\bibitem{ho2022vdm} J. Ho et al. Video Diffusion Models. \emph{NeurIPS}, 2022.
+\bibitem{singer2023makeavideo} U. Singer et al. Make-A-Video: Text-to-Video Generation without Text-Video Data. \emph{ICLR}, 2023.
 \bibitem{sun2025compbench} K. Sun et al. T2V-CompBench: A Comprehensive Benchmark for Compositional Text-to-video Generation. \emph{CVPR}, 2025.
 \bibitem{zheng2025vbench2} D. Zheng et al. VBench-2.0: Advancing Video Generation Benchmark Suite for Intrinsic Faithfulness. arXiv:2503.21755, 2025.
 \end{thebibliography}

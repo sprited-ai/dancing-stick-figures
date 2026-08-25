@@ -12,39 +12,18 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data/v1"
-GENERATIONS = (
-    ROOT
-    / "output/inference/m3_diverse_prompts_10k_rgba/prompt_diverse_grid_rgba.npz"
-)
+GENERATIONS = ROOT / "output/inference/paper1_v02c_qual/qual_suite_rgba.npz"
 OUT = ROOT / "paper/figs/reference_generation_pairs"
 
 # Prompt index, released clip, and matched (source-frame, model-frame) keyframes.
-# The model uses every second source frame over a five-second training window.
+# The v0.2 model jointly generates the complete 64-frame native-cadence window,
+# so model frames map 1:1 onto the first 64 source frames.
+FRAMES_1TO1 = ((0, 0), (20, 20), (42, 42), (63, 63))
 PAIRS = (
-    (
-        "wave left",
-        2,
-        "gesture/a_person_waves_hello_with_the_left_hand_s1/c0",
-        ((0, 0), (18, 9), (38, 19), (58, 29)),
-    ),
-    (
-        "wave right",
-        3,
-        "gesture/a_person_waves_hello_with_the_right_hand_s1/c0",
-        ((0, 0), (18, 9), (38, 19), (58, 29)),
-    ),
-    (
-        "run forward",
-        4,
-        "locomotion/a_person_runs_forward_s0/c0",
-        ((0, 0), (18, 9), (38, 19), (58, 29)),
-    ),
-    (
-        "walk backward",
-        5,
-        "locomotion/a_person_walks_backwards_s1/c0",
-        ((0, 0), (18, 9), (38, 19), (58, 29)),
-    ),
+    ("wave left", 0, "gesture/a_person_waves_hello_with_the_left_hand_s1/c0", FRAMES_1TO1),
+    ("wave right", 1, "gesture/a_person_waves_hello_with_the_right_hand_s1/c0", FRAMES_1TO1),
+    ("run forward", 2, "locomotion/a_person_runs_forward_s0/c0", FRAMES_1TO1),
+    ("walk backward", 3, "locomotion/a_person_walks_backwards_s1/c0", FRAMES_1TO1),
 )
 
 plt.rcParams.update(
@@ -103,7 +82,7 @@ def main():
             by_clip.setdefault(row["clip_id"], {})[row["frame_idx"]] = row
 
     generated = np.load(GENERATIONS)["rgba"]
-    if generated.shape != (8, 50, 64, 64, 4):
+    if generated.ndim != 5 or generated.shape[1] < 64 or generated.shape[-1] != 4:
         raise RuntimeError(f"unexpected generated-video shape: {generated.shape}")
 
     fig = plt.figure(figsize=(12.6, 1.7), facecolor="white")

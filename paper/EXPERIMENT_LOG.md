@@ -778,3 +778,17 @@ attributed:
   reported in latent space (t2v16lat pair, complete), pixel full-ST cost (4.7x factorised)
   reported as measurement, results deferred to arXiv v2. Training continues.
 - Latent pair evals will be re-run after first pass so all rows carry the odometer keys.
+
+## Latent pair first results + visual verification (2026-08-25 night)
+
+- t2v16lat_rand10k_s0: FVD 503.3 +/- 22.5 (dFVD +388.5), tvr .816, lie .398, jerk .276,
+  speed .571. t2v16lat_fullst_rand10k_s0: FVD 527.2 +/- 8.4, tvr .821 -- factorised vs
+  full-ST difference within noise in latent space.
+- Visual verification (results/latent_visual_check.png, 4 prompts x 6 frames, exact eval
+  sampling path): NOT a pipeline bug. Figures show recognisable silhouettes, poses and
+  plausible motion, but limb-identity COLOUR coding is corrupted (black blobs, missing
+  limb colours, detached fragments). Codec floor CPE .037 rules out the decoder: the
+  latent DiT's generated latents are off-distribution in the colour-coding dimensions.
+- Reading: at matched params/steps, latent-space training learns shape/motion but fails
+  colour-precise structure; colour-keyed oracle metrics (tvr/lie) punish this by design
+  (limb identity is the point of the labels). Pixel rows tonight complete the contrast.
