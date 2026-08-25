@@ -693,3 +693,21 @@ attributed:
   representation-generality stays an open question, stated as such.
 - Artifacts: results/p32_{baseline_h42t8,reallocated_h34t16}_100k/
   motion_eval_100k.json (gin), scripts/p32_motion_eval.py.
+
+## 32^2 pixel-space pilot, arm C verdict: partial revival, below the declared bar (2026-08-25 06:30)
+
+- Arm C (= arm B + motion-weighted flow loss alpha 1.0, the single-treatment
+  contrast declared in protocol v5): alpha-mask centroid speed .0881 --
+  BELOW the declared repair threshold (.104 = 1.5x arm A), so by the
+  pre-registered rule the repair does NOT transfer at this budget.
+- Honest observation alongside the formal verdict: C is the only arm that
+  moves motion at all (A .069, B .064, C .088 = +28% over A), and the gains
+  concentrate exactly where the treatment predicts -- periodic actions
+  (jumping jacks .068->.146, jogs-in-place .047->.109, dances .096->.150)
+  -- while gesture freezes persist (waves .029, squats .024). Directionally
+  consistent with the motion-weighted term being the active ingredient;
+  quantitatively insufficient for the latent-scale repair claim.
+- Paper wording: diagnosis fully general; repair PARTIALLY transfers (the
+  motion-weighted term is necessary-looking but not sufficient in pixel
+  space at this budget); repair-generality stated as partially open.
+- Artifacts: results/p32_motion_h34t16_100k/motion_eval_100k.json (gin).

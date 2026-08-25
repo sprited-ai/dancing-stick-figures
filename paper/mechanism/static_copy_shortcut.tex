@@ -400,9 +400,13 @@ teacher-forced short-block factorization, not of the codec. The repair, however,
 the reallocated arm (longer blocks, foreground weight 4) scores .064, indistinguishable from the baseline. Two of
 the three latent-recipe treatments were testable in this trainer; the motion-weighted flow loss — the strongest
 single treatment in the matched pilots — is not implemented there and was declared omitted, and the pixel baseline
-already carries foreground weight 2, halving that contrast. We therefore claim generality for the \emph{diagnosis}
-and leave the repair's representation-generality open, with the missing motion-weighted term as the leading
-candidate explanation.
+already carries foreground weight 2, halving that contrast. A third arm then tested that candidate directly: adding the
+motion-weighted flow loss (ported verbatim, the single change relative to the reallocated arm, declared before its
+result) produces the only motion revival of the three arms (.088, +28\% over baseline), concentrated exactly where
+the treatment predicts — periodic actions (jumping jacks .068 to .146, jogging in place .047 to .109) — yet still
+below the pre-registered repair threshold (.104). We therefore claim generality for the \emph{diagnosis}; the
+repair transfers \emph{partially} — the motion-weighted term is directionally confirmed as the active ingredient but
+is not sufficient at this budget in pixel space — and we state its full representation-generality as open.
 
 \subsection{Residual failure taxonomy}
 % --- moved from testbed report: "What remains broken" paragraph ---
