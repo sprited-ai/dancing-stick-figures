@@ -386,10 +386,21 @@ under these budgets the fixed block-autoregressive model above is the only confi
 floor while keeping real-level motion.
 
 \subsection{Generality: pixel space without a learned codec}
-\todoblock{$32^2$ pixel-space no-VAE block-AR pilot. Plan: same block-AR factorization and budget class directly on
-$32^2$ RGBA pixels (no learned latent space). Prediction to declare before results: the freeze reproduces (static-copy
-is a property of the factorization, not the frozen codec), and the signal-reallocation repair transfers. This section
-defuses the ``artifact of the frozen latent space'' objection. Protocol config to be declared before the run.}
+To test whether the collapse is an artifact of the frozen latent space, we trained matched block-autoregressive
+diffusion models directly on $32^2$ RGBA pixels — no learned codec anywhere in the pipeline — under a protocol whose
+predictions and verdict rule were declared before any run (100k steps from scratch; the trainer's fixed 50-frame
+window sets history/block splits of 42/8 for the baseline arm and 34/16 for the reallocated arm). The freeze
+reproduces: the baseline arm's rollouts hold a single pose for the full five seconds, with alpha-mask centroid speed
+at 28\% of the identically-measured real reference (.069 versus .248), and the per-prompt taxonomy replicates —
+locomotion prompts retain partial motion (walks .208) while gesture prompts freeze near zero (waves .016, squats
+.018), the same action-then-rest profile as the latent model. The static-copy shortcut is therefore a property of the
+teacher-forced short-block factorization, not of the codec. The repair, however, did \emph{not} transfer as tested:
+the reallocated arm (longer blocks, foreground weight 4) scores .064, indistinguishable from the baseline. Two of
+the three latent-recipe treatments were testable in this trainer; the motion-weighted flow loss — the strongest
+single treatment in the matched pilots — is not implemented there and was declared omitted, and the pixel baseline
+already carries foreground weight 2, halving that contrast. We therefore claim generality for the \emph{diagnosis}
+and leave the repair's representation-generality open, with the missing motion-weighted term as the leading
+candidate explanation.
 
 \subsection{Residual failure taxonomy}
 % --- moved from testbed report: "What remains broken" paragraph ---

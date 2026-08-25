@@ -669,3 +669,27 @@ attributed:
   computation applied to real 32^2 downscaled test clips (.2477).
 - Repair-transfer half (arm B: 16-frame blocks, fg-weight 4; needs >=
   1.5x arm A = .104) pending, training ETA ~04:00.
+
+## 32^2 pixel-space pilot, arm B verdict: repair did NOT transfer (2026-08-25 04:00)
+
+- Arm B (16-frame blocks + fg-weight 4, 34-frame history, no VAE) at 100k:
+  alpha-mask centroid speed .0639 -- statistically indistinguishable from
+  arm A's .069 and far below the declared repair threshold (>= .104 =
+  1.5x A). Per-prompt: some redistribution (jumping jacks .118 vs A .068)
+  but no aggregate revival.
+- Verdict per the pre-declared v4 rule's third branch: the FREEZE is
+  general (reproduced without any learned codec, with the same per-prompt
+  taxonomy), but the signal-reallocation REPAIR, as testable in the pixel
+  trainer (2 of 3 treatments -- block length + foreground weight; the
+  motion-weighted flow loss is not implemented there and was declared
+  omitted), did not transfer at this budget.
+- Honest readings (for the paper): (a) the motion-weighted flow loss --
+  the strongest single treatment in the latent pilots (D: speed .383) --
+  may be the essential ingredient, untested here; (b) the pixel baseline
+  already carries fg-weight 2, so the fg contrast (2 vs 4) is weaker than
+  the latent uniform-vs-4 contrast; (c) from-scratch pixel optimization at
+  this budget may sit in a different regime than the warm latent runs. The
+  paper's generality claim narrows to the diagnosis; the repair's
+  representation-generality stays an open question, stated as such.
+- Artifacts: results/p32_{baseline_h42t8,reallocated_h34t16}_100k/
+  motion_eval_100k.json (gin), scripts/p32_motion_eval.py.
