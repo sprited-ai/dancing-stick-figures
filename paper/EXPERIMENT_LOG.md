@@ -804,3 +804,13 @@ attributed:
   latent-video is the standard order). Kill option: defer to v2 if results are ambiguous.
 - Cost: latent steps ~0.17 s/it (slices cheaper); both stages ≈ 1 GPU-hour, no threat to the
   pixel queue.
+
+## Attention axis moved to latent space (2026-08-26 ~01:30, decision Jin)
+
+- Pixel local3d run (t2v64_local3d_warm10k_s0, was ETA ~17 h) killed at step ~1.3k; the
+  factorised / +local3d / full-ST comparison now runs entirely in latent space where the
+  three mechanisms are cost-matched (~0.17-0.19 s/it). New run:
+  paper1_v02c_t2v16lat_local3d_rand10k_s0 (matched to t2v16lat_rand10k except --local_3d),
+  auto-evaluated on win64. Pixel-scale attention runs (full-ST paused at 350 steps,
+  local3d killed) deferred to arXiv v2.
+- Freed GPU goes to L2/L3/seed-1, protecting the morning ship window.

@@ -326,10 +326,10 @@ Two design contrasts complete the ladder under the same trainer, data view, and 
 that carries motion across patch boundaries, in increasing order of direct connectivity and cost: the factorised
 baseline (a two-hop relay through per-cell temporal summaries), a zero-initialised local $3{\times}3{\times}3$
 convolutional mixer added to every block (a direct path for neighbouring cells at negligible cost), and joint
-attention over all spatio-temporal tokens---the direct-interaction design used by larger systems. At pixel scale
-(16{,}384 tokens) joint attention costs $4.7\times$ the factorised step in measured wall-clock, so we report that
-contrast in latent space, where 1{,}024 tokens make it essentially free ($0.17$ vs.\ $0.19$\,s/step measured); the
-step-matched pixel-scale run is deferred to a revision. The second axis varies the representation: matched DiTs
+attention over all spatio-temporal tokens---the direct-interaction design used by larger systems. We measure this
+axis in latent space, where 1{,}024 tokens make all three mechanisms essentially cost-matched ($0.17$ vs.\
+$0.19$\,s/step measured for the two attention extremes); at pixel scale joint attention costs $4.7\times$ the
+factorised step in measured wall-clock, and the step-matched pixel-scale runs are deferred to a revision. The second axis varies the representation: matched DiTs
 trained in the
 latent space of a separately trained frozen video autoencoder (factorised and joint-attention variants),
 whose generated latents are decoded before evaluation so that codec
@@ -362,8 +362,8 @@ Real reference windows & --- & --- & .116 & .093 & .037 & .373 & .501 & .073 & 1
 Codec reconstruction floor & --- & --- & .137 & .104 & .037 & .380 & .503 & .104 & 124.4 \\
 Video DiT, 10k & factorised & random & --- & --- & --- & --- & --- & --- & --- \\
 Video DiT, 10k & factorised & image & --- & --- & --- & --- & --- & --- & --- \\
-Video DiT, 10k & factorised + local mixer & image & --- & --- & --- & --- & --- & --- & --- \\
 Latent video DiT, 10k & factorised & random & --- & --- & --- & --- & --- & --- & --- \\
+Latent video DiT, 10k & factorised + local mixer & random & --- & --- & --- & --- & --- & --- & --- \\
 Latent video DiT, 10k & joint spatio-temporal & random & --- & --- & --- & --- & --- & --- & --- \\\bottomrule
 \end{tabular}
 \par\vspace{2pt}\raggedright\scriptsize TVR is topology violation rate, LIE limb inconsistency error, and CPE
