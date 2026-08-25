@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from eval.keyframes import select_representative_frames
 from generator.rebuild_from_motion import _body_and_cameras
 from generator.render import render_all
 from generator.skeleton import NAMES, PARENT, project
@@ -21,7 +22,7 @@ from generator.skeleton import NAMES, PARENT, project
 
 SOURCE = ROOT / "data/v1"
 OUT = ROOT / "paper/figs/dataset_anatomy"
-EXAMPLE_MOTION = "dance/a_person_dances_energetically_waving_arms_and_stepping_side__s0"
+EXAMPLE_MOTION = "dance/a_person_does_the_running_man_dance_s0"
 
 plt.rcParams.update({
     "font.family": "serif",
@@ -102,14 +103,18 @@ def rerender_view(row, camera, body):
 
 
 def main():
-    dataset = ds.dataset(sorted(SOURCE.glob("train-*.parquet")), format="parquet")
+    dataset = ds.dataset(sorted(SOURCE.glob("*.parquet")), format="parquet")
     table = dataset.to_table(filter=ds.field("clip_id") == EXAMPLE_MOTION + "/c0")
     rows = table.to_pylist()
     if len(rows) != 120:
         raise RuntimeError(f"expected 120 example frames, found {len(rows)}")
     motion_id = EXAMPLE_MOTION
     by_frame = {row["frame_idx"]: row for row in rows}
-    focus_frame = 60
+    joints = np.stack([
+        np.frombuffer(by_frame[f]["joint_xyz"], np.float32).reshape(27, 3) for f in range(120)
+    ])
+    strip_frames = select_representative_frames(joints, count=5)
+    focus_frame = strip_frames[len(strip_frames) // 2]
     focus = by_frame[focus_frame]
     body, cameras = _body_and_cameras(motion_id, "", {})
 
@@ -123,9 +128,9 @@ def main():
              f"view {camera + 1}")
 
     timeline = outer[0, 1].subgridspec(1, 5, wspace=0.06)
-    for column, frame in enumerate((0, 30, 60, 90, 119)):
+    for column, frame in enumerate(strip_frames):
         show(fig.add_subplot(timeline[0, column]), on_white(decode(by_frame[frame]["color"])),
-             rf"$t={frame}$")
+             rf"$t={frame / 20:.1f}\,$s")
 
     labels = outer[1, :].subgridspec(1, 5, wspace=0.06)
     rgba = decode(focus["color"], "RGBA")

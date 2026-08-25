@@ -736,3 +736,45 @@ attributed:
 - Corruption study results (curated corpus): real-real FVD 80.5; freeze 465.5 / shuffle 419.2 /
   loop-8 328.5 / reverse 79.3; shuffle accel .348->2.858, jerk .060->.384; reverse paired
   delta -1.65 +/- 2.69 (9/30 positive). Reversal blind spot replicates.
+
+## Ladder finalised + auxiliary instruments (2026-08-25 evening, Claudia; decisions Jin)
+
+- Ladder amendments (Jin): L4 ResUNet dropped (historically weak). Attention axis becomes three
+  mechanisms in cost order: factorised relay (L3) -> +local 3x3x3 zero-init conv mixer, warm
+  (paper1_v02c_t2v64_local3d_warm10k_s0) -> full-ST, warm (t2v64_fullst_warm10k_s0). Latent track
+  runs BOTH factorised and full-ST variants (t2v16lat_rand10k_s0, t2v16lat_fullst_rand10k_s0),
+  random-init (pixel image warm-start incompatible with latent in_ch/grid); L6 pair launched
+  before L5 (Jin's priority). Headline statistic: FVD, guarded by TVR / centroid_speed /
+  angle_jerk; reverse blindness stated as measured caveat.
+- Throughput (results/parallel_bench.json, parallel_bench_multi.json): 2-job per-job slowdown
+  1.04x, aggregate 1.92x vs sequential -> parallel training wins. Pixel full-ST 7.2 s/it vs
+  factorised ~1.5 s/it (~4.7x); latent full-ST == latent factorised 0.17-0.19 s/it (free at
+  1,024 tokens).
+- Training-seed variance run declared: L3 protocol repeated with --seed 1
+  (paper1_v02c_t2v64_warm10k_s1), queued after latent pair completes. Purpose: scale of
+  run-to-run variance to read all rung differences against.
+- Codec-floor row (scripts/codec_floor.py, results/v02c_eval/codec_floor_64f_n128.json):
+  win64 reference_b encode->decode through frozen f8t4d16 40k codec, FVD vs reference_a 124.4
+  (real-real 115.2, +9); tvr .137 lie .104 jerk .104 (+42% vs real .073, temporal-compression
+  signature). Codec predates curation/seed split -> floor read as optimistic; stated in paper.
+- Critic v0 (scripts/train_critic.py, results/critic_v0/): corruption-severity regressor
+  (freeze_tail, window_shuffle, frame_jitter, warp_static, warp_flicker trained; reverse_time +
+  loop_first_8 HELD OUT), model samples never trained on; role = third-party judge outside the
+  paper. Kill criterion (declared pre-result) passed: real .133 vs trained families .56-.76.
+  Held-out generalisation: loop .184 (weak), reverse .142 (fails, same blind spot as FVD).
+- Train-vs-val distribution check: train_replay FVD 125.7 vs real-real 115.2 -> seed-disjoint
+  split introduces ~no shift; 125.7 doubles as the pure-memorisation score band.
+
+## Angular odometer metric declared (2026-08-25 night, before any model scores read; idea Jin)
+
+- ang_path_<limb> / ang_path_total added to eval.oracle.score_video: accumulated absolute
+  principal-axis angle travelled per limb over the clip (rad, half-circle unwrapped).
+  Two-sided reference signal (agreement with real is desired). Absence and freezing both
+  read 0 -- read beside mass_drift/tvr. Validation on 16 win64 real windows:
+  real 37.5 / freeze 0.0 / shuffle 130.0 / loop-8 28.4 (total). run_ckpt aggregates all
+  ang_path_* keys with CIs; per-limb profile enables "moves the right parts" reading.
+- Ship decision (Claudia, under Jin's B+ directive): pixel full-ST row (7.2 s/it, ~20 h)
+  cannot finish today -> dropped from the submission table; joint-attention contrast is
+  reported in latent space (t2v16lat pair, complete), pixel full-ST cost (4.7x factorised)
+  reported as measurement, results deferred to arXiv v2. Training continues.
+- Latent pair evals will be re-run after first pass so all rows carry the odometer keys.

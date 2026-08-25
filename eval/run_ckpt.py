@@ -25,7 +25,8 @@ def to_uint8_rgba(x):
     return (np.clip(np.concatenate([rgb, a], -1), 0, 1) * 255).astype(np.uint8), v
 
 
-TEMPORAL = ("mass_drift", "centroid_speed", "centroid_accel", "motion_fraction", "angle_speed", "angle_jerk", "height_var")
+TEMPORAL = ("mass_drift", "centroid_speed", "centroid_accel", "motion_fraction", "angle_speed", "angle_jerk", "height_var",
+            "ang_path_total")
 FRAME = ("tvr", "lie", "cpe")
 SEAM_METRICS = (
     "seam_centroid_speed", "within_centroid_speed",
@@ -71,7 +72,8 @@ def real_reference(cache, frames, stride, S, n, dev, manifest=None):
     b_ = load_manifest_windows(cache, manifest["reference_b"], size=S)
     rgba, _ = to_uint8_rgba(a_)
     per = [score_video(v) for v in rgba]
-    ref = {k: float(np.mean([p[k] for p in per])) for k in FRAME + TEMPORAL}
+    limb_keys = tuple(sorted(k for k in per[0] if k.startswith("ang_path_")))
+    ref = {k: float(np.mean([p[k] for p in per])) for k in FRAME + TEMPORAL + limb_keys}
     ra = rgba_premult_to_rgb(((a_.clamp(-1, 1) + 1) / 2).permute(0, 2, 3, 4, 1).numpy())
     rb = rgba_premult_to_rgb(((b_.clamp(-1, 1) + 1) / 2).permute(0, 2, 3, 4, 1).numpy())
     ref["fvd_real_real"] = fvd(ra, rb, device=dev)
@@ -228,7 +230,8 @@ def evaluate(run, cache, n=128, dev="cuda", seeds=(0, 1, 2), target_frames=50,
         xs = torch.cat(outs, 0)
         rgba, prem = to_uint8_rgba(xs)
         per = [score_video(v) for v in rgba]
-        r = {k: [p[k] for p in per] for k in FRAME + TEMPORAL + ("fg",)}
+        limb_keys = tuple(sorted(k for k in per[0] if k.startswith("ang_path_")))
+        r = {k: [p[k] for p in per] for k in FRAME + TEMPORAL + ("fg",) + limb_keys}
         if seam_frames:
             seam_rows = [score_seams(v, seam_frames) for v in rgba]
             for key in SEAM_METRICS:
@@ -237,7 +240,8 @@ def evaluate(run, cache, n=128, dev="cuda", seeds=(0, 1, 2), target_frames=50,
         r["fvd"] = fvd(ref["_real_rgb"], rgba_premult_to_rgb(prem), device=dev)
         print(f"eval seed {sd + 1}/{len(seeds)}: FVD {r['fvd']:.3f}", flush=True)
         per_seed.append(r)
-    for k in FRAME + TEMPORAL + ("fg",):
+    agg_keys = FRAME + TEMPORAL + ("fg",) + tuple(sorted(k for k in per_seed[0] if k.startswith("ang_path_")))
+    for k in agg_keys:
         allv = [v for r in per_seed for v in r[k]]
         m[k] = float(np.mean(allv)); m[k + "_ci"] = boot_ci(allv)
     fv = [r["fvd"] for r in per_seed]

@@ -193,17 +193,25 @@ def score_video(frames_thw4: np.ndarray) -> dict:
     valid_d = d[np.isfinite(d)]
     out["motion_fraction"] = float(np.mean(valid_d > 0.25)) if valid_d.size else 0.0
     out["height_var"] = float(np.nanstd(h) / max(np.nanmean(h), 1)) if np.isfinite(h).any() else 1.0
-    speeds, jerks = [], []
+    speeds, jerks, paths = [], [], []
     for i, n in enumerate(NAMES):
         if n == "ink": continue
         ang = np.array([_axis_angle(l == i) for l, _ in labs])
-        if np.isfinite(ang).sum() < 3: continue
+        if np.isfinite(ang).sum() < 3:
+            out[f"ang_path_{n}"] = 0.0
+            continue
         # unwrap on the half-circle
         dd = np.diff(ang); dd = (dd + np.pi / 2) % np.pi - np.pi / 2
         v = np.abs(dd); v = v[np.isfinite(v)]
         if v.size: speeds.append(float(v.mean()))
         j = np.abs(np.diff(dd)); j = j[np.isfinite(j)]
         if j.size: jerks.append(float(j.mean()))
+        # angular odometer: total principal-axis angle travelled over the clip, rad.
+        # Absence and freezing both read 0 -- read beside mass_drift/tvr.
+        path = float(v.sum()) if v.size else 0.0
+        out[f"ang_path_{n}"] = path
+        paths.append(path)
     out["angle_speed"] = float(np.mean(speeds)) if speeds else 0.0
     out["angle_jerk"] = float(np.mean(jerks)) if jerks else 1.0
+    out["ang_path_total"] = float(np.sum(paths)) if paths else 0.0
     return out

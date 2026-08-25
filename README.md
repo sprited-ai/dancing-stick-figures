@@ -20,19 +20,19 @@ a checkpoint at every step and a scorer that tells you whether each coloured lim
 | **1 · data** (0.79 GB) | `hf download sprited/dancing-stick-figures --repo-type dataset --include "mini/*" --local-dir data/hf` | 64² frames + skeleton labels |
 | **2 · cache** (~3 min) | `python -m train.cache --data data/hf/mini --out data/cache --splits train,val` | one fast uint8 file |
 | **3 · image DiT** | `python -m train.video_dit_fm --cache data/cache --out runs/dit_img64 --arch dit --size 64 --frames 1 --first_frames 64 --batch 64 --steps 2000 --patch 4 --cond text --fg_weight 2 --grad_ckpt --fast` | fixed-noise image samples and a reusable spatial checkpoint |
-| **4 · video DiT** | `python -m train.video_dit_fm --cache data/cache --out runs/dit_vid40 --arch dit --size 64 --frames 40 --stride 1 --first_frames 64 --batch 4 --steps 2000 --patch 4 --cond text --fg_weight 2 --img_frac .1 --i2v_frac .2 --init runs/dit_img64/ckpt.pt --grad_ckpt --fast` | jointly generated two-second windows at the native 20 fps |
-| **5 · generate & diagnose** | `python -m eval.post_eval_t2v --ckpt runs/dit_vid40/ckpt.pt --out out/prompt_suite --prompts_file prompts/v1.txt --n 4 --steps 30 --cfg 3 --fps 20` | fixed prompt/noise comparisons, frame strips, and manifests |
+| **4 · video DiT** | `python -m train.video_dit_fm --cache data/cache --out runs/dit_vid64 --arch dit --size 64 --frames 64 --stride 1 --first_frames 64 --batch 4 --steps 2000 --patch 4 --cond text --fg_weight 2 --img_frac .1 --i2v_frac .2 --init runs/dit_img64/ckpt.pt --grad_ckpt --fast` | jointly generated 64-frame (3.2 s) windows at the native 20 fps |
+| **5 · generate & diagnose** | `python -m eval.post_eval_t2v --ckpt runs/dit_vid64/ckpt.pt --out out/prompt_suite --prompts_file prompts/v1.txt --n 4 --steps 30 --cfg 3 --fps 20` | fixed prompt/noise comparisons, frame strips, and manifests |
 
 The 2,000-step cells are a teaching run, not the released model's full budget. Fixed intermediate samples make it easy
 to decide whether another 1,000 steps changed the result before spending more compute.
 
 **How does it remain small enough for one GPU?** The public videos remain 120 frames at 20 fps. The reference training
-protocol samples a 40-frame native-cadence window (two seconds at 20 fps) at a random offset inside the first 64
-frames of each clip — the same window length ARDY itself generates with, restricted to the span where the prompted
-action concentrates (`--first_frames 64`). Native dataset evaluation still uses complete 120-frame clips. Within
+protocol trains on the first 64 frames of each clip (3.2 seconds at 20 fps) — the span where the prompted action
+concentrates (`--first_frames 64`) — and the video model jointly generates that complete 64-frame native-cadence
+window. Native dataset evaluation still uses complete 120-frame clips. Within
 each transformer block, spatial attention exchanges information inside one frame and temporal attention exchanges
-information across all 40 frames at the same patch position. Patchifying each frame and training on windows keeps the
-baseline practical without a Video VAE.
+information across all 64 frames at the same patch position. Patchifying each frame and training on the first-64
+view keeps the baseline practical without a Video VAE.
 
 **Why image first?** A video is a sequence of pictures. Teaching one network to draw a good *frame* first, then adding
 the "what changes between frames" part, separates spatial learning from temporal learning while keeping one backbone.
