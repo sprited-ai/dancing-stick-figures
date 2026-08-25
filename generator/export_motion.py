@@ -7,12 +7,12 @@ Columns: clip_id, group, held_out, split, text, seed, fps, n_frames, and float32
 with their shapes in meta.json: posed_joints [T,27,3] (world, metres), local_rot_mats / global_rot_mats [T,27,3,3],
 root_positions / smooth_root_pos [T,3], global_root_heading [T,2], foot_contacts [T,4] bool, frame0_basis [3,3]
 (rows = figure-frame x/left, y/up, z/forward in world coords; figure_joints = (world - hips) @ basis.T).
-Split/group are identical to the frame config (same hash of (group, prompt slug)).
+Split/group are identical to the frame config (seeds 0--7 train, 8 validation, 9 test).
 """
 from __future__ import annotations
 import argparse, json, os, sys
 import numpy as np, pyarrow as pa, pyarrow.parquet as pq
-from .build import _h, load_prompts
+from .build import CLIP_FRAMES, load_prompts, split_for_seed
 from .ardy_adapter import _frame0_basis
 from .skeleton import NAMES
 
@@ -33,14 +33,20 @@ def main():
             if not f.endswith(".npz"): continue
             d = np.load(os.path.join(gd, f), allow_pickle=True)
             stem = f[:-4]; seed = int(stem.rsplit("_s", 1)[1]) if "_s" in stem else 0
-            hh = _h(g, stem.rsplit("_s", 1)[0]) % 100
-            split = "test" if g in held else ("train" if hh < 90 else "val" if hh < 95 else "test")
-            P = np.asarray(d["posed_joints"], np.float32); R, _ = _frame0_basis(P.astype(np.float64))
-            row = dict(clip_id=f"{g}/{stem}", group=g, held_out=g in held, split=split, text=str(d["text"]), seed=seed,
-                       fps=int(d["fps"]) if "fps" in d else 20, n_frames=int(P.shape[0]),
+            split = split_for_seed(seed)
+            P = np.asarray(d["posed_joints"], np.float32)
+            if len(P) < CLIP_FRAMES:
+                raise ValueError(f"{f} has only {len(P)} frames; v0.2 requires {CLIP_FRAMES}")
+            source_frames = len(P); P = P[:CLIP_FRAMES]
+            R, _ = _frame0_basis(P.astype(np.float64))
+            row = dict(clip_id=f"{g}/{stem}", group=g, held_out=False, split=split, text=str(d["text"]), seed=seed,
+                       fps=int(d["fps"]) if "fps" in d else 20, n_frames=CLIP_FRAMES,
                        frame0_basis=R.astype(np.float32).tobytes())
             for k in ARR:
-                v = np.ascontiguousarray(d[k]); row[k] = v.tobytes()
+                v = np.asarray(d[k])
+                if len(v) == source_frames:
+                    v = v[:CLIP_FRAMES]
+                v = np.ascontiguousarray(v); row[k] = v.tobytes()
                 shapes[k] = dict(dtype=str(v.dtype), shape=["T"] + list(v.shape[1:]))
             rows.append(row)
     shapes["frame0_basis"] = dict(dtype="float32", shape=[3, 3])
@@ -55,7 +61,9 @@ def main():
             t = pa.Table.from_pylist(rs[i:i + a.rows_per_shard], schema=schema)
             pq.write_table(t, os.path.join(a.out, f"{split}-{i // a.rows_per_shard:05d}.parquet"), compression="zstd")
         n_sh[split] = (len(rs) + a.rows_per_shard - 1) // a.rows_per_shard
-    json.dump(dict(config="motion", clips=len(rows), shards=n_sh, joints=NAMES, arrays=shapes,
+    json.dump(dict(config="motion", version="0.2.0", clips=len(rows), shards=n_sh,
+                   fps=20, clip_frames=CLIP_FRAMES, clip_seconds=CLIP_FRAMES / 20,
+                   joints=NAMES, arrays=shapes,
                    note="raw NVIDIA ARDY outputs (world frame); frame config joints = (posed_joints - Hips) @ frame0_basis.T"),
               open(os.path.join(a.out, "meta.json"), "w"), indent=1)
     print(dict(clips=len(rows), shards=n_sh))

@@ -1,0 +1,36 @@
+{
+  "protocol": "full_prompt_unet_native120_v2",
+  "checkpoint_step": 10000,
+  "checkpoint_sha256": "1ab2bb9da9c43606446e0fb77273ec038d3139179a122c66ce42b522be7bc1c1",
+  "statistical_unit": "source_motion",
+  "source_motions_per_set": 64,
+  "frames": 120,
+  "fps": 20,
+  "ddim_steps": 50,
+  "cfg": 3.0,
+  "conditioning": "full_prompt",
+  "sampling_seeds": [0, 1, 2],
+  "generated_videos": 192,
+  "reference": {
+    "tvr": 0.10528971354166666,
+    "lie": 0.08961588541666667,
+    "cpe": 0.03639749728216127,
+    "centroid_speed": 0.2958721060664996,
+    "centroid_accel": 0.2900112187177918,
+    "motion_fraction": 0.33613445378151263,
+    "angle_jerk": 0.05277943742297035,
+    "fvd_real_real": 129.91164561519906
+  },
+  "unet": {
+    "tvr": 0.2034396701388889,
+    "lie": 0.145166015625,
+    "cpe": 0.04159828171803368,
+    "centroid_speed": 0.4787429302878043,
+    "centroid_accel": 0.6421946652967,
+    "motion_fraction": 0.6044730392156862,
+    "angle_jerk": 0.18917382628327126,
+    "fvd_mean": 510.097679238342,
+    "fvd_std": 31.422093427511488
+  },
+  "source_result": "output/runpod_v02/full64_text_video_native20fps_10k/eval/010000.json"
+}

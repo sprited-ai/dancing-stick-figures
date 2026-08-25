@@ -1,1 +1,11 @@
-{ "version": "0.0.1", "configurations": [ { "name": "viewer", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "viewer", "run", "dev"], "port": 5175 } ] }
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dataset-browser",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8642", "--directory", "output/dataset_browser"],
+      "port": 8642
+    }
+  ]
+}

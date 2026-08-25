@@ -4,8 +4,9 @@ most FVD implementations. Videos: uint8 [N,T,H,W,3] RGB (composite premultiplied
     from eval.fvd import fvd
     d = fvd(real_videos, fake_videos, device="cuda")
 
-Notes: I3D wants T>=9 (we use 16), 224x224 input (we resize), and >=~256 videos per set for a
-stable estimate — report N and use the same N for real and fake. FVD is only comparable within
+Notes: this I3D wrapper requires at least 16 input frames (the native paper protocol supplies all
+120), resizes frames to 224x224, and benefits from large matched sample sets. Report N and use the
+same N for real and fake. FVD is only comparable within
 this exact setup (I3D weights, resize, N, T).
 """
 from __future__ import annotations

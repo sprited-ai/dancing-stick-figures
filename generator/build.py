@@ -1,10 +1,13 @@
-"""Dataset builder: ARDY .npz clips -> stickdance-128 parquet shards.
+"""Dataset builder: ARDY .npz clips -> 120-frame stickdance-128 shards.
 
     python -m generator.build --npz ardy_out/v1 --prompts prompts/v1.txt --out data/v1 [--workers 8] [--limit N]
 
 Per clip (deterministic from clip_id): a Body (bone_scale jitter, stroke, scale) and 1–2 Cameras.
 Per frame: colour / depth / normal / seg PNGs + the label row (§3.5 of SPARK.md).
-Split by PROMPT (not seed): held-out prompt groups -> test; else hash(prompt) -> train 90 / val 5 / test 5.
+The v0.2 contract keeps the complete 120 native-cadence frames (6 s at 20 fps).
+Split by ARDY motion seed: seeds 0--7 train, seed 8 validation, seed 9 test.
+Every prompt and camera family therefore appears in all three splits while the
+underlying motion realization remains disjoint.
 """
 from __future__ import annotations
 import argparse, hashlib, io, json, math, os, random, sys, time
@@ -18,9 +21,10 @@ from .render import render_all, SIZE
 from .ardy_adapter import load, load_root, to_figure_frame, frame_joints, apply_bone_scale
 
 FPS = 20
+CLIP_FRAMES = 120
 DEPTH_RANGE = (-1.5, 1.5)          # metres toward camera, Hips-relative -> uint16
 CANON_YAWS = [0, 45, -45, 90, -90, 135, -135, 180]
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 
 def _h(*parts) -> int:
@@ -37,6 +41,15 @@ def load_prompts(path):
             g = g[1:]; held.add(g)
         groups[p] = g
     return groups, held
+
+
+def split_for_seed(seed: int) -> str:
+    """Return the v0.2 in-domain split for an ARDY generation seed."""
+    if not 0 <= seed <= 9:
+        raise ValueError(f"ARDY seed must be in [0, 9], got {seed}")
+    if seed <= 7:
+        return "train"
+    return "val" if seed == 8 else "test"
 
 
 def sample_body(rng: random.Random) -> Body:
@@ -75,8 +88,12 @@ def depth_png(depth: np.ndarray) -> bytes:
 def build_clip(args):
     npz_path, group, held, out_dir, shard_tag = args
     P, fps, text = load(npz_path)
+    if len(P) < CLIP_FRAMES:
+        raise ValueError(f"{npz_path} has only {len(P)} frames; v0.2 requires {CLIP_FRAMES}")
+    P = P[:CLIP_FRAMES]
     Q = to_figure_frame(P)
     rpos, rvel, rhead = load_root(npz_path)
+    rpos, rvel, rhead = rpos[:CLIP_FRAMES], rvel[:CLIP_FRAMES], rhead[:CLIP_FRAMES]
     # QA flags per clip (kept in the data, not filtered — users decide): levitation = Hips ever > 1.6 m
     # above its frame-0 floor (only jumps get near 1.5); frozen = mean joint speed < 0.02 m/s.
     hips_h = rpos[:, 1] + (P[0, 0, 1] - P[0, [21, 22, 25, 26], 1].min())
@@ -92,10 +109,7 @@ def build_clip(args):
     body = sample_body(rng)
     cams = sample_cameras(rng)
     Q = apply_bone_scale(Q, body.bone_scale)     # per-clip proportions (v1 final: applied to ARDY joints, not just recorded)
-    # split by PROMPT (all seeds + cameras of one prompt share a split) so val/test = held-out prompts
-    # within seen groups; the two `*` groups are held-out concepts. Never split by seed.
-    hh = _h(group, stem.rsplit("_s", 1)[0]) % 100
-    split = "test" if group in held else ("train" if hh < 90 else "val" if hh < 95 else "test")
+    split = split_for_seed(seed)
     rows = []
     for ci, cam in enumerate(cams):
         for t in range(Q.shape[0]):
@@ -108,7 +122,7 @@ def build_clip(args):
             vis = np.array([(o["seg"] == i + 1).any() for i in range(len(NAMES))], bool)
             rows.append(dict(
                 sample_id=f"{clip_id}/c{ci}/f{t:03d}", clip_id=f"{clip_id}/c{ci}", frame_idx=t, n_frames=int(Q.shape[0]),
-                fps=FPS, split=split, group=group, held_out=group in held, text=text, seed=seed, qa_flags=qa_flags,
+                fps=FPS, split=split, group=group, held_out=False, text=text, seed=seed, qa_flags=qa_flags,
                 cam_yaw=float(cam.yaw), cam_pitch=float(cam.pitch), cam_center_x=cam.center[0], cam_center_y=cam.center[1],
                 px_per_m=body.px_per_m, stroke=body.stroke, bone_scale=json.dumps(body.bone_scale),
                 joint_xyz=xyz.tobytes(), joint_xy=xy.tobytes(), joint_depth=jd.tobytes(), joint_visible=vis.tobytes(),
@@ -168,8 +182,10 @@ def main():
             if i % 10 == 0:
                 print(f"  {i+1}/{len(clips)} clips, {total} frames, {time.time()-t0:.0f}s", flush=True)
     for s in buf: flush(s, force=True)
-    meta = dict(version=VERSION, clips=len(clips), frames=total, shards=shard_n, fps=FPS, size=SIZE, depth_range=DEPTH_RANGE,
-                joints=NAMES, held_out_groups=sorted(held), seconds=round(time.time() - t0))
+    meta = dict(version=VERSION, clips=len(clips), frames=total, shards=shard_n, fps=FPS,
+                clip_frames=CLIP_FRAMES, clip_seconds=CLIP_FRAMES / FPS,
+                size=SIZE, depth_range=DEPTH_RANGE, joints=NAMES,
+                held_out_groups=sorted(held), build_seconds=round(time.time() - t0))
     json.dump(meta, open(os.path.join(a.out, "meta.json"), "w"), indent=1)
     print("done", meta)
 

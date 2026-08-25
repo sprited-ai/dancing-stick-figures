@@ -1,0 +1,22 @@
+{
+  "date": "2026-08-24",
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "resolution": 64,
+  "notebook_sha256": "1b3b2b2dccc631e067bae98f8dd8a592bd964509652240d94f281b4e7c65a251",
+  "release_notebook_sha256": "cf558de8910354af7fc813d44b1735c70d93c03fe5651d098108ea5889a21d31",
+  "image_steps": 2000,
+  "video_steps": 1200,
+  "image_wall_seconds": 296,
+  "video_wall_seconds": 364,
+  "total_wall_seconds_through_scoring": 944,
+  "image_peak_gpu_memory_gb": 6.9,
+  "video_peak_gpu_memory_gb": 11.3,
+  "image_validation_mse_first": 0.0259,
+  "video_validation_mse_first": 0.0262,
+  "video_validation_mse_continuation": 0.0250,
+  "typed_prompt": "a stick figure runs forward with swinging arms",
+  "typed_prompt_outputs": 4,
+  "typed_prompt_seconds": 5,
+  "completion_note": "Training and rollout ran under notebook execution. The score cells were resumed from the saved checkpoints after the tracked eval/protocol.py module was copied into an older public clone. The release source includes that module.",
+  "artifact_directory": "output/runpod_v02/colab_contract_4090"
+}

@@ -1,0 +1,36 @@
+{
+  "name": "dit60_stride2_reference_extension_v1",
+  "declared_before_results": true,
+  "source_checkpoint": {
+    "path": "/data/dancing-stick-figure-paper/runs/m3_warm_10k_ema.pt",
+    "sha256": "0ae8bb99f3ee168172c3aae19c3599946059dfc90f88aa64d503aaaf789ae936",
+    "step": 10000,
+    "architecture": "39.9M pixel-space factorised DiT",
+    "objective": "rectified flow"
+  },
+  "data": {
+    "resolution": 64,
+    "source_clip_frames": 120,
+    "source_fps": 20,
+    "training_frames": 60,
+    "stride": 2,
+    "covered_seconds": 6
+  },
+  "training": {
+    "seed": 0,
+    "prompt_conditioning": "frozen google-t5/t5-small",
+    "cfg_dropout": 0.1,
+    "image_batch_fraction": 0.1,
+    "i2v_batch_fraction": 0.2,
+    "foreground_loss_weight": 2.0,
+    "learning_rate": 0.0001,
+    "target_optimizer_updates": 3000,
+    "ema": true
+  },
+  "promotion_gate": [
+    "walking, running, and sitting are visually distinguishable in fixed-noise samples",
+    "limb connectivity is visibly better than the current 10k UNet reference figure",
+    "the complete six-second generation is stable",
+    "the reported checkpoint and sampling manifest are released"
+  ]
+}

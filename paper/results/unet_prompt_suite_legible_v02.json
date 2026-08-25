@@ -1,0 +1,23 @@
+{
+  "protocol": "full_prompt_unet_qualitative_v1",
+  "claim": "conditioning sensitivity; not semantic prompt correctness",
+  "checkpoint_step": 10000,
+  "checkpoint_sha256": "1ab2bb9da9c43606446e0fb77273ec038d3139179a122c66ce42b522be7bc1c1",
+  "frames": 120,
+  "fps": 20,
+  "sampler": "DDIM chunked rollout",
+  "sample_steps": 50,
+  "cfg": 3.0,
+  "prompts": [
+    "A person walks forward.",
+    "A person runs forward.",
+    "A person sits down cross-legged."
+  ],
+  "fixed_noise_seed": 1234,
+  "fixed_noise_varied_prompt_mean_pairwise_l1": 0.04469463229179382,
+  "fixed_prompt_varied_noise_seeds": [1234, 1235, 1236],
+  "fixed_prompt_varied_noise_mean_pairwise_l1": 0.09497455507516861,
+  "prompt_to_noise_l1_ratio": 0.4705958586109699,
+  "local_artifact_directory": "output/runpod/full64_native120_legible_suite",
+  "comparison_video": "output/video/unet_dataset_prompt_comparison.mp4"
+}

@@ -1,0 +1,31 @@
+{
+  "date": "2026-08-24",
+  "gpu": "Tesla T4",
+  "gpu_memory_gb": 16,
+  "resolution": 64,
+  "notebook_sha256": "d108650d6b9e94b881754277bcdc34b9583a901a1e2e797936f720da8f93a3f7",
+  "release_notebook_sha256": "cf558de8910354af7fc813d44b1735c70d93c03fe5651d098108ea5889a21d31",
+  "image": {
+    "steps": 2000,
+    "seconds_per_update": 0.76,
+    "peak_gpu_memory_gb": 6.9,
+    "validation_mse_first": 0.0266,
+    "completed": true
+  },
+  "video": {
+    "steps": 1200,
+    "seconds_per_update": 1.12,
+    "peak_gpu_memory_gb": 11.3,
+    "validation_mse_first": 0.0222,
+    "validation_mse_continuation": 0.0217,
+    "completed": true
+  },
+  "rollout": {
+    "frames": 120,
+    "fps": 20,
+    "completed": true
+  },
+  "full_notebook_completion": false,
+  "termination": "The Colab backend reached its accumulated instance lifetime after the 120-frame rollout and before the typed-prompt scoring cells. A new GPU allocation was unavailable because of the account usage limit.",
+  "release_difference": "The release notebook later split the two Hugging Face include patterns into separate commands, declared matplotlib, updated explanatory markdown, and removed stale execution metadata. Its training, validation, and rollout code cells are unchanged."
+}

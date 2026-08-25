@@ -75,6 +75,16 @@ def test_image_warmstart_keeps_fresh_multi_frame_positions():
     assert "pos_t" not in selected
 
 
+def test_video_warmstart_interpolates_temporal_positions():
+    source_pos = torch.arange(50.0).reshape(1, 50, 1, 1)
+    source = {"pos_t": source_pos}
+    target = {"pos_t": torch.zeros(1, 60, 1, 1)}
+    selected = prepare_warmstart_state(source, target)
+    assert selected["pos_t"].shape == target["pos_t"].shape
+    assert selected["pos_t"][0, 0, 0, 0].item() == pytest.approx(0.0)
+    assert selected["pos_t"][0, -1, 0, 0].item() == pytest.approx(49.0)
+
+
 def test_i2v_warmstart_zero_extends_extra_input_channels():
     source = {"embed.weight": torch.ones(8, 16)}
     target = {"embed.weight": torch.randn(8, 36)}

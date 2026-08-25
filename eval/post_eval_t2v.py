@@ -64,7 +64,10 @@ def load_prompts(cache: str = "", prompts_file: str = "") -> list[str]:
                 value = value.get("prompts", [])
             prompts.extend(value)
         else:
-            prompts.extend(text.splitlines())
+            prompts.extend(
+                line for line in text.splitlines()
+                if not line.lstrip().startswith("#")
+            )
     if cache:
         clips_path = Path(cache) / "clips.json"
         if not clips_path.exists():
@@ -216,6 +219,7 @@ def build_model(ckpt: dict, device: str) -> tuple[VideoDiT, dict]:
         heads=args.get("heads", 6),
         cond_ch=5 if args.get("i2v_frac", 0) > 0 else 0,
         text_dim=text_dim,
+        local_3d=bool(args.get("local_3d", False)),
     ).to(device)
     model.load_state_dict(state)
     model.eval().requires_grad_(False)

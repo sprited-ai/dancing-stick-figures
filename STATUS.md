@@ -1,4 +1,56 @@
-# STATUS — 2026-08-22 07:00 PDT (Claudia) — latent long-horizon evidence complete, paper updated
+# STATUS — 2026-08-24 PDT (Pixel) — dataset paper + factorised-UNet Colab v0.2 release loop
+
+## Current release direction
+
+- The active paper is a **dataset, deterministic rendering pipeline, and evaluation-suite report**. M6 and the latent
+  long-horizon architecture track are no longer the paper's centre; they remain historical research artifacts below.
+- Native evaluation is **120 frames at 20 fps**. The older 50-frame DiT warm-start study is archived as optional
+  research material and no longer supplies a claim in the dataset paper.
+- Controlled native results are complete (`n=128` per set): real–real FVD 90.6, freeze 377.4, shuffle 485.6, loop-8
+  316.6, reverse 89.9. Thirty paired subset trials confirm reversal is indistinguishable within this protocol
+  (mean change −0.44 ± 2.16).
+- `paper/paper.tex` now has the revised framing, updated related work, public-motion reconstruction, instructor
+  renderer variations, factorised-UNet rationale, pixel-space rationale, limitations, and a future learned-rig
+  evaluator. The archived 50-frame DiT study is no longer in the main narrative, and the native corruption figure
+  now contains only the four conditions described by its caption. The seven-page PDF includes the native reference
+  metrics, an explicit seed-disjoint in-domain split table, and a compact two-column dataset/UNet comparison. The final PDF
+  has been re-rendered and visually inspected page by page.
+- `notebooks/dancing_stick_figures_colab_v0_2.ipynb` is the active lesson: fixed factorised 3D UNet, 32²/64² only,
+  complete-prompt T5 conditioning, image→video warm-start, typed-prompt rollout, and video/reference diagnostics.
+
+## Active evidence collection
+
+- RunPod `z631kxnqqf3cx6` (RTX 4090, $0.74/h): the lower-cost 64² full-prompt UNet route is complete (image 30k →
+  video 10k, stride 2). At 60 frames, TVR is .157 versus .127 real, while centroid speed and angular jerk are
+  1.53× and 3.21× the real reference. FVD is 407.3 versus a 178.0 real–real reference. The fixed-noise prompt suite
+  has a prompt/noise distance ratio of .786: conditioning changes the sample, but semantic adherence is not proved.
+- The native-cadence video run (stride 1) and its three-seed, 120-frame evaluation are complete. At 10k steps the
+  UNet reports TVR .203, LIE .145, CPE .042, centroid speed .479, acceleration .642, motion fraction .604, angular
+  jerk .189, and FVD 510.1 ± 31.4. The corresponding reference values are .105, .090, .036, .296, .290, .336, .053,
+  and real–real FVD 129.9. A final walking/running/sitting illustration suite is being collected from this checkpoint.
+- Completed 32² full-prompt engineering run: image 2k + video 1.2k in 500 s total on RTX 4090; 9.2/8.2 GB peaks;
+  typed-prompt five-second rollout produced. This is not used as T4 timing evidence.
+- The current 64² lesson completed both stages and a 120-frame rollout on a hosted Tesla T4: image 2k at .76 s/update,
+  6.9 GB, val .0266; video 1.2k at 1.12 s/update, 11.3 GB, val first/continuation .0222/.0217. The provider ended
+  the accumulated backend lifetime after the rollout and then denied a fresh GPU because of the account quota.
+- A clean RTX 4090 run of the release source completed setup through typed-prompt generation and scoring in 944 s
+  (image 296 s, video 364 s; the same 6.9/11.3 GB peaks). It also exposed and fixed two portability gaps: separate
+  Hugging Face include commands, a declared matplotlib dependency, and inclusion of the tracked `eval/protocol.py`
+  module in the release source. Evidence is in `paper/results/colab_v02_t4.json`,
+  `paper/results/notebook_v02_4090_completion.json`, and `output/runpod_v02/colab_contract_4090/`.
+- Public-motion reconstruction has completed for all 1,430 motions / 514,800 frames in both released tiers. Both
+  checks pass with no missing rows or metadata-label mismatches. At 128², colour/segmentation/visibility agreement is
+  99.88%/99.92%/99.50%; at 64² it is 99.75%/99.92%/99.50%.
+- Full local suite: 143 passed, four expected CPU-only CUDA warnings.
+- Final release artifacts are verified: `output/pdf/paper.pdf`, the cleared v0.2 notebook,
+  `output/video/dsf_paper_walkthrough_ko.mp4` (12 scenes, 1920×1080, 9:44), and
+  `output/dancing-stick-figures-arxiv-v02-20260824.tar.gz`. The arXiv source bundle compiles independently to seven
+  pages; all fonts are embedded; the local test suite reports 143 passed. A quota-available T4 retry of only the final
+  typed-prompt/scoring cells would improve single-provider provenance but is not required for the fit/training/rollout claim.
+
+---
+
+# Historical status — 2026-08-22 07:00 PDT (Claudia) — latent long-horizon evidence complete
 
 ## 2026-08-22 overnight (Claudia, taking over the ChatGPT/Codex paper session on Jin's ask)
 - ChatGPT session (08-20→22, died 05:31 08-22) built: paper.tex repositioning, K1 canonical protocol + warm-start

@@ -4,6 +4,7 @@ pyarrow
 pillow
 scipy
 imageio
+matplotlib
 tensorboard
 huggingface_hub
 transformers==4.46.3

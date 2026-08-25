@@ -1,0 +1,53 @@
+import json
+from pathlib import Path
+
+
+NOTEBOOK = Path(__file__).parents[1] / "notebooks" / "dancing_stick_figures_colab_v0_3.ipynb"
+
+
+def notebook_text():
+    document = json.loads(NOTEBOOK.read_text())
+    return document, "\n".join(
+        "".join(cell.get("source", [])) for cell in document["cells"]
+    )
+
+
+def test_v03_is_a_clean_dit_first_notebook():
+    document, text = notebook_text()
+    assert document["nbformat"] == 4
+    for cell in document["cells"]:
+        if cell["cell_type"] == "code":
+            assert cell.get("execution_count") is None
+            assert cell.get("outputs") == []
+    assert "factorised video DiT" in text
+    assert "Attention, TextCrossAttention, Block, VideoDiT, prepare_warmstart_state" in text
+    assert 'IMAGE_SIZE = "64" #@param ["32", "64"]' in text
+    assert "VIDEO_FRAMES, FRAME_STRIDE = 50, 2" in text
+    assert "UNet3D" not in text
+
+
+def test_v03_separates_native_clips_from_the_five_second_training_protocol():
+    _, text = notebook_text()
+    assert "120 frames at 20 fps" in text
+    assert "50-frame" in text and "10 fps" in text
+    assert "five-second" in text
+    assert "--arch dit" in text
+    assert "--frames 1" in text
+    assert "--frames $VIDEO_FRAMES --stride $FRAME_STRIDE" in text
+    assert "--init $INIT_CKPT" in text
+    assert "--cond text" in text
+    assert "--i2v_frac 0.2" in text
+    assert "eval.post_eval_t2v" in text
+    assert "V03_COMPLETE=1" in text
+
+
+def test_v03_keeps_setup_and_diagnostics_in_order():
+    document, text = notebook_text()
+    assert "DATA_DOWNLOAD_ATTEMPTS = 3" in text
+    assert "Dataset download did not produce mini parquet files" in text
+    cells = ["".join(cell.get("source", [])) for cell in document["cells"]]
+    image_index = next(i for i, source in enumerate(cells) if "Train the image DiT" in source)
+    video_index = next(i for i, source in enumerate(cells) if "Train the 50-frame video DiT" in source)
+    score_index = next(i for i, source in enumerate(cells) if "Measure visible structure" in source)
+    completion_index = next(i for i, source in enumerate(cells) if "Verification record" in source)
+    assert image_index < video_index < score_index < completion_index

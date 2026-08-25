@@ -55,9 +55,35 @@ class TextCrossAttention(nn.Module):
         return self.o(out)
 
 
+class Local3DMixer(nn.Module):
+    """Residual 3x3x3 mixer over neighbouring frames and patch locations.
+
+    Factorised attention exchanges information either within one frame or
+    along one fixed patch trajectory. This zero-initialised branch adds a
+    direct local spatiotemporal path without changing a warm-started model's
+    initial function.
+    """
+    def __init__(self, dim):
+        super().__init__()
+        self.norm = nn.LayerNorm(dim, elementwise_affine=False, eps=1e-6)
+        self.depthwise = nn.Conv3d(dim, dim, 3, padding=1, groups=dim)
+        self.pointwise = nn.Conv3d(dim, dim, 1)
+        nn.init.zeros_(self.pointwise.weight); nn.init.zeros_(self.pointwise.bias)
+
+    def forward(self, x):                    # x [B,T,N,D]
+        B, T, N, D = x.shape
+        side = math.isqrt(N)
+        if side * side != N:
+            raise ValueError(f"local 3D mixer requires a square patch grid, got {N} tokens")
+        h = self.norm(x).reshape(B, T, side, side, D).permute(0, 4, 1, 2, 3)
+        h = self.pointwise(F.silu(self.depthwise(h)))
+        h = h.permute(0, 2, 3, 4, 1).reshape(B, T, N, D)
+        return x + h
+
+
 class Block(nn.Module):
     """DiT block with adaLN-Zero. axis='spatial' attends within frame, 'temporal' across frames."""
-    def __init__(self, dim, heads, axis, mlp=4, text_cond=False):
+    def __init__(self, dim, heads, axis, mlp=4, text_cond=False, local_3d=False):
         super().__init__()
         self.axis = axis
         self.n1 = nn.LayerNorm(dim, elementwise_affine=False, eps=1e-6); self.attn = Attention(dim, heads)
@@ -66,6 +92,7 @@ class Block(nn.Module):
         self.ada = nn.Sequential(nn.SiLU(), nn.Linear(dim, 6 * dim))
         self.text_attn = TextCrossAttention(dim, heads) if text_cond else None
         self.text_norm = nn.LayerNorm(dim, elementwise_affine=False, eps=1e-6) if text_cond else None
+        self.local_mixer = Local3DMixer(dim) if local_3d else None
         nn.init.zeros_(self.ada[-1].weight); nn.init.zeros_(self.ada[-1].bias)
 
     t1_skip = True                             # ib64 (trained before the skip existed) carries args["t1_skip"]=False; loaders honour it
@@ -75,12 +102,14 @@ class Block(nn.Module):
         s1, sc1, g1, s2, sc2, g2 = self.ada(c).chunk(6, -1)
         if self.axis == "spatial":
             h = x.reshape(B * T, N, D); rep = lambda z: z.repeat_interleave(T, 0)
+        elif self.axis == "full":              # joint spatio-temporal attention over all T*N tokens
+            h = x.reshape(B, T * N, D); rep = lambda z: z
         else:
             h = x.permute(0, 2, 1, 3).reshape(B * N, T, D); rep = lambda z: z.repeat_interleave(N, 0)
         if not (self.axis == "temporal" and T == 1 and self.t1_skip):   # image mode: nothing to attend across (gate stays 0 -> identity when video-initialised)
             h = h + rep(g1).unsqueeze(1) * self.attn(modulate(self.n1(h), rep(s1), rep(sc1)))
         h = h + rep(g2).unsqueeze(1) * self.mlp(modulate(self.n2(h), rep(s2), rep(sc2)))
-        if self.axis == "spatial":
+        if self.axis == "spatial" or self.axis == "full":
             h = h.reshape(B, T, N, D)
         else:
             h = h.reshape(B, N, T, D).permute(0, 2, 1, 3)
@@ -88,6 +117,8 @@ class Block(nn.Module):
             flat = h.reshape(B, T * N, D)
             flat = flat + self.text_attn(self.text_norm(flat), text, text_mask)
             h = flat.reshape(B, T, N, D)
+        if self.local_mixer is not None:
+            h = self.local_mixer(h)
         return h
 
 
@@ -100,8 +131,9 @@ def timestep_embedding(t, dim, max_period=10000):
 
 class VideoDiT(nn.Module):
     def __init__(self, size=128, frames=16, patch=4, in_ch=4, dim=384, depth=12, heads=6, n_classes=0, cond_ch=0,
-                 text_dim=0):
+                 text_dim=0, local_3d=False, full_st=False):
         super().__init__()
+        self.full_st = full_st
         self.p, self.T, self.S, self.C, self.dim = patch, frames, size, in_ch, dim
         self.cond_ch = cond_ch                                     # I2V (Seedance §2.2): concat clean/zero frames + binary mask -> in_ch+in_ch+1
         self.N = (size // patch) ** 2
@@ -111,7 +143,11 @@ class VideoDiT(nn.Module):
         self.temb = nn.Sequential(nn.Linear(256, dim), nn.SiLU(), nn.Linear(dim, dim))
         self.cls = nn.Embedding(n_classes + 1, dim) if n_classes else None
         self.text_proj = nn.Linear(text_dim, dim) if text_dim else None
-        self.blocks = nn.ModuleList([Block(dim, heads, "spatial" if i % 2 == 0 else "temporal", text_cond=bool(text_dim)) for i in range(depth)])
+        self.blocks = nn.ModuleList([
+            Block(dim, heads, "full" if full_st else ("spatial" if i % 2 == 0 else "temporal"),
+                  text_cond=bool(text_dim), local_3d=local_3d)
+            for i in range(depth)
+        ])
         self.nf = nn.LayerNorm(dim, elementwise_affine=False, eps=1e-6)
         self.ada_f = nn.Sequential(nn.SiLU(), nn.Linear(dim, 2 * dim))
         self.out = nn.Linear(dim, in_ch * patch * patch)
@@ -155,6 +191,18 @@ def sample_t(B, device, shift=1.0):
     return shift * t / (1 + (shift - 1) * t)
 
 
+def latent_weighted_mse(err, footprint, foreground_weight=1.0):
+    """Latent-space analogue of foreground weighting: ``footprint`` is the
+    per-latent-cell foreground occupancy in [0,1] carried by the cache's extra
+    channel, so the weighting matches the pixel route's fg emphasis."""
+    if foreground_weight < 1:
+        raise ValueError("foreground_weight must be >= 1")
+    if foreground_weight == 1:
+        return err.mean()
+    weights = 1 + (foreground_weight - 1) * footprint.to(err.dtype).clamp(0, 1)
+    return (err * weights).mean() / weights.mean().clamp_min(1e-8)
+
+
 def foreground_weighted_mse(err, clean_video, foreground_weight=1.0):
     """Average flow error while optionally upweighting visible RGBA pixels.
 
@@ -187,11 +235,13 @@ def parse_step_set(spec):
 
 
 def prepare_warmstart_state(source, target):
-    """Select compatible tensors while keeping fresh video-time positions.
+    """Select compatible tensors and adapt learned video-time positions.
 
     A one-frame checkpoint has no information about the identity of 50 video
     positions.  Copy spatial/common weights, but retain the target model's
     independently initialised temporal positions instead of tiling one value.
+    When both checkpoints are video models, linearly interpolate the learned
+    temporal positions so a 50-frame model can initialise a 60-frame model.
     """
     selected = {k: v for k, v in source.items()
                 if k in target and (v.shape == target[k].shape or k == "embed.weight")}
@@ -203,6 +253,15 @@ def prepare_warmstart_state(source, target):
             weight = torch.zeros_like(target["embed.weight"])
             weight[:, :source_weight.shape[1]] = source_weight
             selected["embed.weight"] = weight
+    if (
+        "pos_t" in source and "pos_t" in target
+        and source["pos_t"].shape != target["pos_t"].shape
+        and source["pos_t"].shape[1] > 1 and target["pos_t"].shape[1] > 1
+        and source["pos_t"].shape[2:] == target["pos_t"].shape[2:]
+    ):
+        value = source["pos_t"].squeeze(2).transpose(1, 2)
+        value = F.interpolate(value.float(), size=target["pos_t"].shape[1], mode="linear", align_corners=True)
+        selected["pos_t"] = value.transpose(1, 2).unsqueeze(2).to(dtype=target["pos_t"].dtype)
     return selected
 
 
@@ -257,6 +316,8 @@ def main():
     ap.add_argument("--cache", required=True); ap.add_argument("--out", required=True)
     ap.add_argument("--arch", default="dit", choices=["dit", "resunet"], help="spatial backbone; both use this trainer's rectified-flow protocol")
     ap.add_argument("--frames", type=int, default=16); ap.add_argument("--stride", type=int, default=1)
+    ap.add_argument("--first_frames", type=int, default=0,
+                    help="restrict training/validation windows to the first N frames of each clip (0 = whole clip)")
     ap.add_argument("--batch", type=int, default=8); ap.add_argument("--steps", type=int, default=60000)
     ap.add_argument("--lr", type=float, default=2e-4); ap.add_argument("--dim", type=int, default=384)
     ap.add_argument("--ch", type=int, default=64, help="ResUNet base channels (ignored by DiT)")
@@ -278,6 +339,8 @@ def main():
     ap.add_argument("--i2v_frac", type=float, default=0.0, help="fraction of video batches conditioned on the clean first frame (Seedance I2V, channel-concat + mask); enables cond channels")
     ap.add_argument("--noise_corr", type=float, default=0.0, help="PYoCo mixed noise: eps = sqrt(1-b)*shared + sqrt(b)*per-frame; 0 = iid")
     ap.add_argument("--fg_weight", type=float, default=1.0, help="soft-alpha foreground loss multiplier; 1 preserves the baseline")
+    ap.add_argument("--local_3d", action="store_true", help="add a zero-initialised local 3x3x3 token mixer to every DiT block")
+    ap.add_argument("--full_st", action="store_true", help="replace factorised spatial/temporal attention with joint attention over all T*N tokens in every block")
     a = ap.parse_args()
     early_sample_steps = parse_step_set(a.early_sample_steps)
     if a.preset:
@@ -286,12 +349,22 @@ def main():
     torch.manual_seed(a.seed); random.seed(a.seed); np.random.seed(a.seed)
     if a.fast:
         torch.backends.cudnn.benchmark = True; torch.set_float32_matmul_precision("high")
+    # Conv3d gradients can carry non-standard layouts under AMP. PyTorch's
+    # fused AdamW requires every optimizer tensor to share an identical
+    # layout, so use the regular CUDA implementation for the local-3D arm.
+    a.fused_adamw = bool(a.fast and not a.local_3d)
     os.makedirs(a.out, exist_ok=True); json.dump(vars(a), open(os.path.join(a.out, "args.json"), "w"), indent=1)
     dev = "cuda"
-    ds = VideoWindows(a.cache, a.frames, "train", a.stride, size=a.size, return_text=a.cond == "text")
+    ds = VideoWindows(a.cache, a.frames, "train", a.stride, size=a.size, return_text=a.cond == "text",
+                      first_frames=a.first_frames)
+    latent_mode = ds.latent
+    in_ch = int(json.load(open(os.path.join(a.cache, "meta.json")))["channels"]) if latent_mode else 4
+    if latent_mode and (a.i2v_frac > 0 or a.noise_corr > 0):
+        raise ValueError("latent caches do not support --i2v_frac or --noise_corr")
     dl = torch.utils.data.DataLoader(ds, batch_size=a.batch, shuffle=True, num_workers=a.workers, drop_last=True, pin_memory=True,
                                      persistent_workers=True, worker_init_fn=worker_init)
-    vds = VideoWindows(a.cache, a.frames, "val", a.stride, size=a.size, return_text=a.cond == "text", deterministic=True, repeats=1)
+    vds = VideoWindows(a.cache, a.frames, "val", a.stride, size=a.size, return_text=a.cond == "text", deterministic=True, repeats=1,
+                       first_frames=a.first_frames)
     vdl = torch.utils.data.DataLoader(vds, batch_size=a.batch, shuffle=True, num_workers=2, drop_last=True, worker_init_fn=worker_init) if len(vds) else None
     n_cls = len(ds.groups) if a.cond == "group" else 0
     text_cache = {}; text_dim = 0
@@ -316,8 +389,9 @@ def main():
         return torch.stack(h).to(dev, non_blocking=True), torch.stack(m).to(dev, non_blocking=True)
     a.t1_skip = True                                          # recorded in ckpt args; see Block.t1_skip
     if a.arch == "dit":
-        model = VideoDiT(size=a.size, frames=a.frames, patch=a.patch, dim=a.dim, depth=a.depth, heads=a.heads, n_classes=n_cls,
-                         cond_ch=5 if a.i2v_frac > 0 else 0, text_dim=text_dim).to(dev)
+        model = VideoDiT(size=a.size, frames=a.frames, patch=a.patch, in_ch=in_ch, dim=a.dim, depth=a.depth, heads=a.heads, n_classes=n_cls,
+                         cond_ch=5 if a.i2v_frac > 0 else 0, text_dim=text_dim, local_3d=a.local_3d,
+                         full_st=a.full_st).to(dev)
     else:
         model = UNet3D(ch=a.ch, n_classes=n_cls, size=a.size, cond_ch=5 if a.i2v_frac > 0 else 0,
                        text_dim=text_dim).to(dev)
@@ -331,9 +405,9 @@ def main():
             raise ValueError("--compile is currently supported only for --arch dit")
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
     model_name = "DiT-FM" if a.arch == "dit" else "ResUNet-FM"
-    detail = f"p{a.patch}" if a.arch == "dit" else f"ch{a.ch}"
+    detail = (f"p{a.patch}" + ("+local3d" if a.local_3d else "") + ("+fullst" if a.full_st else "")) if a.arch == "dit" else f"ch{a.ch}"
     print(f"{model_name} params {n_params:.1f}M · {len(ds.clips)} train / {len(vds.clips)} val clips · {a.size}px {detail} · frames {a.frames} · batch {a.batch}×{a.accum} · ckpt {a.grad_ckpt} · shift {a.shift}", flush=True)
-    opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.95), weight_decay=0.01, fused=a.fast)
+    opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.95), weight_decay=0.01, fused=a.fused_adamw)
     step = 0
     if a.resume:
         ck = torch.load(a.resume, map_location=dev); model.load_state_dict(ck["model"]); ema.load_state_dict(ck["ema"]); opt.load_state_dict(ck["opt"]); step = ck["step"]
@@ -355,14 +429,16 @@ def main():
         with torch.no_grad():
             for i, (x, labels) in enumerate(vdl):
                 if i >= 16: break
-                x = x.to(dev); t = sample_t(x.shape[0], dev, a.shift); eps = torch.randn_like(x)
+                x = x.to(dev)
+                if latent_mode: x = x[:, :-1]
+                t = sample_t(x.shape[0], dev, a.shift); eps = torch.randn_like(x)
                 tt = t[:, None, None, None, None]; yy = labels.to(dev) if n_cls else None
                 txt, txt_mask = text_batch(labels) if a.cond == "text" else (None, None)
                 with torch.autocast("cuda", dtype=torch.bfloat16): pred = ema((1 - tt) * x + tt * eps, t, yy, None, txt, txt_mask)
                 tot += F.mse_loss(pred.float(), eps - x).item(); n += 1
         return tot / max(n, 1)
 
-    if step == 0 and 0 in early_sample_steps:
+    if step == 0 and 0 in early_sample_steps and not latent_mode:
         preview_n = 4
         preview_ext = "png" if a.frames == 1 else "gif"
         generator = torch.Generator(device=dev).manual_seed(1234)
@@ -382,8 +458,12 @@ def main():
         try: x, labels = next(it)
         except StopIteration: it = iter(dl); x, labels = next(it)
         x = x.to(dev, non_blocking=True)
+        fg_map = None
+        if latent_mode:
+            fg_map = x[:, -1:]; x = x[:, :-1]
         if a.img_frac > 0 and random.random() < a.img_frac:      # image warm-up mix: a random single frame per clip
             fi = random.randrange(x.shape[2]); x = x[:, :, fi:fi + 1]
+            if fg_map is not None: fg_map = fg_map[:, :, fi:fi + 1]
         text, text_mask = (None, None)
         if a.cond == "text":
             text, text_mask = text_batch(labels)
@@ -413,9 +493,10 @@ def main():
         with torch.autocast("cuda", dtype=torch.bfloat16):
             pred = model(xt, t, y, cond, text, text_mask)
         err = (pred.float() - (eps - x)) ** 2
-        loss = foreground_weighted_mse(err, x, a.fg_weight) / a.accum
+        loss = (latent_weighted_mse(err, fg_map, a.fg_weight) if latent_mode
+                else foreground_weighted_mse(err, x, a.fg_weight)) / a.accum
         with torch.no_grad():                                   # diagnostics only
-            fgm = (x[:, 3:4] > -0.9).float()
+            fgm = (fg_map > 0.5).float() if latent_mode else (x[:, 3:4] > -0.9).float()
             fg_loss = float((err * fgm).sum() / fgm.sum().clamp_min(1))
             per = err.flatten(1).mean(1)
             lb = float(per[t > 0.8].mean()) if (t > 0.8).any() else float("nan")   # near noise
@@ -443,7 +524,7 @@ def main():
                 tb.add_scalar("loss/fg", fg_loss, step); tb.add_scalar("loss/t_gt_0.8", lb, step); tb.add_scalar("loss/t_lt_0.2", hb, step)
                 tb.add_scalar("perf/s_per_it", spi, step); tb.add_scalar("perf/peak_gb", torch.cuda.max_memory_allocated() / 1e9, step)
                 if vl is not None: tb.add_scalar("loss/val", vl, step)
-        if step in early_sample_steps or step % a.sample_every == 0 or step == a.steps:
+        if (step in early_sample_steps or step % a.sample_every == 0 or step == a.steps) and not latent_mode:
             early_preview = step in early_sample_steps and step % a.sample_every != 0 and step != a.steps
             NS, CH = ((4, 4) if early_preview else ((64, 32) if a.frames == 1 else ((4, 1) if a.frames >= 32 else (16, 8))))
             sample_nfe = 20 if early_preview else 50
@@ -486,13 +567,24 @@ def main():
                            shift=a.shift, raw_and_ema=True,
                            outputs=[f"sample_{step:06d}.{sample_ext}", f"sample_raw_{step:06d}.{sample_ext}"]),
                       open(os.path.join(a.out, f"sample_manifest_{step:06d}.json"), "w"), indent=2)
-            arch_tag = (("dit_fm_t2v" if a.cond == "text" else "dit_fm") if a.arch == "dit"
+            arch_tag = ((("dit_fm_fullst_t2v" if a.cond == "text" else "dit_fm_fullst") if a.full_st
+                         else ("dit_fm_local3d_t2v" if a.cond == "text" else "dit_fm_local3d") if a.local_3d
+                         else ("dit_fm_t2v" if a.cond == "text" else "dit_fm")) if a.arch == "dit"
                         else ("resunet_fm_t2v" if a.cond == "text" else "resunet_fm"))
             torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
                        os.path.join(a.out, "ckpt.pt"))
             torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
                        os.path.join(a.out, f"ckpt_{step:06d}.pt"))
             print(f"  wrote sample_{step:06d}.gif", flush=True)
+        elif latent_mode and (step in early_sample_steps or step % a.sample_every == 0 or step == a.steps):
+            # Latent runs skip pixel previews (decode happens in offline evaluation) but still checkpoint.
+            arch_tag = (("dit_fm_fullst_t2v_latent" if a.full_st else "dit_fm_t2v_latent") if a.cond == "text"
+                        else ("dit_fm_fullst_latent" if a.full_st else "dit_fm_latent"))
+            torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
+                       os.path.join(a.out, "ckpt.pt"))
+            torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
+                       os.path.join(a.out, f"ckpt_{step:06d}.pt"))
+            print(f"  wrote ckpt_{step:06d}.pt", flush=True)
 
 
 if __name__ == "__main__":

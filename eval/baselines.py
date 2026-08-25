@@ -87,6 +87,7 @@ def main():
         split="train",
         n_per_half=len(manifest["reference_a"]),
         seed=manifest["seed"] + 1,
+        first_frames=manifest.get("first_frames", 0),
     )
     videos["train_replay"] = tensors_to_rgba(
         load_manifest_windows(args.cache, train_manifest["reference_a"], size=args.size)

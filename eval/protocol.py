@@ -46,6 +46,7 @@ def build_reference_manifest(
     n_per_half=64,
     seed=0,
     drop_flags=("levitation",),
+    first_frames=0,
 ):
     """Create two deterministic, source-motion-disjoint real reference sets.
 
@@ -74,6 +75,8 @@ def build_reference_manifest(
             views = sorted(by_motion[str(mid)], key=lambda x: x["clip_id"])
             clip = views[int(rng.integers(0, len(views)))]
             max_offset = clip["n"] - span
+            if first_frames:
+                max_offset = max(0, min(max_offset, first_frames - span))
             offset = int(rng.integers(0, max_offset + 1)) if max_offset else 0
             entries.append(
                 {
@@ -94,6 +97,7 @@ def build_reference_manifest(
         "frames": int(frames),
         "stride": int(stride),
         "seed": int(seed),
+        "first_frames": int(first_frames),
         "statistical_unit": "source_motion",
         "reference_a": choose(motions[:n_per_half]),
         "reference_b": choose(motions[n_per_half:needed]),
@@ -137,6 +141,8 @@ def main():
     parser.add_argument("--n", type=int, default=128, help="videos in each reference half")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--split", default="val,test", help="comma-separated source splits")
+    parser.add_argument("--first_frames", type=int, default=0,
+                        help="restrict reference windows to the first N frames of each clip (0 = whole clip)")
     args = parser.parse_args()
     manifest = build_reference_manifest(
         args.cache,
@@ -145,6 +151,7 @@ def main():
         split=tuple(x for x in args.split.split(",") if x),
         n_per_half=args.n,
         seed=args.seed,
+        first_frames=args.first_frames,
     )
     save_manifest(manifest, args.out)
     left = {x["motion_id"] for x in manifest["reference_a"]}

@@ -1,0 +1,16 @@
+# Prompts excluded from the v0.2 release (Jin, 2026-08-25).
+# The generation recipe (prompts/v1.txt, 143 prompts) is unchanged; these prompts
+# were generated but are removed from the released dataset because their ARDY
+# motions do not visibly perform the requested action in the rendered domain.
+# Stillness-consistent prompts (idle group, stands-*, balances on one leg) are
+# KEPT even when the `frozen` QA flag fires: their stillness is semantically
+# correct. Per-seed failures of kept prompts remain released with qa_flags.
+dance	A person sways to slow music.	# 10/10 seeds frozen; motion is breathing-level (<0.02 m/s), sway invisible at released resolutions
+gesture	A person shakes their head no.	# 7/10 seeds frozen; the head renders as a filled circle, so a head shake is invisible in pixels by construction
+sport	A person does a yoga warrior pose.	# unrecognisable lunge held statically; pose does not read as warrior pose (visual QA 2026-08-25)
+sport	A person does a yoga tree pose.	# leg never lifts; arms raised sideways only; pose does not read as tree pose (visual QA)
+sport	A person does a standing long jump.	# root slides 1.2-2.1 m forward with max hip rise <=0.19 m: no airborne phase, reads as gliding
+sport	A person does a sit up.	# figure stays standing for all six seconds; the floor action never occurs (visual QA)
+sport	A person does a push up.	# figure only descends toward the floor over six seconds; no push-up repetitions; early pose collapses (visual QA + activity profile)
+transitions	A person climbs over a low wall.	# the wall does not exist in the render; hip rises 0.9-1.5 m mid-air with tangled limbs, reads as a glitch (visual QA)
+transitions	A person lies down on the floor.	# removed by visual QA (Jin, 2026-08-25)

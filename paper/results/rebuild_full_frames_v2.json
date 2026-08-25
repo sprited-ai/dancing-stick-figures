@@ -1,0 +1,27 @@
+{
+  "rebuilt_rows": 514800,
+  "matched_rows": 514800,
+  "missing_sample_ids": [],
+  "label_mismatches": {},
+  "root_heading_rows_outside_tolerance": 0,
+  "root_heading_max_abs_difference": 6.4714872269780146e-18,
+  "root_heading_atol": 1e-06,
+  "color_channel_difference_fraction": 0.0011563736649567338,
+  "color_max_channel_delta": 255,
+  "seg_pixel_difference_fraction": 0.0007655932019640516,
+  "joint_visibility_bit_difference_fraction": 0.005049569771791994,
+  "joint_visibility_contract": "joint_visible is true when a segment owns at least one raster pixel; one boundary pixel can therefore flip the stored bit",
+  "depth_pixel_difference_fraction": 7.387660692714404e-05,
+  "depth_max_value_delta": 49369,
+  "normal_channel_difference_fraction": 5.638401176731255e-06,
+  "normal_max_channel_delta": 128,
+  "reference_config": "frames",
+  "thresholds": {
+    "max_color_channel_fraction": 0.005,
+    "max_seg_pixel_fraction": 0.005,
+    "max_visible_bit_fraction": 0.01,
+    "max_depth_pixel_fraction": 0.005,
+    "max_normal_channel_fraction": 0.005
+  },
+  "passed": true
+}

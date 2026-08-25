@@ -1,3 +1,9 @@
+# ARCHIVED v0.1 DRAFT — NOT THE CURRENT PAPER
+
+The maintained submission source is [`paper.tex`](paper.tex). This file preserves the earlier mixed report and its
+autoregressive experiments for provenance; its title, claims, notebook link, and result set must not be used to
+describe the v0.2 dataset paper.
+
 # Dancing Stick Figures: A Labeled Synthetic Benchmark for Consumer-GPU Video Diffusion
 
 **Technical report draft · v0.1 results · 20 August 2026**
@@ -51,7 +57,7 @@ anatomical failure modes.
 
 The v0.1 release makes three contributions:
 
-1. **A compact, fully traced motion-video dataset.** Every rendered frame is paired with the skeleton, camera, and
+1. **A compact, fully specified motion-video dataset.** Every rendered frame is paired with the skeleton, camera, and
    G-buffer that produced it; the raw 27-joint motion is also released.
 2. **A checkable structural baseline.** Oracle v0 parses the fixed limb palette directly from generated pixels and
    reports both frame and temporal errors next to a real-data floor.

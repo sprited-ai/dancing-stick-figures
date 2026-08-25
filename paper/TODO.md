@@ -1,65 +1,53 @@
-# Dancing Stick Figures — paper TODO
+# Dancing Stick Figures — release TODO
 
-The primary task is: **text prompt → 64×64 RGBA video, 50 frames at 10 fps**.
-The 16×16 and 32×32 runs are cheap pipeline/teaching checks, not quality settings. The measured 32×32 anatomy loss makes
-64×64 the smallest canonical setting that preserves the dataset's structural signal.
-Claims stay `TODO` until the listed evidence exists.
+The paper's native video unit is **120 frames at 20 fps (six seconds)**. The older 50-frame DiT warm-start study is
+preserved in `paper/refs/image_warmstart_ablation.md`, but is outside the dataset paper's evidence chain. Claims remain
+TODO until the corresponding artifact and measurement exist.
 
-All new runs must follow `paper/TRAINING_PROTOCOL.md`: periodic validation,
-fixed-manifest inference panels, immutable milestone checkpoints, resumable
-latest state, and off-pod artifact verification are mandatory.
+All new runs follow `paper/TRAINING_PROTOCOL.md`: fixed manifests and noise, immutable milestone checkpoints,
+resumable latest state, measured wall time/VRAM, and off-pod artifact verification.
 
-The architecture sequence and per-model gates live in `paper/RESEARCH_ROADMAP.md`.
+## Paper narrative and native evaluation
 
-## P0 — start the first real T2V baseline
+- [x] Frame the contribution as a dataset, deterministic rendering pipeline, and evaluation suite—not a new SOTA model.
+- [x] Open the Introduction with the inaccessible data/compute/feedback/evaluation problem.
+- [x] Keep model history subordinate to the dataset contribution; explain only the chosen reference architectures.
+- [x] Evaluate controlled temporal failures and FVD on complete 120-frame clips.
+- [x] Quantify FVD's reversal blind spot with paired subset trials.
+- [x] Explain pixel-space training and defer Video-VAE curriculum to a separate optional lesson.
+- [x] Add the public-motion reconstruction route and instructor-specific renderer variations.
+- [x] Verify reconstruction over the complete released corpus in both tiers. Both 128² and 64² checks passed over
+      all 514,800 frames with no missing rows or metadata-label mismatches.
 
-- [x] Choose K1: bidirectional, factorised Video DiT + flow matching.
-- [x] Add token-level frozen T5-small conditioning and classifier-free dropout/guidance.
-- [x] Pass CPU unit tests and a 16×16, 50-frame end-to-end GPU pipeline test.
-- [x] Pass short 16×16 and 64×64, 50-frame GPU smoke runs; preserve them as engineering evidence.
-- [x] Pass the 32×32 batch/throughput teaching run.
-- [x] Pass the canonical 64×64, 50-frame batch-16 capacity run on RTX 4090
-      (14.5 GB observed); an A100 is not required for K1.
-- [x] Start a separate RunPod 4090 canonical scratch K1 pilot; preserve the
-      existing U-Net runs unchanged.
-- [ ] Record pod, GPU, command, git diff/hash, seed, parameter count, and hourly cost.
-- [ ] Inspect samples at 100/500/1,000 steps before committing to the long run.
-- [x] Preserve the scratch 3k K1 pilot as non-canonical engineering evidence:
-      its saved `stride=1` is 20 fps, while the fixed task requires `stride=2`.
-- [ ] Run every canonical 50-frame baseline with `stride=2` and reject a run
-      at preflight if its saved arguments disagree.
+## v0.2 factorised-UNet Colab
 
-## P1 — make the number publishable
+- [x] Use one fixed factorised 3D UNet backbone for T=1 image training and T>1 video training.
+- [x] Expose only 32² sanity and 64² reference resolutions; readers may inspect/edit the source without an option maze.
+- [x] Make complete-prompt T5-small conditioning the default for both stages.
+- [x] Add a typed-prompt, five-second rollout and label the older public checkpoint as unconditional.
+- [x] Complete an uninterrupted 32² engineering run on RTX 4090 (2k image + 1.2k video; 500 s total).
+- [x] Finish the lower-cost 64² reference run (30k image + 10k video), preserve checkpoints, samples, logs, and
+      measured resources.
+- [x] Finish the native-cadence 64² video run and its complete 120-frame, three-seed prompt/reference evaluation.
+- [x] Run both exact 64² training stages and the 120-frame rollout on a Colab-class T4; record update speed,
+      validation, and peak memory separately from the complete RTX execution contract.
+- [ ] When Colab quota permits, repeat the final typed-prompt/scoring cells in the same T4 provider session. This is a
+      provenance improvement, not a missing fit/training/rollout measurement.
+- [x] Add a fixed-noise prompt suite. Do not call the model prompt-following until blinded human or motion-grounded
+      adherence evidence exists; prompt swaps establish sensitivity only.
 
-- [ ] Freeze the prompt-disjoint train/validation/test manifest and publish its hash.
-- [ ] Run K1 with at least 3 seeds under one fixed budget.
-- [ ] Save fixed-seed/fixed-prompt samples and exact checkpoints.
-- [ ] Report mean ± confidence interval, parameters, peak VRAM, steps, and GPU-hours.
-- [ ] Measure prompt adherence, anatomy/structure, temporal motion, drift, and FVD.
-- [ ] Validate the text-adherence evaluator on controlled prompt swaps.
+## Release QA
 
-## P2 — comparison, not model collecting
+- [x] Keep rendered TODOs out of the reader PDF while preserving them here and as source comments.
+- [x] Re-render and visually inspect every final PDF page after the 64²/T4 evidence is incorporated.
+- [x] Execute the complete notebook contract from a clean RTX 4090 environment; keep outputs cleared in the released
+      notebook. The same source separately completed both training stages and the 120-frame rollout on hosted T4.
+- [x] Run the complete test suite and verify video, JSON, notebook, arXiv-source, and PDF artifacts off the training pod.
+- [x] Produce and inspect the 12-scene Korean narrated MP4 walkthrough with page/paragraph highlights.
 
-- [ ] Implement K2: chunk-causal text-conditioned Video DiT under the same budget.
-- [ ] Compare K1 and K2 on the identical 50-frame protocol.
-- [ ] Separate chunk-boundary errors from within-chunk errors for K2.
-- [ ] Add one simple non-generative/replay control so metric floors are visible.
-- [ ] Only define O1 after a measured K1/K2 failure yields a concrete hypothesis.
+## Future work, outside this report
 
-## Paper and educational release
-
-- [ ] Rewrite Abstract and Introduction around the T2V testbed; do not claim unfinished results.
-- [ ] Add modern primary references: Wan, MAGI-1, Seedance 1.0, Diffusion Forcing, Self Forcing, VBench-2.0, T2V-CompBench.
-- [ ] Replace the broken pipeline figure and use “testbed” rather than mature “benchmark”.
-- [ ] Add a compact architecture/results table instead of many sticker-like figures.
-- [ ] Create a Colab path that trains a reduced lesson model but evaluates at the same concepts.
-- [ ] Publish configs, evaluator version, checkpoints, samples, and failure reports.
-- [ ] Ask a professor for a focused technical review once K1/K2 evidence is complete.
-
-## Explicitly out of scope for the first submission
-
-- 128×128 training.
-- Claiming Seedance-level quality.
-- Hidden leaderboard infrastructure.
-- Unmeasured O1/O2 architecture inventions.
-- Calling image pretraining itself the paper thesis.
+- Optional Video-VAE/latent-space lesson with codec reconstruction scored before generator training.
+- Learned rig estimator with calibrated joint confidence and analysis-by-synthesis re-rendering.
+- A multi-seed, compute-matched DiT warm-start study under the native 120-frame tier, if pursued as a companion study.
+- Validated prompt-adherence evaluation, hidden evaluation container, and hosted submissions.

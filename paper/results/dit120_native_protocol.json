@@ -1,0 +1,45 @@
+{
+  "name": "dit120_native20fps_reference_v1",
+  "declared_before_results": true,
+  "source_checkpoint": {
+    "path": "/data/dancing-stick-figure-paper/runs/m3_warm_10k_ema.pt",
+    "sha256": "0ae8bb99f3ee168172c3aae19c3599946059dfc90f88aa64d503aaaf789ae936",
+    "step": 10000,
+    "source_training_shape": [50, 64, 64],
+    "architecture": "39.9M pixel-space factorised DiT",
+    "objective": "rectified flow"
+  },
+  "data": {
+    "resolution": 64,
+    "frames": 120,
+    "fps": 20,
+    "stride": 1,
+    "covered_seconds": 6
+  },
+  "training": {
+    "seed": 0,
+    "prompt_conditioning": "frozen google-t5/t5-small",
+    "cfg_dropout": 0.1,
+    "image_batch_fraction": 0.1,
+    "i2v_batch_fraction": 0.2,
+    "foreground_loss_weight": 2.0,
+    "learning_rate": 0.0001,
+    "target_optimizer_updates": 3000,
+    "ema": true
+  },
+  "comparison": {
+    "unet_checkpoint": "output/runpod_v02/full64_text_video_native20fps_10k/ckpt_010000.pt",
+    "evaluation_frames": 120,
+    "evaluation_fps": 20,
+    "evaluation_source_motions": 64,
+    "sampling_seeds": 3,
+    "sample_steps": 50
+  },
+  "promotion_gate": [
+    "walking, running, and sitting are visually distinguishable in fixed-noise samples",
+    "limb connectivity is visibly better than the current UNet reference figure",
+    "all 120 generated frames remain stable",
+    "the same 20-fps evaluation contract is used for UNet and DiT",
+    "checkpoint, metrics, and sampling manifests are released"
+  ]
+}

@@ -81,11 +81,11 @@ dataset_info:
     dtype: binary
   splits:
   - name: train
-    num_examples: 363600
+    num_examples: 385920
   - name: validation
-    num_examples: 18000
+    num_examples: 48240
   - name: test
-    num_examples: 133200
+    num_examples: 48240
 - config_name: mini
   features:
   - name: color
@@ -144,11 +144,11 @@ dataset_info:
     dtype: binary
   splits:
   - name: train
-    num_examples: 363600
+    num_examples: 385920
   - name: validation
-    num_examples: 18000
+    num_examples: 48240
   - name: test
-    num_examples: 133200
+    num_examples: 48240
 - config_name: motion
   features:
   - name: text
@@ -185,11 +185,11 @@ dataset_info:
     dtype: binary
   splits:
   - name: train
-    num_examples: 1010
+    num_examples: 1072
   - name: validation
-    num_examples: 50
+    num_examples: 134
   - name: test
-    num_examples: 370
+    num_examples: 134
 configs:
 - config_name: frames
   default: true
@@ -218,11 +218,11 @@ configs:
     path: mini/test-*.parquet
 ---
 
-# Dancing Stick Figures — v0.1
+# Dancing Stick Figures — v0.2
 
 **A small, fully-labelled synthetic video dataset for learning (and teaching) video diffusion on one consumer GPU.**
 
-1,430 clips · 6 s @ 20 fps · 128×128 RGBA · 514,800 frames · 143 text prompts × 10 seeds × 3 cameras ·
+1,340 clips · 6 s @ 20 fps · 128×128 RGBA · 482,400 frames · 134 text prompts × 10 seeds × 3 cameras ·
 every frame carries the 3D skeleton, camera and G-buffer (depth, normals, part segmentation) that produced it.
 
 <p align="center"><img src="figs/dataset_contact_sheet.png" width="900"></p>
@@ -233,28 +233,31 @@ detached leg? wrong colour?) instead of eyeballing it. It is also a clean playgr
 then video" curriculum used by Seedance-class systems.
 
 > **Start here →** [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sprited-ai/dancing-stick-figures/blob/main/notebooks/dancing_stick_figures_colab.ipynb)
-> **one route, end to end, ~1 h on a free T4:** look at the data → train a 64² image model → warm-start a video model from
-> it → watch the GIF → let the "oracle" count the limbs. Same five commands in the
+> **one route, end to end, sized for a 16 GB T4:** look at the data → train a 64² image model → warm-start a video model from
+> it → watch the GIF → measure visible topology and motion. The measured optimization phases take about 25 and 22 minutes;
+> validation and diffusion sampling add time afterward. Same five commands in the
 > [code repo README](https://github.com/sprited-ai/dancing-stick-figures#the-route-colab-t4-1-h--rtx-4090-20-min).
 >
 > **Sibling dataset:** [sprited/dancing-chibi-figures](https://huggingface.co/datasets/sprited/dancing-chibi-figures) — the same motions and cameras rendered as a volumetric chibi character (paired by `clip_id`).
 >
-> **v0.1 = first public cut.** Data, labels and splits are final for this version; captions are the raw motion
-> prompts (templated dense captions come in v0.2); baselines are unconditional. Feedback and issues welcome.
+> **v0.2 uses an in-domain seed split.** Captions remain the raw motion prompts. Seeds 0--7 train, seed 8 validates,
+> and seed 9 tests; every split contains all 134 prompts. Nine of the original 143 prompts were removed after visual
+> QA because their motions do not visibly perform the requested action (see the curation note below). Feedback and
+> issues are welcome.
 
 ## Which config?
 
 | config | rows | size | contents |
 |---|---|---|---|
-| `frames` (default) | 514,800 frames | 4.6 GB | 128² RGBA colour + depth16 + normals + seg + all labels |
-| `mini` | 514,800 frames | 0.85 GB | **64²** RGBA colour + seg + all labels — laptops, Colab, classrooms |
-| `motion` | 1,430 clips | 0.35 GB | raw generator output: world joints, rotation matrices, foot contacts |
+| `frames` (default) | 482,400 frames | 4.4 GB | 128² RGBA colour + depth16 + normals + seg + all labels |
+| `mini` | 482,400 frames | 0.79 GB | **64²** RGBA colour + seg + all labels — laptops, Colab, classrooms |
+| `motion` | 1,340 clips | 0.33 GB | raw generator output: world joints, rotation matrices, foot contacts |
 
 ## Quick start
 
 ```python
 from datasets import load_dataset
-ds = load_dataset("sprited/dancing-stick-figures", "frames", split="validation")   # 128 px frames + labels ("mini" = 64 px, 0.85 GB)
+ds = load_dataset("sprited/dancing-stick-figures", "frames", split="validation")   # 128 px frames + labels ("mini" = 64 px, 0.79 GB)
 row = ds[0]
 row["color"]            # PIL RGBA image (transparent background, colour-coded bones)
 row["text"]             # "A person does the running man dance."
@@ -288,13 +291,13 @@ python -m train.video_dit_fm --cache cache --size 64 --frames 8 --batch 16 --pat
 
 *color (RGBA over white) · seg (bone id per pixel) · depth16 · camera-space normals · `joint_xy` overlay (green = visible, red = occluded)*
 
-**`frames` config — one row per rendered frame (514,800 rows).**
+**`frames` config — one row per rendered frame (482,400 rows).**
 
 | column | type | meaning |
 |---|---|---|
 | `sample_id`, `clip_id`, `frame_idx`, `n_frames`, `fps` | str/int | `clip_id = group/prompt_slug_s{seed}/c{cam}`; 120 frames per clip, 20 fps |
-| `split`, `group`, `held_out` | str/bool | split ∈ train/val/test; group ∈ dance, gesture, locomotion, transitions, idle, **sport** (held out → test only) |
-| `text` | str | the motion prompt the clip was generated from (143 unique) |
+| `split`, `group`, `held_out` | str/bool | split ∈ train/val/test; group ∈ dance, gesture, locomotion, transitions, idle, sport; `held_out` is false in the current seed split |
+| `text` | str | the motion prompt the clip was generated from (134 unique) |
 | `seed` | int | generator seed 0–9 |
 | `qa_flags` | str | comma list; `levitation` (root ever > 1.6 m above floor), `frozen` (mean joint speed < 0.02 m/s). Kept, not filtered — filter if you like |
 | `cam_yaw`, `cam_pitch` | float (rad) | orthographic camera; yaw 0 = figure faces the camera, canonical yaws ±6° jitter (70 %) or uniform (30 %); pitch −3°…10° |
@@ -322,7 +325,7 @@ right upper arm ■ `#286EE6`, right forearm+hand ■ `#50C8F0`; left thigh ■ 
 right thigh ■ `#1E965A`, right shin+foot ■ `#78DC5A` (`generator/render.py:PALETTE`, keyed by the bone's child joint).
 Colours are anti-aliased (4× supersampled); if you need hard-edged colour, rebuild it from `seg` + the palette.
 
-**`motion` config — one row per clip (1,430 rows, 349 MB).** Raw output of the motion generator (NVIDIA ARDY):
+**`motion` config — one row per clip (1,340 rows, 327 MB).** Raw output of the motion generator (NVIDIA ARDY):
 `posed_joints` f32[T,27,3] (world, m), `local_rot_mats` / `global_rot_mats` f32[T,27,3,3], `root_positions`,
 `smooth_root_pos` f32[T,3], `global_root_heading` f32[T,2], `foot_contacts` bool[T,4], plus `frame0_basis` f32[3,3]
 (rows = figure-frame x/left, y/up, z/forward in world coordinates; `figure_joints = (posed_joints − Hips) @ basis.T`,
@@ -330,14 +333,24 @@ before `bone_scale`). Same `clip_id` (minus the camera suffix), `split`, `group`
 
 ## Splits
 
-Split is by **prompt**, never by seed or camera: all 10 seeds × 3 cameras of a prompt land in the same split, so
-val/test are unseen motions. `sport` (33 prompts) is held out entirely (test only) as an unseen-concept probe.
+Split is by **ARDY generation seed**: seeds 0--7 train, seed 8 validation, and seed 9 test. All 134 prompts and all
+camera families occur in every split, while the underlying source-motion realizations remain disjoint. This is an
+in-domain generation split; it does not claim zero-shot generalisation to unseen prompt vocabulary.
 
 | | motion clips (×3 cameras) | frames | prompts |
 |---|---|---|---|
-| train | 1,010 | 363,600 | 101 |
-| validation | 50 | 18,000 | 5 |
-| test (incl. sport) | 370 | 133,200 | 37 |
+| train | 1,072 | 385,920 | 134 |
+| validation | 134 | 48,240 | 134 |
+| test | 134 | 48,240 | 134 |
+
+**Prompt curation (v0.2).** Nine of the 143 generated prompts are excluded from the release because their ARDY
+motions do not visibly perform the requested action in this rendered domain: near-static failures (*sways to slow
+music*), motion that cannot render (*shakes their head no* — the head is a filled circle), unrecognisable or absent
+actions (*yoga warrior pose*, *yoga tree pose*, *sit up*, *push up*, *standing long jump* — the figure glides without
+an airborne phase), interactions with objects that do not exist in the render (*climbs over a low wall*), and
+*lies down on the floor*. The exclusion list with per-prompt reasons ships as `prompts/v02_excluded.txt` in the code
+repository. Stillness prompts whose stillness is semantically correct (the idle group, stands-* prompts, *balances on
+one leg*) are kept even when the `frozen` QA flag fires.
 
 ## How it was made
 
@@ -346,14 +359,18 @@ per-clip body jitter (bone lengths ±8 %, stroke, scale) → 3 orthographic came
 yaws, 30 % uniform) → z-buffered capsule rasteriser writes colour / depth / normal / segmentation in one pass →
 parquet. Everything is deterministic from `clip_id`; the generator is in the repo (`generator/`).
 
-Motion prompts: 143 hand-written English sentences in 6 groups (dance 34, gesture 30, locomotion 21, transitions 15,
-idle 10, sport 33 held out); acrobatics and moonwalk were removed after QA (ARDY did not render them faithfully).
+Motion prompts: 134 hand-written English sentences in 6 groups (dance 33, gesture 29, locomotion 21, transitions 13,
+idle 10, sport 28); acrobatics and moonwalk were removed during generation QA, and nine further prompts were removed
+by the v0.2 release curation above (ARDY did not render them faithfully).
 
-## Baselines (v0.1) and the "oracle"
+## Historical v0.1 baselines and the structural evaluator
+
+The results below were produced on the original prompt-disjoint v0.1 partition. They document the released
+checkpoints, but they are not the official v0.2 seed-split baseline; a matched v0.2 reference run is reported separately.
 
 Because every bone has its own colour, a rendered frame can be *parsed*: count colour segments per limb, check they
-touch their parent, measure colour purity. We call this rule-based checker the **oracle v0** and use it to score
-generated frames:
+touch their parent, and measure colour purity. The v0.1 files called this rule-based checker **oracle v0**; the current
+paper uses the more descriptive name **structural evaluator**. It reports:
 
 - **tvr** — topology violation rate: fraction of the eight limb colours whose visible mask has a connected-component
   count other than one (missing, detached/fragmented, or duplicated colour regions)
@@ -364,8 +381,8 @@ generated frames:
 
 Real frames do **not** score 0: an occluded arm looks like a missing arm to a pixel parser. So every number is reported
 next to the score of real validation frames at the same resolution (the *floor*); a model at the floor makes these
-kinds of errors no more often than the data itself. The oracle is blind to geometry (proportions, joint angles) —
-that is v0.2 work (a learned pose regressor).
+kinds of errors no more often than the data itself. The structural evaluator is blind to geometry such as proportions
+and joint angles; a validated learned rig estimator remains future work.
 
 **Unconditional image models, 512 samples each, 50 sampling steps (oracle v0):**
 
@@ -395,30 +412,34 @@ DiT-track (Seedance-style two-stage, interim) and class-conditional checkpoints 
 - Teaching and prototyping video/image diffusion, motion-conditioned generation, pose estimation from renders,
   I2V, and structural evaluation. Not a human-motion dataset: it is stick figures with a single body preset (jittered).
 - Motion realism is bounded by the generator (ARDY); some prompts are only loosely followed. Use `qa_flags` and
-  the held-out `sport` group accordingly.
-- 143 prompts is small for text conditioning; captions in v0.1 are the raw prompts. Dense templated captions
-  (camera, body, root motion; dynamic + static) are planned for v0.2.
-- The oracle floor is set by occlusion at these resolutions (64²: ~14 % tvr on real frames).
+  inspect motion samples when prompt semantics are central to an experiment.
+- 134 prompts is small for text conditioning; captions are the raw motion prompts. Dense templated captions
+  (camera, body, root motion; dynamic + static) remain future work.
+- The real-reference TVR is non-zero because occlusion hides coloured limbs at these resolutions (about 14% at 64²).
 
 ## Versioning
 
 - **v0.1 (2026-08-18)** — initial public release: 1,430 clips, `frames` + `motion` configs, oracle v0, image baselines.
-- v0.2 (planned) — templated dense captions, more prompts, video baselines table (UNet vs DiT, image-init vs scratch),
-  learned pose regressor / anomaly detector, "anomaly" config of deliberately malformed renders.
+- **v0.2 (2026-08-25)** — seed-disjoint in-domain train/validation/test partitions, visual-QA prompt curation
+  (143 → 134 prompts), public-motion reconstruction and verification, seeded instructor render variants,
+  prompt-conditioned reference models, and an image-to-video Colab lesson.
+  A learned rig estimator remains future work until its generated-video scores are validated.
 
 ## License and attribution
 
-- **Data (this dataset): CC0-1.0.** Motion was generated with [NVIDIA ARDY](https://github.com/nv-tlabs/ardy) whose
-  [Open Model License](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/)
-  claims no ownership of outputs; the rendering, labels and skeleton conventions are ours.
+- **Data (this dataset): CC0-1.0.** Motion was generated with ARDY's 20-fps Core model; the original generation record
+  did not retain the checkpoint revision. ARDY's source code is Apache-2.0; its released checkpoints are governed by the
+  [NVIDIA Open Model Agreement](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-agreement/),
+  which states that NVIDIA claims no ownership of generated outputs. The rendering, labels, and skeleton conventions
+  are ours.
 - **Code** (generator, trainers, oracle): MIT, <https://github.com/sprited-ai/dancing-stick-figures>.
 
 If you use it:
 
 ```
 @misc{dancingstickfigures2026,
-  title  = {Dancing Stick Figures: a labelled synthetic benchmark for consumer-GPU video diffusion},
-  author = {Sprited},
+  title  = {Dancing Stick Figures: A Synthetic Video Dataset, Renderer, and Diagnostic Evaluation Suite},
+  author = {Cho, Jin Hyuk},
   year   = {2026},
   url    = {https://huggingface.co/datasets/sprited/dancing-stick-figures}
 }

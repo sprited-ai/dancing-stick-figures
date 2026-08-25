@@ -1,4 +1,9 @@
-# Dancing Stick Figures — research roadmap
+# Dancing Stick Figures — historical model-research roadmap
+
+> **Scope note (2026-08-24):** this file tracks the earlier K1/K2/M6 architecture programme. Its 50-frame task is
+> still the contract for those matched model studies, but it is not the dataset paper's native task. The active paper
+> and controlled evaluation use all 120 frames at 20 fps; the v0.2 student Colab uses the factorised UNet route. See
+> `paper/TODO.md` and the current section at the top of `STATUS.md` for release work.
 
 ## Fixed question
 

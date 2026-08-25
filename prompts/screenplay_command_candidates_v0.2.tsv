@@ -1,0 +1,43 @@
+command	action_family	temporal_pattern	intensity	prop_dependency	source_corpus	review_status
+Run toward a destination.	locomotion	continuous	normal	none	ordinary_screenplays	PENDING
+Run past someone while looking at them.	locomotion	continuous	normal	partner	ordinary_screenplays	PENDING
+Run forward, then stop.	transition	sequence	normal	none	ordinary_screenplays	PENDING
+Walk toward someone.	locomotion	continuous	normal	partner	ordinary_screenplays	PENDING
+Walk toward a doorway.	locomotion	continuous	normal	environment	ordinary_screenplays	PENDING
+Walk side by side with someone.	locomotion	continuous	normal	partner	ordinary_screenplays	PENDING
+Walk forward while looking from side to side.	locomotion	continuous	normal	none	ordinary_screenplays	PENDING
+Walk forward, then stop and look around.	transition	sequence	normal	none	ordinary_screenplays	PENDING
+Keep walking forward.	locomotion	continuous	normal	none	ordinary_screenplays	PENDING
+Speed up while running.	locomotion	transition	high	none	ordinary_screenplays	PENDING
+Run away into the distance.	locomotion	continuous	high	none	ordinary_screenplays	PENDING
+Turn sharply toward someone.	transition	single	high	partner	ordinary_screenplays	PENDING
+Turn your head to look sideways.	gesture	single	normal	none	ordinary_screenplays	PENDING
+Look from side to side.	gesture	repeated	normal	none	ordinary_screenplays	PENDING
+Look up.	gesture	single	low	none	ordinary_screenplays	PENDING
+Look down sadly.	gesture	hold	low	none	ordinary_screenplays	PENDING
+Close your eyes and take a deep sigh.	gesture	single	low	none	ordinary_screenplays	PENDING
+Wipe your forehead with the back of your hand.	gesture	single	normal	none	ordinary_screenplays	PENDING
+Wave to someone while walking.	gesture	continuous	normal	partner	ordinary_screenplays	PENDING
+Point straight ahead.	gesture	hold	normal	none	ordinary_screenplays	PENDING
+Hold both hands up uncertainly.	gesture	hold	low	none	ordinary_screenplays	PENDING
+Put your hands on your hips and turn around.	transition	sequence	normal	none	ordinary_screenplays	PENDING
+Spread both hands in frustration.	gesture	single	high	none	ordinary_screenplays	PENDING
+Raise both arms in anger.	gesture	single	high	none	ordinary_screenplays	PENDING
+Slump your shoulders.	gesture	hold	low	none	ordinary_screenplays	PENDING
+Extend one hand forward.	gesture	hold	normal	none	ordinary_screenplays	PENDING
+Cross your arms and look away.	gesture	hold	normal	none	ordinary_screenplays	PENDING
+Sit up straight suddenly.	transition	single	high	none	ordinary_screenplays	PENDING
+Sit down and breathe deeply.	idle	transition_then_hold	low	none	ordinary_screenplays	PENDING
+Stand with your hands on your hips.	idle	hold	normal	none	ordinary_screenplays	PENDING
+Bend forward and look up.	gesture	hold	normal	none	ordinary_screenplays	PENDING
+Stand up while holding something.	transition	single	normal	object	ordinary_screenplays	PENDING
+Make a fist confidently.	gesture	hold	high	none	ordinary_screenplays	PENDING
+Rub the back of your head in embarrassment.	gesture	repeated	low	none	ordinary_screenplays	PENDING
+Lean backward against a wall and slide down.	transition	sequence	low	environment	ordinary_screenplays	PENDING
+Sit on the ground and pound both fists.	gesture	repeated	high	none	ordinary_screenplays	PENDING
+Slouch and hold your head in both hands.	gesture	hold	low	none	ordinary_screenplays	PENDING
+Shake one fist overhead defiantly.	gesture	repeated	high	none	ordinary_screenplays	PENDING
+Reach down and pick something up.	transition	single	normal	object	ordinary_screenplays	PENDING
+Lift both hands, then slam your palms downward.	gesture	sequence	high	surface	ordinary_screenplays	PENDING
+Lean backward in surprise.	gesture	single	high	none	ordinary_screenplays	PENDING
+Stop, then turn your whole body around.	transition	sequence	normal	none	ordinary_screenplays	PENDING

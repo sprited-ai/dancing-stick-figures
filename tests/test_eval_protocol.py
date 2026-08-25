@@ -16,9 +16,18 @@ from train.video_ddpm import (
     VideoWindows,
     adapt_warm_start_state,
     initialize_video_input,
+    sample,
+    to_gif,
     val_loss,
     val_losses,
 )
+
+
+def test_sample_writer_reports_png_for_single_frame_and_gif_for_video(tmp_path):
+    image_path = to_gif(torch.zeros(1, 4, 1, 4, 4), str(tmp_path / "image.gif"))
+    video_path = to_gif(torch.zeros(1, 4, 2, 4, 4), str(tmp_path / "video.gif"))
+    assert image_path.endswith("image.png") and os.path.exists(image_path)
+    assert video_path.endswith("video.gif") and os.path.exists(video_path)
 
 
 def _cache(tmp_path, n_clips=8, frames_per_clip=60, size=4):
@@ -151,6 +160,71 @@ def test_ar_validation_separates_first_chunk_and_continuation_deterministically(
     assert one["first_chunk"] != one["continuation"]
 
 
+class _TextAwareModel(torch.nn.Module):
+    cls = None
+    text_proj = object()
+
+    def forward(self, x, t, y=None, cond=None, text=None, text_mask=None):
+        assert text is not None and text_mask is not None
+        value = text.mean(dim=(1, 2))[:, None, None, None, None]
+        return value.expand_as(x)
+
+
+def _fixture_text_batch(prompts):
+    values = torch.tensor([1.0 if prompt == "fixture" else 0.0 for prompt in prompts])
+    return values[:, None, None].expand(-1, 2, 3), torch.ones(len(prompts), 2, dtype=torch.long)
+
+
+def test_full_prompt_validation_and_cfg_sampling_paths(tmp_path):
+    cache = _cache(tmp_path)
+    ds = VideoWindows(cache, frames=4, split="val", size=4, deterministic=True, return_text=True)
+    dl = torch.utils.data.DataLoader(ds, batch_size=2, shuffle=False)
+    ac = torch.linspace(0.01, 0.99, 20)
+    model = _TextAwareModel()
+    scores = val_losses(model, dl, ac, "cpu", n_batches=2, seed=19, text_batch=_fixture_text_batch)
+    assert set(scores) == {"first_chunk"}
+    assert np.isfinite(scores["first_chunk"])
+
+    noise = torch.zeros(1, 4, 2, 2, 2)
+    text, mask = _fixture_text_batch(["fixture"])
+    null_text, null_mask = _fixture_text_batch([""])
+    conditional = sample(model, noise.shape, ac, "cpu", steps=2, noise=noise, text=text, text_mask=mask)
+    guided = sample(model, noise.shape, ac, "cpu", steps=2, noise=noise, text=text, text_mask=mask,
+                    null_text=null_text, null_text_mask=null_mask, cfg=2.0)
+    assert not torch.equal(conditional, guided)
+
+
+def test_neighbor_temporal_unet_preserves_warm_start_and_t1_behavior():
+    """The challenger adds only temporal parameters and remains an exact image model."""
+    torch.manual_seed(7)
+    base = UNet3D(ch=32, mult=(1,), attn_res=(), tattn_res=(4,), n_res=1, size=4, cond_ch=0)
+    neighbor = UNet3D(
+        ch=32, mult=(1,), attn_res=(), tattn_res=(4,), n_res=1, size=4, cond_ch=0,
+        temporal_neighbors=1, temporal_pos_bias=True,
+    )
+    missing = neighbor.load_state_dict(base.state_dict(), strict=False).missing_keys
+    assert missing
+    assert all("neighbor.weight" in key or "time_bias" in key for key in missing)
+
+    x = torch.randn(2, 4, 1, 4, 4)
+    t = torch.tensor([3, 9])
+    with torch.no_grad():
+        assert torch.equal(base(x, t), neighbor(x, t))
+
+
+def test_neighbor_temporal_unet_video_shape_and_gradients():
+    model = UNet3D(
+        ch=32, mult=(1,), attn_res=(), tattn_res=(4,), n_res=1, size=4, cond_ch=0,
+        temporal_neighbors=1, temporal_pos_bias=True,
+    )
+    x = torch.randn(2, 4, 4, 4, 4)
+    out = model(x, torch.tensor([2, 5]))
+    assert out.shape == x.shape
+    out.square().mean().backward()
+    temporal = [module for module in model.modules() if getattr(module, "axis", None) == "temporal"]
+    assert temporal and all(module.neighbor is not None and module.time_bias is not None for module in temporal)
+
+
 def test_image_warm_start_is_framewise_equivalent_for_repeated_video():
     torch.manual_seed(7)
     image = UNet3D(ch=32, mult=(1,), attn_res=(), tattn_res=(), n_res=1, size=4, cond_ch=0)
@@ -183,3 +257,20 @@ def test_scratch_ar_uses_matched_structural_zero_initialization():
     assert torch.count_nonzero(model.inp.weight[:, :, 2]) == 0
     assert torch.count_nonzero(model.inp.weight[:, 4:, 1]) == 0
     assert torch.count_nonzero(model.inp.weight[:, :4, 1]) > 0
+
+
+def test_first_frames_restricts_training_and_reference_windows(tmp_path):
+    cache = _cache(tmp_path, n_clips=4, frames_per_clip=120, size=4)
+    ds = VideoWindows(cache, frames=40, split="val", size=4, first_frames=64)
+    starts = set()
+    for _ in range(40):
+        x, _ = ds[0]
+        starts.add(int(((x[0, 0, 0, 0] + 1) / 2 * 255).round()))
+    assert starts and max(starts) <= 24 and min(starts) >= 0
+
+    from eval.protocol import build_reference_manifest
+    manifest = build_reference_manifest(cache, frames=40, stride=1, split="val",
+                                        n_per_half=1, seed=3, first_frames=64)
+    offsets = [e["frame_offset"] for e in manifest["reference_a"] + manifest["reference_b"]]
+    assert manifest["first_frames"] == 64
+    assert all(0 <= off <= 24 for off in offsets)

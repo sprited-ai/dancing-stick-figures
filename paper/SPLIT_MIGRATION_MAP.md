@@ -5,7 +5,7 @@ git tag `paper-v01-mixed` + verbatim copy `paper/paper_mixed_v01.tex`.
 
 ## Documents
 
-- **Testbed report**: `paper/paper.tex` (6 pp after cut; was 8 pp mixed).
+- **Dataset report**: `paper/paper.tex` (7 pp after the related-work audit; was 8 pp mixed).
 - **Mechanism paper skeleton**: `paper/mechanism/static_copy_shortcut.tex`
   ("The Static-Copy Shortcut: Diagnosing and Repairing Motion Collapse in
   Block-Autoregressive Video Diffusion"), compiles to 4 pp with both M6
@@ -58,17 +58,17 @@ paper (removed from the testbed arXiv bundle).
 
 ## Unresolved decisions (for Jin/Pixel review)
 
-1. Testbed title still says "for Diagnosing Long-Horizon Video Generation" —
-   defensible via the corruption suite + protocol, but "Diagnosing" now leans
-   less on M6; consider "for Small-Scale Video Generation Research".
+1. Resolved: the current title is "A Synthetic Video Dataset, Renderer, and
+   Diagnostic Evaluation Suite"; ambiguous `traced`, long-horizon, and generic
+   testbed wording were removed from the maintained dataset paper.
 2. The "Why full-clip bidirectionality stops being enough" essay ¶ was KEPT
    in the testbed report (conceptual, zero numbers, motivates the released AR
    track) — trim or move if the report should read leaner.
 3. Codec reconstruction numbers (IoU .952 / 34 dB) now appear only in the
    mechanism paper; if the testbed release page needs them, they'd live in the
    HF model card, not the report.
-4. Page 6 of the testbed PDF is mostly whitespace after references — fine for
-   arXiv, could be balanced later.
+4. The maintained report is now 7 pages after adding the closest synthetic-human
+   and synthetic-video predecessors; final pagination still requires visual QA.
 5. arXiv bundle regenerated as DRAFT (`output/arxiv_bundle_testbed_draft.tar.gz`,
    compile-verified standalone) — NOT submitted, per instruction.
 
@@ -85,5 +85,6 @@ paper (removed from the testbed arXiv bundle).
   moved to the mechanism paper's Introduction (K1 now introduced via
   \cite{cho2026dsf}); testbed keeps a 4-sentence "Beyond fixed-length
   clips" interface rationale. Resolves unresolved decision #2.
-- Testbed still 6 pp; mechanism still 4 pp; both compile clean (0 overfull).
+- At the time of this review the testbed was 6 pp; the maintained dataset report
+  is now 7 pp. The mechanism paper remains a separate draft.
   arXiv draft bundle regenerated (still NOT submitted).

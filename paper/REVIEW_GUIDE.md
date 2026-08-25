@@ -1,38 +1,70 @@
-# paper-m6 리뷰 가이드 (Jin용, 2026-08-23)
+# Dancing Stick Figures dataset paper — Jin review guide (v0.2)
 
-브랜치 `paper-m6`, 커밋 20개, 페이퍼는 7쪽 (`output/pdf/paper.pdf`).
-`paper.tex`는 이 브랜치에서 신설 — diff가 아니라 통독 대상.
+Authoritative source: `paper/paper.tex`
 
-## 30분 리뷰 동선
+Live PDF: `output/pdf/paper.pdf`
 
-1. **1쪽 abstract + intro 포지셔닝** (5분) — "테스트베드" 프레이밍이 네 의도와
-   맞는지. 저자 표기 Jin Hyuk Cho + ORCID 확인.
-2. **핵심 신규 섹션** (15분), 이번 세션에서 들어간 것:
-   - "Latent long-horizon track: a frozen codec" — 코덱 선택·고정 근거
-   - "Block-autoregressive M6 and its convergence trade-off" + fig:m6 —
-     동결 곡선 (100k 점선 포함)
-   - **"Breaking the freeze"** + fig:m6fix — 파일럿 5개 표 + v8 결과.
-     이 문단이 논문의 새 하이라이트.
-   - "Full-clip latent control R0" — 50k 곡선 확장 문장까지
-3. **status 테이블 + future work** (5분) — 주장 한계 서술이 과하지도
-   부족하지도 않은지.
-4. **결정** (5분): arXiv go/no-go. go면 남는 작업: 최종 페이지 QA 한 번,
-   (선택) v8 300k 결과 한 문장 반영, 제출 메타데이터.
+The older `paper_mixed_v01.tex` and `REPORT.md` are archived provenance, not review targets.
 
-## 지금 페이퍼에 안 들어간 것 (의도적)
+## The question to keep in mind
 
-- v9 리그 공동생성 트랙 — 다음 논문/v0.2 척추로 보류
-- CFG 스윕, t5-base 기각, 약점 택소노미 — EXPERIMENT_LOG에만 기록
-- v8 300k — 완주 시 예측 대조 후 한 문장 추가 여부만 판단
+Would a professor adopt this release to let students train, modify, and diagnose a video generator from scratch on
+ordinary hardware? The paper should not read as a small substitute for a frontier model. It should read as a complete
+experiment whose data, renderer, reference models, and measurements can all be inspected and changed.
 
-## 증거 상태 요약
+## 30-minute review route
 
-| 주장 | 근거 | 한계 |
-|---|---|---|
-| 동결은 구조적 | h8 100k: TVR .097(<floor) & speed .115 고정 | 1 seed |
-| 원인은 gradient 배분 | 파일럿 5개: 신호재배분 3승 / 히스토리 2패 | 각 2k·1 seed |
-| v8이 Pareto 탈출 | 100k: TVR .122 + speed .286 (real 91%) | 1 seed, 성분귀속은 파일럿 의존 |
-| R0는 구조 정체 | 50k: TVR .22 평탄 | 예산 상이 (50k vs 100k) |
+1. **Abstract and Introduction (pages 1–2, 8 min).**
+   - Is the access problem recognisable: unavailable training data, expensive pretraining, and evaluation that does
+     not explain visible failures?
+   - Is the answer concrete: a 0.85-GB route, one-GPU training, known rendering state, and runnable image-to-video
+     curriculum?
+   - Reject any sentence that sounds like a claim of photorealism, state of the art, or general real-video validity.
 
-전 곡선 데이터: `paper/results/m6_h8_milestones_n64.json`
-전체 이력: `paper/EXPERIMENT_LOG.md`
+2. **Related Work (page 2, 5 min).**
+   - SURREAL and BEDLAM are stronger synthetic-human datasets.
+   - Synthetic Video Enhances Physical Fidelity and DynaVid give stronger evidence that synthetic supervision can
+     improve large video generators.
+   - VBench, GeneVA, and Ref4D provide broader or more human-aligned evaluation.
+   - Our defensible distinction is the conjunction: reconstructible data, from-scratch text-conditioned video
+     training, controlled corruptions, and a short classroom-scale feedback loop.
+
+3. **Data and evaluation (pages 3–5, 7 min).**
+   - Confirm 1,430 motions, three views, 4,290 videos, 514,800 frames, 20 fps, and 120-frame source clips.
+   - Read the controlled-corruption figure as a metric unit test: freezing, shuffling, reversing, and looping expose
+     different blind spots. Reversal is intentionally a negative result for FVD and the time-symmetric diagnostics.
+   - Check that each structural measurement is tied to a visible palette or connectivity failure rather than being
+     presented as a universal quality judge.
+
+4. **Reference models and Colab route (pages 5–6, 7 min).**
+   - The primary released reference is a factorised 3D UNet whose spatial and temporal blocks can be read directly
+     and whose released lesson fits a Colab T4; the larger RTX 4090 batch is used for throughput.
+   - Table 3 is the reproduction target: three-seed, 120-frame UNet values are compared with the matching real
+     reference, and Figure 4 places walking, running, and sitting outputs directly below released clips.
+   - The Colab should visibly train an image generator, transfer spatial weights, train a text-conditioned video
+     generator, sample labelled prompts, and score results.
+   - Check that 32×32 is presented only as a faster sanity-check configuration.
+
+5. **Limits and release contract (final pages, 3 min).**
+   - The paper must distinguish exact public reconstruction from instructor-private renderer variations.
+   - Prompt conditioning must not be described as verified semantic prompt following.
+   - Learned rig recovery is proposed as future work, not reported as a metric or result of this release.
+   - Any unfinished measurement or experiment must remain marked `[TODO]` in prose or the experiment matrix rather
+     than being implied complete.
+
+## Release gates still being verified
+
+- Native-cadence 64×64 factorised 3D UNet: complete at 10k steps with three sampling seeds, 120-frame evaluation,
+  and the walking/running/sitting qualitative suite.
+- T4 fit, update speed, validation, peak memory, and 120-frame rollout are measured. The exact release source also
+  completes typed-prompt generation and scoring on RTX 4090; a later quota-available run may consolidate both records
+  into one T4 provider session without changing the paper's current hardware-specific claims.
+- Full 1,430-motion reconstruction is complete: both released tiers passed over all 514,800 frames.
+- Final PDF visual QA and Korean narrated walkthrough MP4.
+
+The native model's FVD is 510.1 ± 31.4 across three sampling seeds, compared with a 129.9 real–real reference under
+the same n=64 manifest. Its motion is faster and less smooth than the reference, and fixed-noise walking/running
+samples remain similar. These are useful baseline weaknesses, not hidden release defects or prompt-following claims.
+
+Evidence and remaining work are tracked in `paper/EXPERIMENT_MATRIX.md`; M6 autoregressive research belongs to the
+separate mechanism-paper track and is not part of this dataset-paper review.

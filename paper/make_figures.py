@@ -26,7 +26,9 @@ def load(name: str):
 
 def style():
     plt.rcParams.update({
-        "font.family": "DejaVu Sans",
+        "font.family": "serif",
+        "font.serif": ["STIX Two Text"],
+        "mathtext.fontset": "stix",
         "font.size": 8,
         "axes.titlesize": 9,
         "axes.labelsize": 8,
@@ -35,6 +37,8 @@ def style():
         "legend.frameon": False,
         "figure.dpi": 180,
         "savefig.bbox": "tight",
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
     })
 
 
@@ -60,7 +64,7 @@ def image_benchmark(ax):
     ax.set_yticks(y, labels)
     ax.invert_yaxis()
     ax.set_xlabel("excess error over matched real floor")
-    ax.set_title("a  Image approaches")
+    ax.set_title("(a) Image approaches")
     ax.legend(ncol=2, loc="upper right")
     ax.grid(axis="x", color="#dddddd", lw=.5)
 
@@ -83,7 +87,7 @@ def video_benchmark(ax):
     ax.set_xticks(x, [m[0] for m in metrics])
     ax.set_ylabel("model / real-floor error")
     ax.set_ylim(0, 1.9)
-    ax.set_title("b  Video approaches")
+    ax.set_title("(b) Video approaches")
     ax.legend(ncol=1, loc="upper left")
     ax.grid(axis="y", color="#dddddd", lw=.5)
 
@@ -105,7 +109,7 @@ def corruption_heatmap(ax):
             text = f"{raw[i, j]:+.3f}"
             ax.text(j, i, text, ha="center", va="center",
                     color="white" if norm[i, j] > .58 else "#222222", fontsize=7)
-    ax.set_title("c  Controlled failures (delta from clean, n=500)")
+    ax.set_title("(c) Controlled failures (delta from clean, n=500)")
     ax.tick_params(length=0)
 
 
@@ -146,10 +150,10 @@ def training_curve():
 
 
 def failure_modes():
-    metrics = load("degenerate_50f_n128.json")["baselines"]
-    distances = load("fvd_50f_n128.json")["fvd"]
-    names = ["repeat_first", "shuffle_frames", "reverse_time", "loop_first_8", "train_replay"]
-    labels = ["freeze", "shuffle", "reverse", "loop\n8", "train\nreplay"]
+    metrics = load("degenerate_120f_n128.json")["baselines"]
+    distances = {name: row["fvd"] for name, row in metrics.items()}
+    names = ["repeat_first", "shuffle_frames", "reverse_time", "loop_first_8"]
+    labels = ["freeze", "shuffle", "reverse", "first 8\nlooped"]
     signals = [("centroid speed", "centroid_speed"), ("centroid accel.", "centroid_accel"),
                ("angle jerk", "angle_jerk")]
     colors = [PURPLE, TEAL, ORANGE]
@@ -160,22 +164,28 @@ def failure_modes():
         reference = metrics["real_reference_b"][key]["mean"]
         values = [metrics[name][key]["mean"] / reference for name in names]
         left.bar(x + (i - 1) * .24, values, width=.22, label=label, color=color)
+    # A frozen video makes all three motion signals exactly zero.  Show the
+    # zero values explicitly so the empty group is not mistaken for missing data.
+    freeze_x = x[0] + np.array([-.24, 0, .24])
+    left.scatter(freeze_x, np.zeros(3), marker="o", s=20, facecolors="white",
+                 edgecolors=colors, linewidths=1.4, zorder=5, clip_on=False)
+    left.text(x[0], .38, "all = 0", ha="center", va="bottom", fontsize=7.5, color="#333333")
     left.axhline(1, color="#222222", lw=.8, ls="--")
     left.set_xticks(x, labels)
     left.set_ylabel("signal / real reference")
-    left.set_ylim(0, 6.8)
-    left.set_title("a  Controlled temporal failures")
+    left.set_ylim(0, 11.2)
+    left.set_title("(a) Controlled temporal failures")
     left.grid(axis="y", color="#dddddd", lw=.5)
     left.legend(ncol=1, loc="upper right")
 
     values = [distances[name] for name in names]
-    bars = right.bar(x, values, color=[PURPLE, TEAL, ORANGE, "#B55AA5", GRAY])
+    bars = right.bar(x, values, color=[PURPLE, TEAL, ORANGE, "#B55AA5"])
     real_real = distances["real_reference_b"]
     right.axhline(real_real, color="#222222", lw=.9, ls="--", label=f"real--real: {real_real:.1f}")
     right.set_xticks(x, labels)
     right.set_ylabel("FVD to real reference A")
     right.set_ylim(0, max(values) * 1.18)
-    right.set_title("b  FVD sensitivity to temporal failures")
+    right.set_title("(b) FVD sensitivity to temporal failures")
     right.grid(axis="y", color="#dddddd", lw=.5)
     right.legend(loc="upper left")
     for bar, value in zip(bars, values):

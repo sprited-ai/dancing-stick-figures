@@ -37,6 +37,19 @@ run without a passing preflight record is not paper-facing evidence.
 - `COMPLETE`: written only after the final checkpoint and artifacts pass an
   integrity check and are copied off the training pod.
 
+## Seed registry for the v0.2 reference route
+
+- model training and fixed validation noise: `0`;
+- checkpoint first-window previews: `1234`;
+- checkpoint autoregressive rollouts: `4321`;
+- native 120-frame real-reference manifest: `1`;
+- 30-trial FVD subset resampling: `0`.
+
+Dataset motion seeds (`0`–`9`) identify the ten source motions generated for
+each prompt. They are data identifiers, not model-training seeds. Every
+paper-facing sample must also preserve its own prompt and inference seed in a
+manifest.
+
 ## Inference panels
 
 Each milestone must contain three controlled panels:

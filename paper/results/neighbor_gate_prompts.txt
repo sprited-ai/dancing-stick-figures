@@ -1,0 +1,3 @@
+A person walks forward.
+A person runs forward.
+A person sits down cross-legged.

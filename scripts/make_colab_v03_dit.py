@@ -25,10 +25,10 @@ REPLACEMENTS = {
 **What you'll do**
 1. 👀 Inspect the videos and their hidden skeleton labels.
 2. 🎨 Train a small **image DiT** from noise.
-3. 🎬 Reuse those weights in a **video DiT** that jointly generates a five-second action.
+3. 🎬 Reuse those weights in a **video DiT** that jointly generates a 3.2-second action at the native 20 fps.
 4. 🤖 Generate from your own prompt and diagnose visible structural failures.
 
-The released clips contain 120 frames at 20 fps. The compute-limited teaching protocol takes 50 frames at stride 2, giving a five-second training clip at 10 fps. Native dataset evaluation still uses the complete 120-frame clips.
+The released clips contain 120 frames at 20 fps. The teaching protocol trains on the first 64 frames of each clip (3.2 seconds at the native 20 fps): the source motions concentrate their prompted action early, so the later frames often continue or idle. Native dataset evaluation still uses the complete 120-frame clips.
 
 Before you start: **Runtime → Change runtime type → GPU** (T4 is sufficient for the conservative batch below).
 """,
@@ -58,18 +58,18 @@ import torch; print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_avail
 #@title 0b. Choose a resolution
 IMAGE_SIZE = "64" #@param ["32", "64"]
 IMAGE_SIZE = int(IMAGE_SIZE)
-VIDEO_FRAMES, FRAME_STRIDE = 50, 2
+VIDEO_FRAMES, FRAME_STRIDE = 64, 1
 IMAGE_BATCH = 128 if IMAGE_SIZE == 32 else 64
 VIDEO_BATCH = 8 if IMAGE_SIZE == 32 else 4
 RUN_TAG = f"{IMAGE_SIZE}px"
-IMAGE_RUN, VIDEO_RUN = f"runs/dit_img_{RUN_TAG}", f"runs/dit_vid50_{RUN_TAG}"
-print(f"resolution={IMAGE_SIZE}² · factorised DiT · {VIDEO_FRAMES} frames at 10 fps")
+IMAGE_RUN, VIDEO_RUN = f"runs/dit_img_{RUN_TAG}", f"runs/dit_vid64_{RUN_TAG}"
+print(f"resolution={IMAGE_SIZE}² · factorised DiT · {VIDEO_FRAMES} frames at 20 fps")
 print("32² is a faster sanity check; 64² is the reference setting.")
 """,
     2: r"""
 ## 🧩 The fixed reference backbone
 
-The same **factorised video DiT** is used for both stages. At `T=1`, it is an image generator. At `T=50`, it becomes a video generator.
+The same **factorised video DiT** is used for both stages. At `T=1`, it is an image generator. At `T=64`, it becomes a video generator.
 
 ```text
 noisy RGBA frames [4, T, size, size]
@@ -83,7 +83,7 @@ text cross-attention: the complete prompt conditions every block
 predicted flow from noise toward clean video [4, T, size, size]
 ```
 
-Spatial and temporal attention alternate. This makes the division of labour visible in code and lets each generated time point use both earlier and later context inside the five-second training clip. A frozen T5-small encoder supplies prompt tokens; the DiT itself learns the rendered figure and motion from this dataset.
+Spatial and temporal attention alternate. This makes the division of labour visible in code and lets each generated time point use both earlier and later context inside the 3.2-second training window. A frozen T5-small encoder supplies prompt tokens; the DiT itself learns the rendered figure and motion from this dataset.
 
 The exercise fixes the architecture and exposes its source. The only initial choice is `32²` for a quick sanity check or `64²` for the main run.
 """,
@@ -108,7 +108,7 @@ This stage teaches spatial structure before temporal modelling begins. Samples a
 import time
 STEPS = 2000  #@param {type:"integer"}
 image_started = time.perf_counter()
-!python -m train.video_dit_fm --cache data/cache --out $IMAGE_RUN --arch dit --size $IMAGE_SIZE --frames 1 --stride 2 --batch $IMAGE_BATCH --steps $STEPS --dim 384 --depth 12 --heads 6 --patch 4 --cond text --cfg_drop 0.1 --fg_weight 2 --grad_ckpt --fast --workers 2 --sample_every 500 --val_every 500 2>&1 | grep --line-buffered -v Warning | grep --line-buffered "^cached\|^init\|^step\|wrote\|params\|Error\|Traceback"
+!python -m train.video_dit_fm --cache data/cache --out $IMAGE_RUN --arch dit --size $IMAGE_SIZE --frames 1 --stride 1 --first_frames 64 --batch $IMAGE_BATCH --steps $STEPS --dim 384 --depth 12 --heads 6 --patch 4 --cond text --cfg_drop 0.1 --fg_weight 2 --grad_ckpt --fast --workers 2 --sample_every 500 --val_every 500 2>&1 | grep --line-buffered -v Warning | grep --line-buffered "^cached\|^init\|^step\|wrote\|params\|Error\|Traceback"
 IMAGE_WALL_SECONDS = time.perf_counter() - image_started
 print(f"image stage wall time: {IMAGE_WALL_SECONDS / 60:.1f} min")
 """,
@@ -123,11 +123,11 @@ for f in sorted(glob.glob(f"{IMAGE_RUN}/sample_0*.png")):
 > **Why do early samples look rough?** Two thousand steps are enough to expose the complete training loop, not to equal the released reference checkpoint. The longer reference image stage runs for 30,000 steps. Your image checkpoint is still useful: it supplies the spatial weights for the video stage below.
 """,
     13: r"""
-## 3 · 🎬 Make it move — train a five-second video generator
+## 3 · 🎬 Make it move — train a 3.2-second video generator
 
-We now build the same DiT with 50 temporal positions and initialise every compatible spatial, text, and output weight from your image model. Temporal positions and temporal attention then learn from video.
+We now build the same DiT with 64 temporal positions and initialise every compatible spatial, text, and output weight from your image model. Temporal positions and temporal attention then learn from video.
 
-Each source clip remains available in full at 120 frames and 20 fps. For this training exercise we take frames `0, 2, 4, …, 98`, producing a five-second, 50-frame window at 10 fps. This is the protocol used by the released prompt-conditioned DiT reference and saves memory without changing playback speed.
+Each source clip remains available in full at 120 frames and 20 fps. For this training exercise we keep the first 64 frames — 3.2 seconds at the native 20 fps. The source motions perform their prompted action early (the generator does not pace an action to the requested duration), so this window concentrates training on the action itself. This is the protocol used by the released prompt-conditioned DiT reference.
 
 > **Prompt conditioning.** Both stages use complete prompts through frozen T5-small token features. The model is prompt-conditioned; the notebook demonstrates sensitivity to prompt changes but does not claim a calibrated semantic adherence score.
 
@@ -136,29 +136,29 @@ Each source clip remains available in full at 120 frames and 20 fps. For this tr
 Unlike the earlier autoregressive lesson, this baseline generates the complete clip jointly. Every temporal-attention layer can coordinate earlier and later frames at a shared patch position.
 """,
     14: r"""
-#@title Train the 50-frame video DiT on top of your image DiT
+#@title Train the 64-frame video DiT on top of your image DiT
 INIT_CKPT = f"{IMAGE_RUN}/ckpt.pt"
 assert os.path.exists(INIT_CKPT), f"Missing {INIT_CKPT}; finish image training first."
 VSTEPS = 2000  #@param {type:"integer"}
 video_started = time.perf_counter()
-!python -m train.video_dit_fm --cache data/cache --out $VIDEO_RUN --arch dit --size $IMAGE_SIZE --frames $VIDEO_FRAMES --stride $FRAME_STRIDE --batch $VIDEO_BATCH --steps $VSTEPS --dim 384 --depth 12 --heads 6 --patch 4 --cond text --cfg_drop 0.1 --fg_weight 2 --img_frac 0.1 --i2v_frac 0.2 --init $INIT_CKPT --grad_ckpt --fast --workers 2 --sample_every $VSTEPS --val_every 500 2>&1 | grep --line-buffered -v Warning | grep --line-buffered "^cached\|^init\|^step\|wrote\|params\|Error\|Traceback"
+!python -m train.video_dit_fm --cache data/cache --out $VIDEO_RUN --arch dit --size $IMAGE_SIZE --frames $VIDEO_FRAMES --stride $FRAME_STRIDE --first_frames 64 --batch $VIDEO_BATCH --steps $VSTEPS --dim 384 --depth 12 --heads 6 --patch 4 --cond text --cfg_drop 0.1 --fg_weight 2 --img_frac 0.1 --i2v_frac 0.2 --init $INIT_CKPT --grad_ckpt --fast --workers 2 --sample_every $VSTEPS --val_every 500 2>&1 | grep --line-buffered -v Warning | grep --line-buffered "^cached\|^init\|^step\|wrote\|params\|Error\|Traceback"
 VIDEO_WALL_SECONDS = time.perf_counter() - video_started
 print(f"video stage wall time: {VIDEO_WALL_SECONDS / 60:.1f} min")
 """,
     15: r"""
-#@title Type a prompt, then watch four five-second samples
+#@title Type a prompt, then watch four 3.2-second samples
 from pathlib import Path
 from IPython.display import Image as IPImage
 PROMPT = "A person runs forward."  #@param {type:"string"}
 PROMPT_DIR = Path(f"out/dit_prompt_{RUN_TAG}")
 PROMPT_DIR.mkdir(parents=True, exist_ok=True)
 (PROMPT_DIR / "prompt.txt").write_text(PROMPT + "\n")
-!python -m eval.post_eval_t2v --ckpt $VIDEO_RUN/ckpt.pt --out $PROMPT_DIR --prompts_file $PROMPT_DIR/prompt.txt --same_prompt "$PROMPT" --n 4 --steps 30 --cfg 3 --batch 1 --seed 1234 --fps 10 --strip_frames 0,16,33,49 --save_rgba 2>&1 | grep -v FutureWarning
+!python -m eval.post_eval_t2v --ckpt $VIDEO_RUN/ckpt.pt --out $PROMPT_DIR --prompts_file $PROMPT_DIR/prompt.txt --same_prompt "$PROMPT" --n 4 --steps 30 --cfg 3 --batch 1 --seed 1234 --fps 20 --strip_frames 0,21,42,63 --save_rgba 2>&1 | grep -v FutureWarning
 MINE_GIF = str(PROMPT_DIR / "fixed_prompt_varied_noise_labeled.gif")
 print(f"yours — prompt: {PROMPT!r}"); display(IPImage(filename=MINE_GIF))
 """,
     16: r"""
-> The image stage teaches the model how a clean figure is assembled. The video stage teaches how those parts change together over a five-second interval. Compare the four samples: changing noise should change the motion while preserving a coherent figure. If they remain rough, the first useful experiment is simply to train longer and compare the fixed-noise strips again.
+> The image stage teaches the model how a clean figure is assembled. The video stage teaches how those parts change together over a 3.2-second window. Compare the four samples: changing noise should change the motion while preserving a coherent figure. If they remain rough, the first useful experiment is simply to train longer and compare the fixed-noise strips again.
 """,
     18: r"""
 #@title Measure visible structure in your image DiT and real validation frames

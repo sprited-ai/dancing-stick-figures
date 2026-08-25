@@ -1,0 +1,144 @@
+group	original_prompt	proposed_command	review_status	review_note
+idle	A person stands still and breathes.	Stand still and breathe.	PENDING	
+idle	A person stands idle, shifting weight from foot to foot.	Shift your weight from foot to foot.	PENDING	
+idle	A person stands with hands on hips.	Stand with your hands on your hips.	PENDING	
+idle	A person stands and looks around.	Look around.	PENDING	
+idle	A person stands and stretches their arms overhead.	Stretch your arms overhead.	PENDING	
+idle	A person stands and scratches their head.	Scratch your head.	PENDING	
+idle	A person stands and crosses their arms.	Cross your arms.	PENDING	
+idle	A person stands and taps their foot.	Tap your foot.	PENDING	
+idle	A person stands and shrugs.	Shrug.	PENDING	
+idle	A person stands and nods.	Nod.	PENDING	
+locomotion	A person walks forward.	Walk forward.	PENDING	
+locomotion	A person walks forward slowly.	Walk forward slowly.	PENDING	
+locomotion	A person walks briskly.	Walk forward briskly.	PENDING	
+locomotion	A person walks in a circle.	Walk in a circle.	PENDING	
+locomotion	A person walks backwards.	Walk backward.	PENDING	
+locomotion	A person walks sideways to the left.	Walk sideways to your left.	PENDING	
+locomotion	A person walks sideways to the right.	Walk sideways to your right.	PENDING	
+locomotion	A person jogs forward.	Jog forward.	PENDING	
+locomotion	A person runs forward.	Run forward.	PENDING	
+locomotion	A person sprints.	Sprint forward.	PENDING	Added direction; confirm intent.
+locomotion	A person tiptoes forward.	Tiptoe forward.	PENDING	
+locomotion	A person marches in place.	March in place.	PENDING	
+locomotion	A person walks with a limp.	Walk forward with a limp.	PENDING	
+locomotion	A person walks like a zombie.	Walk forward like a zombie.	PENDING	
+locomotion	A person walks proudly with a swagger.	Walk forward proudly with a swagger.	PENDING	
+locomotion	A person walks while looking at their phone.	Walk forward while looking at your phone.	PENDING	Invisible prop.
+locomotion	A person walks and turns around.	Walk forward, then turn around.	PENDING	
+locomotion	A person skips forward.	Skip forward.	PENDING	
+locomotion	A person gallops sideways.	Gallop sideways.	PENDING	Direction unspecified.
+locomotion	A person shuffles forward.	Shuffle forward.	PENDING	
+locomotion	A person strolls casually.	Stroll forward casually.	PENDING	
+gesture	A person waves hello with the right hand.	Wave hello with your right hand.	PENDING	
+gesture	A person waves hello with the left hand.	Wave hello with your left hand.	PENDING	
+gesture	A person waves goodbye with both hands.	Wave goodbye with both hands.	PENDING	
+gesture	A person points forward.	Point forward.	PENDING	
+gesture	A person points up at the sky.	Point up at the sky.	PENDING	
+gesture	A person points to the left.	Point to your left.	PENDING	
+gesture	A person claps their hands.	Clap your hands.	PENDING	
+gesture	A person gives a thumbs up.	Give a thumbs-up.	PENDING	
+gesture	A person beckons someone to come closer.	Beckon someone closer.	PENDING	Invisible partner.
+gesture	A person bows politely.	Bow politely.	PENDING	
+gesture	A person bows deeply.	Bow deeply.	PENDING	
+gesture	A person salutes.	Salute.	PENDING	
+gesture	A person shakes their head no.	Shake your head no.	PENDING	
+gesture	A person nods yes.	Nod yes.	PENDING	
+gesture	A person shrugs with palms up.	Shrug with your palms up.	PENDING	
+gesture	A person covers their face with both hands.	Cover your face with both hands.	PENDING	
+gesture	A person puts a hand on their forehead.	Put one hand on your forehead.	PENDING	Side unspecified.
+gesture	A person looks at their wristwatch.	Look at your wristwatch.	PENDING	Invisible prop; wrist side unspecified.
+gesture	A person stretches out both arms wide.	Stretch both arms out wide.	PENDING	
+gesture	A person raises both arms in celebration.	Raise both arms in celebration.	PENDING	
+gesture	A person pumps a fist in the air.	Pump one fist in the air.	PENDING	Side unspecified.
+gesture	A person crosses their arms and taps a foot.	Cross your arms and tap one foot.	PENDING	Foot unspecified.
+gesture	A person scratches their chin thoughtfully.	Scratch your chin thoughtfully.	PENDING	
+gesture	A person cups a hand to their ear to listen.	Cup one hand to your ear and listen.	PENDING	Side unspecified.
+gesture	A person blows a kiss.	Blow a kiss.	PENDING	
+gesture	A person gives a high five.	Give a high five.	PENDING	Invisible partner.
+gesture	A person applauds enthusiastically.	Applaud enthusiastically.	PENDING	
+gesture	A person throws their hands up in frustration.	Throw both hands up in frustration.	PENDING	
+gesture	A person wipes sweat from their brow.	Wipe sweat from your brow.	PENDING	
+gesture	A person yawns and stretches.	Yawn and stretch.	PENDING	
+dance	A person dances energetically, waving arms and stepping side to side.	Dance energetically, waving your arms and stepping side to side.	PENDING	
+dance	A person dances slowly and gracefully.	Dance slowly and gracefully.	PENDING	
+dance	A person does the robot dance.	Do the robot dance.	PENDING	
+dance	A person does the twist.	Do the twist.	PENDING	
+dance	A person does the floss dance.	Do the floss dance.	PENDING	
+dance	A person does the running man dance.	Do the running man dance.	PENDING	
+dance	A person does the disco point dance.	Do the disco point dance.	PENDING	
+dance	A person does the macarena.	Do the Macarena.	PENDING	
+dance	A person does a hip hop dance.	Do a hip-hop dance.	PENDING	Broad motion class.
+dance	A person does a ballet pirouette.	Do a ballet pirouette.	PENDING	
+dance	A person does a ballet plie and rises onto their toes.	Do a ballet plié, then rise onto your toes.	PENDING	
+dance	A person does the chicken dance.	Do the chicken dance.	PENDING	
+dance	A person does the YMCA dance.	Do the YMCA dance.	PENDING	
+dance	A person does a salsa step.	Do a salsa step.	PENDING	
+dance	A person waltzes with an imaginary partner.	Waltz with an imaginary partner.	PENDING	
+dance	A person does the sprinkler dance.	Do the sprinkler dance.	PENDING	
+dance	A person does the shopping cart dance.	Do the shopping cart dance.	PENDING	
+dance	A person headbangs to heavy metal.	Headbang to heavy metal.	PENDING	Audio context is not rendered.
+dance	A person sways to slow music.	Sway slowly to music.	PENDING	Audio context is not rendered.
+dance	A person does the worm.	Do the worm.	PENDING	
+dance	A person does a body wave.	Do a body wave.	PENDING	
+dance	A person does the dougie.	Do the Dougie.	PENDING	
+dance	A person does the charleston.	Do the Charleston.	PENDING	
+dance	A person does a tap dance.	Do a tap dance.	PENDING	
+dance	A person does the cabbage patch dance.	Do the cabbage patch dance.	PENDING	
+dance	A person does the raise the roof dance.	Do the raise-the-roof dance.	PENDING	
+dance	A person dances the cha cha.	Dance the cha-cha.	PENDING	
+dance	A person does the mashed potato dance.	Do the mashed potato dance.	PENDING	
+dance	A person does the swim dance.	Do the swim dance.	PENDING	
+dance	A person does a breakdance freeze.	Hold a breakdance freeze.	PENDING	Changed do to hold; confirm temporal intent.
+dance	A person does the funky chicken.	Do the funky chicken.	PENDING	
+dance	A person dances with arms in the air.	Dance with your arms in the air.	PENDING	
+dance	A person does the two step.	Do the two-step.	PENDING	
+dance	A person does the electric slide.	Do the electric slide.	PENDING	
+sport	A person jumps up and down.	Jump up and down.	PENDING	
+sport	A person jumps up and down with arms raised.	Jump up and down with your arms raised.	PENDING	
+sport	A person does jumping jacks.	Do jumping jacks.	PENDING	
+sport	A person does squats.	Do squats.	PENDING	
+sport	A person does lunges.	Do lunges.	PENDING	Direction and leg unspecified.
+sport	A person does a high kick.	Do a high kick.	PENDING	Leg unspecified.
+sport	A person kicks a ball.	Kick a ball.	PENDING	Invisible prop.
+sport	A person throws a ball overhand.	Throw a ball overhand.	PENDING	Invisible prop; arm unspecified.
+sport	A person throws a ball underhand.	Throw a ball underhand.	PENDING	Invisible prop; arm unspecified.
+sport	A person swings a baseball bat.	Swing a baseball bat.	PENDING	Invisible prop.
+sport	A person swings a golf club.	Swing a golf club.	PENDING	Invisible prop.
+sport	A person swings a tennis racket.	Swing a tennis racket.	PENDING	Invisible prop.
+sport	A person shoots a basketball.	Shoot a basketball.	PENDING	Invisible prop and target.
+sport	A person dribbles a basketball.	Dribble a basketball.	PENDING	Invisible prop.
+sport	A person punches the air like a boxer.	Punch the air like a boxer.	PENDING	
+sport	A person shadow boxes.	Shadowbox.	PENDING	
+sport	A person does a karate chop.	Do a karate chop.	PENDING	Arm unspecified.
+sport	A person does a roundhouse kick.	Do a roundhouse kick.	PENDING	Leg unspecified.
+sport	A person jumps rope.	Jump rope.	PENDING	Invisible prop.
+sport	A person does a standing long jump.	Do a standing long jump.	PENDING	
+sport	A person balances on one leg.	Balance on one leg.	PENDING	Leg unspecified.
+sport	A person does a yoga tree pose.	Hold a yoga tree pose.	PENDING	
+sport	A person does a yoga warrior pose.	Hold a yoga warrior pose.	PENDING	Warrior variant unspecified.
+sport	A person touches their toes.	Touch your toes.	PENDING	
+sport	A person does arm circles.	Do arm circles.	PENDING	Direction unspecified.
+sport	A person does side bends.	Do side bends.	PENDING	
+sport	A person does a burpee.	Do a burpee.	PENDING	
+sport	A person does a push up.	Do a push-up.	PENDING	
+sport	A person does a sit up.	Do a sit-up.	PENDING	
+sport	A person swims freestyle in place.	Swim freestyle in place.	PENDING	No water or forward displacement.
+sport	A person rows a boat.	Row a boat.	PENDING	Invisible prop.
+sport	A person lifts a heavy box.	Lift a heavy box.	PENDING	Invisible prop.
+sport	A person lifts weights overhead.	Lift weights overhead.	PENDING	Invisible props.
+transitions	A person sits down on a chair.	Sit down on a chair.	PENDING	Invisible prop.
+transitions	A person stands up from a chair.	Stand up from a chair.	PENDING	Invisible prop.
+transitions	A person kneels down.	Kneel down.	PENDING	
+transitions	A person stands up from kneeling.	Stand up from a kneeling position.	PENDING	
+transitions	A person lies down on the floor.	Lie down on the floor.	PENDING	
+transitions	A person gets up from the floor.	Get up from the floor.	PENDING	
+transitions	A person picks something up from the floor.	Pick something up from the floor.	PENDING	Invisible prop.
+transitions	A person turns around 180 degrees.	Turn around 180 degrees.	PENDING	
+transitions	A person spins around in place.	Spin around in place.	PENDING	
+transitions	A person stumbles and regains balance.	Stumble, then regain your balance.	PENDING	
+transitions	A person trips and falls forward.	Trip and fall forward.	PENDING	
+transitions	A person ducks under something.	Duck under an obstacle.	PENDING	Invisible obstacle.
+transitions	A person steps over an obstacle.	Step over an obstacle.	PENDING	Invisible obstacle.
+transitions	A person climbs over a low wall.	Climb over a low wall.	PENDING	Invisible obstacle.
+transitions	A person sits down cross-legged.	Sit down cross-legged.	PENDING	

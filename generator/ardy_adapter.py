@@ -30,6 +30,12 @@ def load_root(npz_path: str):
     d = np.load(npz_path, allow_pickle=True)
     P = np.asarray(d["posed_joints"], dtype=np.float64)
     fps = float(d["fps"]) if "fps" in d else 20.0
+    return root_trajectory(P, fps)
+
+
+def root_trajectory(P: np.ndarray, fps: float = 20.0):
+    """Compute the released root position, velocity, and heading directly from posed joints."""
+    P = np.asarray(P, dtype=np.float64)
     R, up = _frame0_basis(P)
     hips = IDX["Hips"]
     pos = (P[:, hips] - P[0, hips]) @ R.T

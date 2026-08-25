@@ -83,22 +83,61 @@ def real_reference(cache, frames, stride, S, n, dev, manifest=None):
 
 
 def evaluate(run, cache, n=128, dev="cuda", seeds=(0, 1, 2), target_frames=50,
-             reference_stride=2, manifest=None, sample_steps=50, batch=8):
+             reference_stride=2, manifest=None, sample_steps=50, batch=8, text_cfg=3.0):
     ck = torch.load(os.path.join(run, "ckpt.pt"), map_location=dev)
     a = ck["args"]; step = ck["step"]
     n_cls = len(ck.get("groups", [])) if a.get("cond") == "group" else 0
-    model_frames, S = a.get("frames", 16), a.get("size", 128)
+    model_frames, model_size = a.get("frames", 16), a.get("size", 128)
     ar_context = a.get("ar_ctx", 0)
-    is_dit = ck.get("arch") == "dit_fm"
+    is_dit = str(ck.get("arch", "")).startswith("dit_fm")
+    is_text = a.get("cond") == "text"
+    latent_meta = codec = None
+    if str(ck.get("arch", "")).endswith("_latent"):
+        latent_meta = json.load(open(os.path.join(a["cache"], "meta.json")))
+        from scripts.encode_latent_cache import load_codec
+        codec, _, _ = load_codec(latent_meta["codec_ckpt"], dev)
+    in_ch = int(latent_meta["channels"]) if latent_meta else 4
+    # References always load at pixel resolution; a latent model generates at
+    # its latent grid and is decoded back to pixels before scoring.
+    S = model_size * int(latent_meta["spatial_compression"]) if latent_meta else model_size
+    text_dim = 0
+    if is_text:
+        from transformers import AutoConfig
+        text_dim = AutoConfig.from_pretrained(a.get("text_encoder", "google-t5/t5-small")).d_model
     if is_dit:
-        model = VideoDiT(size=S, frames=model_frames, patch=a.get("patch", 4), dim=a.get("dim", 384), depth=a.get("depth", 12), heads=a.get("heads", 6), n_classes=n_cls, cond_ch=5 if a.get("i2v_frac", 0) > 0 else 0).to(dev)
+        model = VideoDiT(size=model_size, frames=model_frames, patch=a.get("patch", 4), in_ch=in_ch, dim=a.get("dim", 384), depth=a.get("depth", 12), heads=a.get("heads", 6), n_classes=n_cls, cond_ch=5 if a.get("i2v_frac", 0) > 0 else 0, text_dim=text_dim, local_3d=bool(a.get("local_3d", False)),
+                         full_st=bool(a.get("full_st", False))).to(dev)
     else:
-        model = UNet3D(ch=a.get("ch", 64), n_classes=n_cls, size=S, cond_ch=5 if a.get("ar_ctx", 0) > 0 else 0).to(dev)
+        model = UNet3D(ch=a.get("ch", 64), n_classes=n_cls, size=S,
+                      cond_ch=5 if a.get("ar_ctx", 0) > 0 else 0, text_dim=text_dim,
+                      temporal_neighbors=int(a.get("temporal_neighbors", 0)),
+                      temporal_pos_bias=bool(a.get("temporal_pos_bias", False))).to(dev)
     model.load_state_dict(ck["ema"]); model.eval()
     if is_dit:
         for b in model.blocks: b.t1_skip = bool(a.get("t1_skip", True))
     ac = alphas_cumprod().to(dev)
     ref = real_reference(cache, target_frames, reference_stride, S, n, dev, manifest=manifest)
+    prompt_text = prompt_mask = null_text = null_mask = None
+    prompts = None
+    if is_text:
+        clips = json.load(open(os.path.join(cache, "clips.json")))
+        prompts = [clips[item["clip_id"]]["text"] for item in ref["_manifest"]["reference_a"]]
+        from transformers import AutoTokenizer, T5EncoderModel
+        name = a.get("text_encoder", "google-t5/t5-small")
+        tokenizer = AutoTokenizer.from_pretrained(name)
+        encoder = T5EncoderModel.from_pretrained(name).to(dev).eval().requires_grad_(False)
+        tokens = tokenizer(prompts + [""], padding="max_length", truncation=True,
+                           max_length=a.get("text_len", 32), return_tensors="pt")
+        encoded = []
+        for start in range(0, n + 1, batch):
+            with torch.no_grad():
+                encoded.append(encoder(input_ids=tokens.input_ids[start:start + batch].to(dev),
+                                       attention_mask=tokens.attention_mask[start:start + batch].to(dev)).last_hidden_state.cpu())
+        encoded = torch.cat(encoded).to(dev)
+        prompt_text, prompt_mask = encoded[:-1], tokens.attention_mask[:-1].to(dev)
+        null_text = encoded[-1:].expand(n, -1, -1)
+        null_mask = tokens.attention_mask[-1:].to(dev).expand(n, -1)
+        del encoder
     m = {
         "protocol_version": 2,
         "step": int(step),
@@ -110,6 +149,12 @@ def evaluate(run, cache, n=128, dev="cuda", seeds=(0, 1, 2), target_frames=50,
         "reference": {k: v for k, v in ref.items() if not k.startswith("_")},
         "manifest": ref["_manifest"],
     }
+    if prompts is not None:
+        m.update(conditioning="full_prompt", cfg=float(text_cfg), prompts=prompts)
+    if latent_meta is not None:
+        m.update(latent_codec=latent_meta["codec_ckpt"], latent_codec_sha256=latent_meta.get("codec_ckpt_sha256"),
+                 latent_grid=[model_frames, model_size, model_size, in_ch],
+                 note="generated latents are decoded with the frozen codec before scoring; codec reconstruction cost is included")
     per_seed = []
     seam_frames = ar_seam_frames(ar_context, model_frames, target_frames) if ar_context > 0 else []
     if seam_frames:
@@ -125,30 +170,61 @@ def evaluate(run, cache, n=128, dev="cuda", seeds=(0, 1, 2), target_frames=50,
             B = min(batch, n - i)
             ys = (torch.arange(B, device=dev) % n_cls) if n_cls else None
             with torch.no_grad():
-                if is_dit:
+                if latent_meta is not None:
+                    noise = torch.randn((B, in_ch, model_frames, model_size, model_size), device=dev, generator=g)
+                    z = euler_sample(model, noise.shape, dev, steps=sample_steps, y=ys,
+                                     cfg=text_cfg if is_text else (2.0 if n_cls else 0.0),
+                                     null_y=torch.full((B,), n_cls, device=dev) if n_cls else None,
+                                     noise=noise, shift=a.get("shift", 1.0),
+                                     text=prompt_text[i:i + B] if prompt_text is not None else None,
+                                     text_mask=prompt_mask[i:i + B] if prompt_mask is not None else None,
+                                     null_text=null_text[i:i + B] if null_text is not None else None,
+                                     null_text_mask=null_mask[i:i + B] if null_mask is not None else None)
+                    mean_t = torch.tensor(latent_meta["mean"], device=dev, dtype=z.dtype).view(1, -1, 1, 1, 1)
+                    std_t = torch.tensor(latent_meta["std"], device=dev, dtype=z.dtype).view(1, -1, 1, 1, 1)
+                    pre = codec.decode(z * std_t + mean_t, output_frames=target_frames, output_size=(S, S)).clamp(0, 1)
+                    xs = pre * 2 - 1
+                elif is_dit:
                     chunks = []
                     for _ in range(int(np.ceil(target_frames / model_frames))):
                         noise = mixed_noise((B, 4, model_frames, S, S), dev, a.get("noise_corr", 0.0), g)
                         chunks.append(euler_sample(model, noise.shape, dev, steps=sample_steps, y=ys,
-                                      cfg=2.0 if n_cls else 0.0,
+                                      cfg=text_cfg if is_text else (2.0 if n_cls else 0.0),
                                       null_y=torch.full((B,), n_cls, device=dev) if n_cls else None,
-                                      noise=noise, shift=a.get("shift", 1.0)))
+                                      noise=noise, shift=a.get("shift", 1.0),
+                                      text=prompt_text[i:i + B] if prompt_text is not None else None,
+                                      text_mask=prompt_mask[i:i + B] if prompt_mask is not None else None,
+                                      null_text=null_text[i:i + B] if null_text is not None else None,
+                                      null_text_mask=null_mask[i:i + B] if null_mask is not None else None))
                     xs = torch.cat(chunks, 2)[:, :, :target_frames]
                 elif ar_context > 0:
                     chunks = rollout_chunks(ar_context, model_frames, target_frames)
                     xs = rollout(model, B, ar_context, model_frames, chunks, ac, dev, steps=sample_steps,
-                                 S=S, y=ys, cfg=2.0 if n_cls else 0.0,
+                                 S=S, y=ys,
                                  null_y=torch.full((B,), n_cls, device=dev) if n_cls else None,
-                                 generator=g)[:, :, :target_frames]
+                                 generator=g,
+                                 text=prompt_text[i:i + B] if prompt_text is not None else None,
+                                 text_mask=prompt_mask[i:i + B] if prompt_mask is not None else None,
+                                 null_text=null_text[i:i + B] if null_text is not None else None,
+                                 null_text_mask=null_mask[i:i + B] if null_mask is not None else None,
+                                 cfg=text_cfg if is_text else (2.0 if n_cls else 0.0))[:, :, :target_frames]
                 else:
                     chunks = []
                     for _ in range(int(np.ceil(target_frames / model_frames))):
                         noise = torch.randn((B, 4, model_frames, S, S), device=dev, generator=g)
                         chunks.append(sample(model, noise.shape, ac, dev, steps=sample_steps, y=ys,
-                                      cfg=2.0 if n_cls else 0.0,
-                                      null_y=torch.full((B,), n_cls, device=dev) if n_cls else None, noise=noise))
+                                      cfg=text_cfg if is_text else (2.0 if n_cls else 0.0),
+                                      null_y=torch.full((B,), n_cls, device=dev) if n_cls else None, noise=noise,
+                                      text=prompt_text[i:i + B] if prompt_text is not None else None,
+                                      text_mask=prompt_mask[i:i + B] if prompt_mask is not None else None,
+                                      null_text=null_text[i:i + B] if null_text is not None else None,
+                                      null_text_mask=null_mask[i:i + B] if null_mask is not None else None))
                     xs = torch.cat(chunks, 2)[:, :, :target_frames]
             outs.append(xs.cpu())
+            print(
+                f"eval seed {sd + 1}/{len(seeds)}: generated {min(i + B, n)}/{n} "
+                f"videos ({target_frames} frames)", flush=True,
+            )
         xs = torch.cat(outs, 0)
         rgba, prem = to_uint8_rgba(xs)
         per = [score_video(v) for v in rgba]
@@ -157,7 +233,9 @@ def evaluate(run, cache, n=128, dev="cuda", seeds=(0, 1, 2), target_frames=50,
             seam_rows = [score_seams(v, seam_frames) for v in rgba]
             for key in SEAM_METRICS:
                 r[key] = [row[key] for row in seam_rows]
+        print(f"eval seed {sd + 1}/{len(seeds)}: extracting FVD features", flush=True)
         r["fvd"] = fvd(ref["_real_rgb"], rgba_premult_to_rgb(prem), device=dev)
+        print(f"eval seed {sd + 1}/{len(seeds)}: FVD {r['fvd']:.3f}", flush=True)
         per_seed.append(r)
     for k in FRAME + TEMPORAL + ("fg",):
         allv = [v for r in per_seed for v in r[k]]
@@ -184,6 +262,7 @@ def main():
     ap.add_argument("--stride", type=int, default=2, help="real-reference temporal stride")
     ap.add_argument("--sample_steps", type=int, default=50)
     ap.add_argument("--batch", type=int, default=8)
+    ap.add_argument("--cfg", type=float, default=3.0, help="guidance for full-prompt UNet checkpoints")
     ap.add_argument("--manifest", default="", help="frozen reference manifest; created if absent")
     a = ap.parse_args()
     os.makedirs(os.path.join(a.run, "eval"), exist_ok=True)
@@ -208,7 +287,8 @@ def main():
                 try:
                     manifest = json.load(open(a.manifest)) if a.manifest and os.path.exists(a.manifest) else None
                     m = evaluate(a.run, a.cache, a.n, seeds=tuple(range(a.seeds)), target_frames=a.frames,
-                                 reference_stride=a.stride, manifest=manifest, sample_steps=a.sample_steps, batch=a.batch)
+                                 reference_stride=a.stride, manifest=manifest, sample_steps=a.sample_steps,
+                                 batch=a.batch, text_cfg=a.cfg)
                     if a.manifest and not os.path.exists(a.manifest):
                         save_manifest(m["manifest"], a.manifest)
                     json.dump(m, open(os.path.join(a.run, "eval", f"{m['step']:06d}.json"), "w"), indent=1)

@@ -711,3 +711,28 @@ attributed:
   motion-weighted term is necessary-looking but not sufficient in pixel
   space at this budget); repair-generality stated as partially open.
 - Artifacts: results/p32_motion_h34t16_100k/motion_eval_100k.json (gin).
+
+## v0.2 final contract + reference ladder DECLARED (2026-08-25 12:50, Claudia; decisions Jin)
+
+- Dataset contract: keep full six-second/120-frame clips (measurement over 1,430 ARDY motions
+  refuted the "only first 2 s meaningful" premise: t90 median 4.12 s, only 8% finish 90% of pose
+  motion inside 2 s; 46% still active at 5 s). Seed-disjoint split (0-7/8/9). Visual-QA prompt
+  curation removes 9 of 143 prompts (prompts/v02_excluded.txt, per-prompt reasons): sways-to-slow-music,
+  shakes-head-no, yoga warrior, yoga tree, standing long jump, sit up, push up, climbs-over-low-wall,
+  lies-down-on-floor. Stillness-correct prompts (idle, stands-*, balance) kept. Released corpus:
+  134 prompts / 1,340 motions / 4,020 videos / 482,400 frames (train 385,920, val 48,240, test 48,240).
+- Training view: all stages restricted to the first 64 frames (3.2 s) of each clip (--first_frames 64;
+  action-dense span). Video models jointly generate the complete 64-frame stride-1 native-cadence window.
+- Reference ladder (all on cache/mini_v02, fresh cosine, seed 0, declared before results):
+  L1 image DiT 30k (t2i, T5-small) -> L2 video DiT 64f 10k random-init -> L3 same warm-started from L1
+  (single-variable init contrast; L2/L3 launched in parallel, throughput measured in results/parallel_bench.json)
+  -> L4 3D ResUNet 64f 10k same rectified-flow trainer (--arch resunet; architecture contrast)
+  -> L5 full spatio-temporal attention DiT 64f 10k (--full_st; factorisation contrast, ~4x attention compute,
+  step-matched). L6 latent (Video-VAE) vs pixel comparison: decision pending.
+- Evaluation protocols (declared, frozen): dataset-level corruption+FVD study at 120 f, n=128/half,
+  val+test motions, seed 20260825 (results/v02c_eval/native120_*); model-comparison protocol =
+  64-frame stride-1 windows inside the first 64 frames, same seed/n (results/v02c_eval/win64_*).
+  eval/baselines.py train_replay now inherits the manifest's first_frames restriction.
+- Corruption study results (curated corpus): real-real FVD 80.5; freeze 465.5 / shuffle 419.2 /
+  loop-8 328.5 / reverse 79.3; shuffle accel .348->2.858, jerk .060->.384; reverse paired
+  delta -1.65 +/- 2.69 (9/30 positive). Reversal blind spot replicates.

@@ -1,0 +1,33 @@
+{
+  "protocol": "neighbor_aware_temporal_resunet_gate_v1",
+  "declared_before_training": "2026-08-24",
+  "question": "Does local spatial-neighbour temporal attention plus relative-time bias improve motion and prompt separation over the current factorised ResUNet?",
+  "shared": {
+    "image_warm_start_steps": 30000,
+    "video_updates": 2500,
+    "resolution": 64,
+    "context_frames": 8,
+    "new_frames": 8,
+    "stride": 1,
+    "batch": 8,
+    "seed": 0,
+    "conditioning": "frozen T5-small full prompt, CFG dropout 0.1",
+    "optimizer": "AdamW, lr 1e-4 with existing warmup/cosine schedule",
+    "sampling": "50-step DDIM, CFG 3, fixed noise"
+  },
+  "baseline": {
+    "temporal_neighbors": 0,
+    "temporal_pos_bias": false
+  },
+  "challenger": {
+    "temporal_neighbors": 1,
+    "temporal_pos_bias": true,
+    "key_value_neighborhood": "3x3 within every adjacent-frame feature map"
+  },
+  "promotion_gate": [
+    "continuation validation loss is no worse than 5% above the matched baseline",
+    "fixed-noise prompt changes are larger relative to fixed-prompt noise changes",
+    "walking, running, and sitting samples show more distinguishable motion without worse structural scores",
+    "the reference batch-8 configuration remains within a 24 GB memory budget"
+  ]
+}
