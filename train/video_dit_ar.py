@@ -759,6 +759,10 @@ def main() -> None:
     parser.add_argument("--lr-final", type=float, default=0.1)
     parser.add_argument("--warmup", type=int, default=100)
     parser.add_argument("--fg-weight", type=float, default=2.0)
+    parser.add_argument("--motion-weight-alpha", type=float, default=0.0,
+                        help="per-sample motion weighting of the flow loss, ported from the latent "
+                             "trainer's v6 treatment: weight = (target-segment temporal diff)^alpha, "
+                             "normalized and clamped to [0.25, 4]; 0 disables")
     parser.add_argument("--shift", type=float, default=1.0)
     parser.add_argument("--cfg-drop", type=float, default=0.1)
     parser.add_argument("--text-encoder", default="google-t5/t5-small")
@@ -899,7 +903,20 @@ def main() -> None:
                                history_frames=history)
         target_error = (prediction[:, :, history:].float() - flow_target[:, :, history:]) ** 2
         target_clean = clean[:, :, history:]
-        loss = foreground_weighted_mse(target_error, target_clean, args.fg_weight) / args.accum
+        if args.motion_weight_alpha > 0:
+            # per-sample motion weight (latent trainer v6 port), applied on top of
+            # the same foreground weighting used by the scalar path
+            alpha_map = ((target_clean[:, 3:4].to(target_error.dtype) + 1) / 2).clamp(0, 1)
+            fg_weights = 1 + (args.fg_weight - 1) * alpha_map
+            per_sample = (target_error * fg_weights).mean(dim=(1, 2, 3, 4)) / fg_weights.mean(
+                dim=(1, 2, 3, 4)).clamp_min(1e-8)
+            segment = clean[:, :, max(history - 1, 0):].float()
+            motion = segment.diff(dim=2).abs().mean(dim=(1, 2, 3, 4))
+            motion_weight = (motion + 1e-4) ** args.motion_weight_alpha
+            motion_weight = (motion_weight / motion_weight.mean().clamp_min(1e-8)).clamp(0.25, 4.0)
+            loss = (motion_weight.detach() * per_sample).mean() / args.accum
+        else:
+            loss = foreground_weighted_mse(target_error, target_clean, args.fg_weight) / args.accum
         loss.backward()
         if (step + 1) % args.accum:
             step += 1
