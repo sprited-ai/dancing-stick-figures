@@ -570,3 +570,21 @@ attributed:
 - Operating-point search launched: eval_n64 at 40k/60k/80k milestones (the
   divergence plateau from 40k suggests a mid-schedule sweet spot, mirroring
   v8's 40k-100k band). Seed 1 training continues unchanged.
+
+## Flagship s0 VERDICT under the declared judgment (2026-08-24 ~17:40)
+
+- Four criteria (protocol v10, declared before training): TVR <= v9.0-conv:
+  .1027 PASS (below the real floor .133). On-figure >= .85 sustained: ~.99
+  across prompts PASS (sweep-time .912 -> .99 at 100k). Motion within v8
+  band: FAIL -- centroid speed .212 / motion fraction .302 vs v8 .286/.434
+  (real .314/.371). TF divergence <= .2870 within noise: FAIL (marginal) --
+  .2923, +.0053 outside the +-.005 band.
+- VERDICT: flagship claim does NOT hold as declared (2/4). Reading: the
+  warmup removed the coupling trade at 10k on the structure axis; at 10x
+  budget the trade reappears on the MOTION axis (and a small TF tax), while
+  binding and structure are excellent. The protocol's own inversion warning
+  realized. s1 (seed 1) will confirm or soften; no relitigation.
+- Practical: v9.0 (uncoupled co-generation) remains the best continuation
+  recipe at 100k; v9.3-warmup is the binding recipe. Release framing belongs
+  to Jin.
+- rig-space (--sre) runs launched for s0 10k/40k/100k milestones.
