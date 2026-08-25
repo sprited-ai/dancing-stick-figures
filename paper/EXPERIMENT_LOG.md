@@ -792,3 +792,15 @@ attributed:
 - Reading: at matched params/steps, latent-space training learns shape/motion but fails
   colour-precise structure; colour-keyed oracle metrics (tvr/lie) punish this by design
   (limb identity is the point of the labels). Pixel rows tonight complete the contrast.
+
+## Latent slice-prewarm rung declared (2026-08-26 ~00:40, idea Jin, decision Claudia under B+ rule)
+
+- Fills the standard-recipe factorial cell in latent space: stage 1 trains the latent DiT at
+  T_lat=1 (one latent slice = one 4-pixel-frame block; a "split-second live image", not a still)
+  for 30k steps; stage 2 warm-starts the 16-slice latent video DiT from it, 10k steps, same
+  recipe as t2v16lat_rand10k otherwise. Runs: paper1_v02c_t2i1lat30k_s0 ->
+  paper1_v02c_t2v16lat_warm10k_s0. Hypothesis: the colour-coding collapse of the random-init
+  latent runs is the part a dedicated slice pretrain solves (mirrors why VAE -> latent-image ->
+  latent-video is the standard order). Kill option: defer to v2 if results are ambiguous.
+- Cost: latent steps ~0.17 s/it (slices cheaper); both stages ≈ 1 GPU-hour, no threat to the
+  pixel queue.
