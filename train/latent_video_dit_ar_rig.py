@@ -527,7 +527,8 @@ def main():
     ).to(args.device)
     if args.init_checkpoint:
         init_data = torch.load(args.init_checkpoint, map_location=args.device, weights_only=False)
-        model.load_state_dict(init_data["model"])
+        init_weights = init_data.get("model") or init_data["ema"]
+        model.load_state_dict(init_weights)
         print(f"post-training init from {args.init_checkpoint} (step {init_data.get('step')})", flush=True)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
     if args.init_checkpoint and "ema" in init_data:
