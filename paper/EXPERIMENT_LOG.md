@@ -814,3 +814,20 @@ attributed:
   auto-evaluated on win64. Pixel-scale attention runs (full-ST paused at 350 steps,
   local3d killed) deferred to arXiv v2.
 - Freed GPU goes to L2/L3/seed-1, protecting the morning ship window.
+
+## OURS BEST curriculum result (2026-08-26 ~03:00, recipe Jin)
+
+- Recipe: frozen f8t4d16 codec; latent DiT staged length curriculum T_lat 1 (15k, batch 64)
+  -> 4 (10k) -> 16 (10k), each warm-started from the previous stage; fg_weight 8 throughout.
+  Runs: best_stageA_t1lat15k_fg8_s0 -> best_stageB_t4lat10k_fg8_s0 -> best_stageC_t16lat10k_fg8_s0.
+  Total wall-clock ~40 min with exclusive GPU (side chains killed per Jin: fg2-prewarm chain,
+  fg8 rand probe, latent local3d all terminated mid-flight; pixel runs SIGSTOPped during the
+  exclusive window, resumed after).
+- win64 result vs latent rand baseline (fg2, no curriculum): FVD 410.4 +/- 4.8 (was 503.3),
+  tvr .797 (was .816), jerk .233 (was .276), ang_path_total 44.5 (was 52.0; real 37.5).
+  Every metric improves; visual strip (results/ours_best_visual.png) shows limb colours largely
+  recovered. Structural gap to codec floor (124.4) remains -- colour-precise topology still
+  unsolved at this budget.
+- Confound note: curriculum AND fg_weight changed together (Jin's call: best-first, variations
+  backfilled later). Attribution split deferred.
+- Extension launched: best_stageC_t16lat50k_fg8_s0 (same warm source, 50k steps) + auto eval.
