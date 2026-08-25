@@ -181,9 +181,11 @@ bone-length drift — while the model's self-reported rig converges to near-inst
 pixels. Continuation improves in the space the auxiliary channel describes \emph{and} in the pixel space it was
 meant to help.
 
-\todoblock{Pending for this section: seed replication at 100k (the flagship pair, in flight);
-rig-quality-versus-pixel-gain analysis (do clips whose rig the model predicts well diverge less?);
-per-block-position curves as a figure.}
+The 100k comparison replicates across seeds: an independent seed-1 run of the rig-co-generating recipe reaches
+teacher-forced divergence .292 and free-running .439 (seed 0: .287/.440), both still decisively ahead of the
+pixel-only model's .314/.458 — the advantage is not seed luck.
+\todoblock{Pending: rig-quality-versus-pixel-gain analysis (do clips whose rig the model predicts well diverge
+less?); per-block-position curves as a figure.}
 
 \section{How tightly should the rig couple to the pixels?}
 Co-generation couples rig and pixels only through shared attention. A differentiable soft-capsule renderer can couple
@@ -478,7 +480,19 @@ diagnostics with no human evaluation, and the residual-failure taxonomy document
 more training makes the model listen to the prompt more without understanding it better.
 
 \section{Conclusion}
-\todoblock{Write last.}
+A block-autoregressive video diffusion model is a next-block prediction machine, and this paper evaluated and
+improved it as one. Measured by divergence from the data's actual continuation, making the model co-generate an
+explicit rig improves pixel prediction at matched parameters, data, and budget, across two training budgets and two
+seeds, in pixel space and — via a validated rig regressor — in rig space; the same discipline shows that longer
+training helps only the model whose structure channel keeps it honest. Around this headline sit three bounded
+studies: a training pathology of the factorization (the static-copy shortcut) that reproduces without any learned
+codec, is caused by gradient allocation rather than history misunderstanding, and is repaired by reallocating signal
+toward moving foreground; a coupling-strength study showing that an explicit render coupling is a monotone trade at
+constant weight and a free win under a short warmup; and an evaluation stack — next-block divergence plus a
+rig-space regressor — that scores rig-free and rig-generating models in the same spaces. The domain is one traced
+testbed and the scale is 40M parameters; what we offer at that scale is causal attribution with pre-declared
+protocols, and a practical recommendation for anyone training motion-centric block-autoregressive video: give the
+model a structure channel, couple it gently and late if at all, and judge it by its next block.
 
 \paragraph{AI assistance disclosure.} Pixel (\href{https://sprited.ai}{@pix-el}) and Claudia assisted; the author
 reviewed the work and is responsible for its claims.
