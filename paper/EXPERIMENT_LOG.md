@@ -552,3 +552,21 @@ attributed:
   No relitigation: the declared rule decides; interpretation goes to the
   coupling section either way.
 - Artifacts mirrored: paper/results/m6v9p3_flagship_warmup_100k_s0_*.json.
+
+## Flagship v9.3-warmup 100k seed 0 -- completed (2026-08-24), mixed verdict
+
+- Winner recipe (render+consistency 2.0, 5k coupling warmup) at 100k, seed 0,
+  per `configs/m6_protocol_v9p3_flagship_warmup_100k_s0.json`.
+- Against the pre-declared criteria: TVR .103 / LIE .024 (PASS, best
+  structure of any run to date, below the v9.0conv .126); on-figure .994
+  (PASS -- the co-generated rig is effectively glued to the pixels);
+  centroid speed .212 / motion fraction .302 (FAIL -- below the v8
+  operating band ~.28+, 68% of real .314); TF divergence 10k .3031 -> 40k
+  .2936 -> 100k .2923 (marginal vs the v9.0 .2870 target), FR .4674 (worse
+  than v9.0's .4399).
+- Reading: at 10x the sweep budget the coupling taxes MOTION rather than
+  frame structure -- a milder relative of the v8 300k over-training
+  re-freeze. Structure/binding triumph, motion damping at the endpoint.
+- Operating-point search launched: eval_n64 at 40k/60k/80k milestones (the
+  divergence plateau from 40k suggests a mid-schedule sweet spot, mirroring
+  v8's 40k-100k band). Seed 1 training continues unchanged.
