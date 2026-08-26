@@ -247,6 +247,7 @@ def main():
                             "bg_col": float(t_bgcol.mean()),
                             "alpha_pred_bg": float((a_hat * bg).sum() / bg.sum().clamp_min(1))}
                 dloss = a.decode_loss * ((1 - t) * per).mean() / a.accum
+                fm_loss = float(loss)
                 loss = loss + dloss
             loss.backward()
         step += 1
@@ -266,6 +267,7 @@ def main():
             print(msg, flush=True); log.write(msg + "\n"); log.flush()
             tb.add_scalar("loss/train", loss.item() * a.accum, step)
             if a.decode_loss > 0 and codec is not None:
+                tb.add_scalar("loss/fm", fm_loss * a.accum, step)
                 tb.add_scalar("loss/decode_disagree", float(dloss) * a.accum, step)
                 for k, v in dec_diag.items(): tb.add_scalar(f"decode/{k}", v, step)
             if vl is not None:
