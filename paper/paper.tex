@@ -69,11 +69,13 @@ model and run it again; and
 controlled tests of what those measurements miss.
 \end{enumerate}
 
-Stated as a research question: \emph{can a deliberately narrow, fully controlled synthetic domain support a
-benchmark in which visible structural failures of video generation are measured directly, canonical design
-choices are resolved under matched single-GPU budgets, and an observed failure is attributed to a specific
-component of the generation stack?} The dataset, evaluation suite, and reference ladder below are our answer,
-and the controlled-corruption study reports where the answer's instruments themselves fail.
+Stated as a research question: \emph{can people train small video generation models from scratch on a cheap but
+meaningful dataset, and iteratively study the behaviour of those models?} For the study to be iterative rather
+than anecdotal, the domain must make three things possible under a single-GPU budget: visible structural
+failures must be measured directly, canonical design choices must resolve under matched budgets, and an
+observed failure must be attributable to a specific component of the generation stack. The dataset, evaluation
+suite, and reference ladder below are our answer, and the controlled-corruption study reports where the
+answer's instruments themselves fail.
 
 Pretrained generators and adapter methods are productive tools, but they begin after central choices about data,
 representation, and architecture have been made. A complementary teaching system should expose the experiment cycle
@@ -374,7 +376,7 @@ Image DiT, 30k & factorised & random & .128 & .050 & .030 & --- & --- & --- & --
 Real reference windows & --- & --- & .116 & .093 & .037 & .373 & .501 & .073 & 115.2 / ref. \\
 Codec reconstruction floor & --- & --- & .137 & .104 & .037 & .380 & .503 & .104 & 124.4 \\
 Video DiT, 10k & factorised & random & --- & --- & --- & --- & --- & --- & --- \\
-Video DiT, 10k & factorised & image & --- & --- & --- & --- & --- & --- & --- \\
+Video DiT, 10k & factorised & image & .169 & .045 & .034 & .850 & .719 & .324 & 545.0 \\
 Video DiT, 10k & factorised + local mixer & image & --- & --- & --- & --- & --- & --- & --- \\
 Video DiT, 10k & joint spatio-temporal & image & --- & --- & --- & --- & --- & --- & --- \\
 Latent video DiT, 10k & factorised & random & .816 & .398 & .084 & .571 & .647 & .276 & 503.3 \\
