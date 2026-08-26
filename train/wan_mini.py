@@ -79,6 +79,8 @@ def main():
     ap.add_argument("--val_every", type=int, default=500)
     ap.add_argument("--channels", type=int, default=4,
                     help="model channels: 4 for pixel RGBA, latent_channels for a latent cache")
+    ap.add_argument("--compile", action="store_true")
+    ap.add_argument("--resume", default="", help="ckpt.pt with model+ema+step to continue from")
     a = ap.parse_args()
     dev = "cuda"
     torch.manual_seed(a.seed)
@@ -108,6 +110,14 @@ def main():
     model.enable_gradient_checkpointing()
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
     ema = copy.deepcopy(model).eval().requires_grad_(False)
+    start_step = 0
+    if a.resume:
+        ck = torch.load(a.resume, map_location=dev, weights_only=False)
+        model.load_state_dict(ck["model"]); ema.load_state_dict(ck["ema"])
+        start_step = int(ck["step"])
+        print(f"resumed from {a.resume} at step {start_step}", flush=True)
+    if a.compile:
+        model = torch.compile(model)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, fused=True)
     os.makedirs(a.out, exist_ok=True)
     arch = "wan_mini_lat" if latent_mode else "wan_mini_pix"
@@ -138,7 +148,7 @@ def main():
                 tot += F.mse_loss(pred.float(), eps - x).item(); n += 1
         return tot / max(n, 1)
 
-    step, t0 = 0, time.time()
+    step, t0 = start_step, time.time()
     it = iter(dl)
     while step < a.steps:
         opt.zero_grad(set_to_none=True)
@@ -190,7 +200,7 @@ def main():
         if step % 5000 == 0 or step == a.steps:
             torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), arch=arch),
                        os.path.join(a.out, f"ckpt_{step:06d}.pt"))
-            torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), step=step,
+            torch.save(dict(model=getattr(model, '_orig_mod', model).state_dict(), ema=ema.state_dict(), step=step,
                             args=vars(a), arch=arch), os.path.join(a.out, "ckpt.pt"))
     print("training done", flush=True)
 
