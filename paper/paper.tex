@@ -313,7 +313,7 @@ Neither measurement alone certifies directionally correct motion.
 \paragraph{Released reference models.} The reference experiments form a ladder in which one training variable changes
 per rung. The shared backbone is a 39.9M-parameter factorised video DiT: $4\times4$ frame patches, alternating
 spatial-attention blocks (within one frame) and temporal-attention blocks (across frames at one patch position),
-rectified-flow velocity prediction~\cite{peebles2023dit,lipman2023flow}, and a frozen T5-small encoder supplying
+flow-matching velocity prediction (linear interpolant; often called rectified flow, though we apply no reflow step)~\cite{peebles2023dit,lipman2023flow}, and a frozen T5-small encoder supplying
 complete prompt tokens through cross-attention. With $T{=}1$ the same network is an image generator; with $T{=}64$
 it jointly generates the complete two-second-scale training window rather than rolling short chunks forward.
 
@@ -345,7 +345,7 @@ under the superseded split and are not comparable rows. Figure~\ref{fig:dit-samp
 \begin{table*}[t]
 \centering
 \caption{Reference ladder on the released seed-disjoint data. Every model trains on the same $64^2$ cache and
-first-64-frame view with the same rectified-flow trainer, optimiser, and step budget; one variable changes per rung.
+first-64-frame view with the same flow-matching trainer, optimiser, and step budget; one variable changes per rung.
 Rows are comparable only within a protocol block. ``Image'' initialisation copies compatible spatial and text weights
 from the single-frame checkpoint above it.}
 \label{tab:backbone-results}
