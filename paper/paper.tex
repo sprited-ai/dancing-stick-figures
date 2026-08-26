@@ -69,6 +69,12 @@ model and run it again; and
 controlled tests of what those measurements miss.
 \end{enumerate}
 
+Stated as a research question: \emph{can a deliberately narrow, fully controlled synthetic domain support a
+benchmark in which visible structural failures of video generation are measured directly, canonical design
+choices are resolved under matched single-GPU budgets, and an observed failure is attributed to a specific
+component of the generation stack?} The dataset, evaluation suite, and reference ladder below are our answer,
+and the controlled-corruption study reports where the answer's instruments themselves fail.
+
 Pretrained generators and adapter methods are productive tools, but they begin after central choices about data,
 representation, and architecture have been made. A complementary teaching system should expose the experiment cycle
 itself: change one thing, train on a single conventional GPU, inspect the samples, measure the change, and explain the
@@ -477,6 +483,12 @@ measurements must be read together: a score that detects jitter may miss reverse
 does not explain which visible property failed. The dataset rebuild and full-length 120-frame protocol keep data changes,
 model outputs, and diagnostic measurements within one inspectable experiment. The result is a starting point for
 learning and diagnosable experimentation within this narrow synthetic domain.
+
+\paragraph{Use of AI systems.} The source motions were generated with ARDY's 20-fps Core model as described in
+\S\ref{sec:results}; rendering, curation, and verification are deterministic code. An AI coding assistant
+(Claude) was used throughout for experiment orchestration, evaluation tooling, and manuscript editing under
+author direction; all design decisions, numerical results, and claims were produced by the released code and
+reviewed by the authors.
 
 \balance
 \begin{thebibliography}{99}\footnotesize
