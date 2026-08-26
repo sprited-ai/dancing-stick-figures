@@ -166,7 +166,9 @@ def main():
         tb.add_video("inference/val_prompts", rgb.permute(0, 2, 1, 3, 4).cpu(), step, fps=20)
 
     def vloss():
-        ema.eval(); tot = 0; n = 0
+        # returns (mean, t<0.2 bucket, t>0.8 bucket) so TB can show where the
+        # model improves: near-data (detail) vs near-noise (layout)
+        ema.eval(); sums = [0.0, 0.0, 0.0]; cnts = [0, 0, 0]
         with torch.no_grad():
             for i, (x, labels) in enumerate(vdl):
                 if i >= 8: break
@@ -179,8 +181,10 @@ def main():
                 with torch.autocast("cuda", dtype=torch.bfloat16):
                     pred = ema(hidden_states=(1 - tt) * x + tt * eps, timestep=t * 1000,
                                encoder_hidden_states=txt, return_dict=False)[0]
-                tot += F.mse_loss(pred.float(), eps - x).item(); n += 1
-        return tot / max(n, 1)
+                per = ((pred.float() - (eps - x)) ** 2).flatten(1).mean(1)
+                for k, m in enumerate([torch.ones_like(t, dtype=torch.bool), t < 0.2, t > 0.8]):
+                    if m.any(): sums[k] += float(per[m].sum()); cnts[k] += int(m.sum())
+        return tuple(sums[k] / max(cnts[k], 1) for k in range(3))
 
     step, t0 = start_step, time.time()
     it = iter(dl)
@@ -255,13 +259,16 @@ def main():
             vl = vloss() if step % a.val_every == 0 else None
             msg = (f"step {step} loss {loss.item() * a.accum:.4f} lr {lr:.2e} {spi:.2f}s/it "
                    f"peak {torch.cuda.max_memory_allocated()/1e9:.1f}GB "
-                   f"ETA {(a.steps - step) * spi / 3600:.1f}h" + (f" val {vl:.4f}" if vl is not None else ""))
+                   f"ETA {(a.steps - step) * spi / 3600:.1f}h" + (f" val {vl[0]:.4f}" if vl is not None else ""))
             print(msg, flush=True); log.write(msg + "\n"); log.flush()
             tb.add_scalar("loss/train", loss.item() * a.accum, step)
             if a.decode_loss > 0 and codec is not None:
                 tb.add_scalar("loss/decode_disagree", float(dloss) * a.accum, step)
                 for k, v in dec_diag.items(): tb.add_scalar(f"decode/{k}", v, step)
-            if vl is not None: tb.add_scalar("loss/val", vl, step)
+            if vl is not None:
+                tb.add_scalar("loss/val", vl[0], step)
+                tb.add_scalar("loss/val_t_low_detail", vl[1], step)
+                tb.add_scalar("loss/val_t_high_layout", vl[2], step)
         if a.video_every > 0 and step % a.video_every == 0:
             tb_video(step)
         if step % 5000 == 0 or step == a.steps:
