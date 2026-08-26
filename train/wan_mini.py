@@ -271,11 +271,14 @@ def main():
                 tb.add_scalar("loss/val_t_high_layout", vl[2], step)
         if a.video_every > 0 and step % a.video_every == 0:
             tb_video(step)
-        if step % 5000 == 0 or step == a.steps:
-            torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), arch=arch),
-                       os.path.join(a.out, f"ckpt_{step:06d}.pt"))
+        if step % 1000 == 0 or step == a.steps:
+            # rolling resume point every 1k; heavier milestone files every 5k
             torch.save(dict(model=getattr(model, '_orig_mod', model).state_dict(), ema=ema.state_dict(), step=step,
-                            args=vars(a), arch=arch), os.path.join(a.out, "ckpt.pt"))
+                            args=vars(a), arch=arch), os.path.join(a.out, "ckpt.tmp"))
+            os.replace(os.path.join(a.out, "ckpt.tmp"), os.path.join(a.out, "ckpt.pt"))
+            if step % 5000 == 0 or step == a.steps:
+                torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), arch=arch),
+                           os.path.join(a.out, f"ckpt_{step:06d}.pt"))
     print("training done", flush=True)
 
 
