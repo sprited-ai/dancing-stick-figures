@@ -231,9 +231,14 @@ def main():
                 # colour inside transparency only counts at 0.1
                 w10 = 1 + 9 * (a_gt + mismatch).clamp(0, 1)
                 rgb_err = (dec_gt[:, :3] - dec_hat[:, :3]) ** 2
-                per = ((w10 * mismatch).mean((1, 2, 3, 4)) / w10.mean((1, 2, 3, 4))
-                       + (w10 * a_gt * a_hat * rgb_err).mean((1, 2, 3, 4)) / w10.mean((1, 2, 3, 4))
-                       + 0.1 * ((1 - a_gt) * rgb_err).mean((1, 2, 3, 4)))
+                t_alpha = (w10 * mismatch).mean((1, 2, 3, 4)) / w10.mean((1, 2, 3, 4))
+                t_fgcol = (w10 * a_gt * a_hat * rgb_err).mean((1, 2, 3, 4)) / w10.mean((1, 2, 3, 4))
+                t_bgcol = 0.1 * ((1 - a_gt) * rgb_err).mean((1, 2, 3, 4))
+                per = t_alpha + t_fgcol + t_bgcol
+                bg = (a_gt < 0.05).float()
+                dec_diag = {"alpha": float(t_alpha.mean()), "fg_col": float(t_fgcol.mean()),
+                            "bg_col": float(t_bgcol.mean()),
+                            "alpha_pred_bg": float((a_hat * bg).sum() / bg.sum().clamp_min(1))}
                 dloss = a.decode_loss * ((1 - t) * per).mean() / a.accum
                 loss = loss + dloss
             loss.backward()
@@ -253,7 +258,9 @@ def main():
                    f"ETA {(a.steps - step) * spi / 3600:.1f}h" + (f" val {vl:.4f}" if vl is not None else ""))
             print(msg, flush=True); log.write(msg + "\n"); log.flush()
             tb.add_scalar("loss/train", loss.item() * a.accum, step)
-            if a.decode_loss > 0 and codec is not None: tb.add_scalar("loss/decode_disagree", float(dloss) * a.accum, step)
+            if a.decode_loss > 0 and codec is not None:
+                tb.add_scalar("loss/decode_disagree", float(dloss) * a.accum, step)
+                for k, v in dec_diag.items(): tb.add_scalar(f"decode/{k}", v, step)
             if vl is not None: tb.add_scalar("loss/val", vl, step)
         if a.video_every > 0 and step % a.video_every == 0:
             tb_video(step)
