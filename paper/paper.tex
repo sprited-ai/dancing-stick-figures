@@ -450,6 +450,16 @@ The earlier UNet lesson completed both training stages and rollout on a hosted T
 the same cache, data volumes, and a smaller training tensor (40-frame windows), and its hardware measurements are
 reported for the hardware on which they were actually recorded rather than transferred between GPUs.
 
+Because the research question is about who can run the experiment, resource footprints are results, not
+appendix details. On the single workstation GPU used for the reference ladder (NVIDIA RTX PRO 6000 Blackwell,
+96\,GB), the 30k-step image stage runs at 0.10\,s/step with a 10.5\,GB peak; each 10k-step 64-frame factorised
+video run peaks at 8.6\,GB and completed at 3.4\,s/step measured with two runs sharing the GPU; the local-mixer
+and joint-attention variants peak at 9.1\,GB and 8.2\,GB respectively. Every ladder run therefore fits a 12\,GB
+consumer GPU with gradient checkpointing enabled, and none of the reported rows requires more than a day of
+wall-clock for its step budget on this hardware. The numbers are deliberately imperfect---they were recorded
+under the schedules we actually ran, and step times transfer across GPUs only approximately---but they bound
+the cost of repeating any single rung.
+
 Our code is MIT and the released dataset is CC0-1.0. The motions were generated with ARDY's 20-fps Core model; the
 generation record did not retain the checkpoint revision. ARDY's source code is Apache-2.0, while its released
 checkpoints are distributed under the
