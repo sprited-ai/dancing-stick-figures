@@ -871,3 +871,28 @@ attributed:
 - mini-Wan v1: verbatim Wan 2.1 blocks (diffusers), 13M (dim 256/12L/8H), patch (1,2,2), 1024 tokens, flow matching, fg2, 10k steps (torch.compile 0.10s/it solo). win64: FVD 344.2, TVR .484, ang_path 47.8. Beats dead f8 track (503/.797) decisively; behind pixel prior-gen (198.8). Codec floor 130.6 leaves ~214 to the 13M generator.
 - Terminology: paper now says "flow matching (no reflow)"; rectified-flow kept as alias. wan_mini gained --channels/--compile/--resume/--video_every (TB inference videos).
 - Next: 40M mini-Wan (dim 384/16L) 30k with TB videos running overnight; pixel L2/L3 resumed toward 10k -> auto evals.
+
+## 2026-08-26 — 40M curves, decode-disagreement verdict, forensics, ST axis to pixel (overnight + day)
+
+- 40M baseline (dim 384/16L/6H, f4t4d8 latents, fg2): fast protocol (n=64, seed 0, real-real 189.7)
+  FVD 390.5/324.7/307.9/289.6/279.4/267.2 at 5-30k; TVR .455->.210. Trained 0.14s/it solo (torch.compile).
+- Decode-disagreement run (same 40M + decode_loss 1.0): Jin's design — x0-hat = x_t - t*v-hat decoded through the
+  frozen codec vs decode(GT latent); alpha-mismatch (both directions) + fg-agreed colour + 0.1 bg colour,
+  10x weight on (alpha_gt + mismatch), /mean(w) normalised, (1-t)-gated. bf16 decode fix took 0.56 -> 0.38s/it.
+  FVD 394.9/340.8/304.2/268.3/258.0/266.1 at 5-30k; TVR .453 -> .157.
+- Same-step verdict: early (<=10k) baseline marginally ahead; 20-25k dec clearly ahead (268 vs 290, 258 vs 279);
+  30k FVD converges (266 vs 267) but dec TVR .157 vs baseline .210 (real .118) — decode loss buys topology,
+  costs nothing in FVD. loss/fm trajectory unharmed; decode/alpha 0.142->0.020, alpha_pred_bg 0.004->0.0009.
+  Motion slightly damped vs baseline (GIF mean|dframe| 1.36 vs 1.56) — reads as normalisation of 13M's
+  over-motion (TVR .64) rather than freezing.
+- Failure forensics (Jin's lens-distortion hypothesis): (1) isotropic-noise alpha-flicker test — eps 0.3 gives
+  zero frame dropouts, jump rates equal to clean: decoder temporally stable off-manifold. (2) Generated-sample
+  forensics: head dropouts in 2/8 clips, but latent |z| at dropout frames is statistically normal (0.66-0.73 vs
+  0.71 mean) — generator writes well-formed latents with wrong content; decoder renders them faithfully.
+  Three-way attribution: decoder exonerated twice, generator semantic error confirmed.
+- Jin's calls: stop solving, close paper1 as-is; ST-mixing axis moved to PIXEL space (local3d + fullst
+  warm-started to 10k, day queue); one job per GPU (SIGSTOP queueing); loop stack re-engineered
+  (gin-side nohup queue scripts + Monitor tail-f events + wakeup heartbeat) after the 4.4h idle incident.
+- Paper edits landed: single-frame rows (real .115/.093/.039; image DiT .128/.050/.030), latent rows
+  (L6 503.3, L6-ST 527.2), codec-audit caveat (63%/33x vs ~10%/3-5x), pixel-ST prose. Remaining: 4 pixel video
+  rows + ladder paragraph once day-queue evals land.
