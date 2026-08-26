@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import random
 import time
@@ -57,15 +58,26 @@ def augment_batch(video: torch.Tensor) -> torch.Tensor:
     """Translation-led augmentation on premultiplied RGBA [B,4,T,H,W] in [0,1].
 
     Every sample gets an integer spatial shift (transparent zero padding);
-    half get mild scale jitter; a third get temporal reversal. Horizontal
-    flips and any colour jitter are deliberately excluded because limb
-    colours are part-identity labels.
+    half get mild scale jitter, half a horizontal flip, a third rotation
+    (+/-15 deg) and a third temporal reversal. Flips/rotations are safe for a
+    CODEC (it reconstructs pixels, not part semantics) and teach the decoder
+    not to memorise colour-position priors -- directly targeting the
+    off-manifold decode cliff. Colour jitter stays excluded (colour purity is
+    an eval axis).
     """
     import torch.nn.functional as F
     B, C, T, H, W = video.shape
     out = []
     for b in range(B):
         v = video[b]
+        if random.random() < 0.5:
+            v = torch.flip(v, dims=(3,))                     # horizontal flip
+        if random.random() < 0.33:
+            a = math.radians(random.uniform(-15, 15))
+            m = torch.tensor([[math.cos(a), -math.sin(a), 0.0],
+                              [math.sin(a), math.cos(a), 0.0]], device=v.device)
+            grid = F.affine_grid(m[None].expand(v.shape[1], -1, -1), (v.shape[1], C, H, W), align_corners=False)
+            v = F.grid_sample(v.permute(1, 0, 2, 3), grid, align_corners=False, padding_mode="zeros").permute(1, 0, 2, 3)
         dy, dx = random.randint(-10, 10), random.randint(-10, 10)
         v = torch.roll(v, shifts=(dy, dx), dims=(2, 3))
         if dy > 0: v[:, :, :dy].zero_()

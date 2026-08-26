@@ -850,3 +850,15 @@ attributed:
 - Also implemented today, parked: VideoDiT --patch_t (learned f-t patchify), --conv_stem
   (end-to-end f8t4 conv stem/head, VAE-free contextual mixing), train/wan_mini.py
   (Wan 2.1 blocks in our loop). torch.compile smoke passed on sm_120.
+
+## Latent smuggling confirmed (2026-08-26 night, hypothesis Jin)
+
+- Test: encode real val clips with frozen f8t4d16, replace background-footprint latent
+  cells with the channel mean (fair prior), decode, measure FOREGROUND pixel MSE.
+  Result: 19.4e-4 (intact) -> 631.5e-4 (33x) with bg cells neutralised; bg latent std
+  0.42 (not empty). The codec stores foreground information in "empty" background cells.
+- Implications: (1) fg-footprint loss weighting in latent DiT training under-trains
+  exactly the smuggling cells -- likely co-culprit in the colour collapse and why fg8
+  did not fix it; (2) f2t4d4 (gentler 16x compression) should smuggle less -- rerun this
+  test on it after training; (3) codec-side mitigations: stronger KL, bg-cell dropout,
+  and the new flip/rotation augmentation all tax smuggling.
