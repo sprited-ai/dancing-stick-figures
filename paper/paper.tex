@@ -69,13 +69,11 @@ model and run it again; and
 controlled tests of what those measurements miss.
 \end{enumerate}
 
-Stated as a research question: \emph{can people train small video generation models from scratch on a cheap but
-meaningful dataset, and iteratively study the behaviour of those models?} For the study to be iterative rather
-than anecdotal, the domain must make three things possible under a single-GPU budget: visible structural
-failures must be measured directly, canonical design choices must resolve under matched budgets, and an
-observed failure must be attributable to a specific component of the generation stack. The dataset, evaluation
-suite, and reference ladder below are our answer, and the controlled-corruption study reports where the
-answer's instruments themselves fail.
+The underlying question is practical: can someone with a single GPU train video generation models from
+scratch on a small synthetic dataset and study their behaviour through repeated, controlled experiments?
+This requires that structural failures be measurable directly, that design contrasts resolve within small
+step budgets, and that a failure be traceable to the component that caused it. The corruption study in
+\S\ref{sec:results} also measures what the diagnostics themselves miss.
 
 Pretrained generators and adapter methods are productive tools, but they begin after central choices about data,
 representation, and architecture have been made. A complementary teaching system should expose the experiment cycle
@@ -397,17 +395,14 @@ A training-seed repeat of the warm-started video row scores TVR .183 / FVD 570.7
 % training-seed variance note under the table. Single-frame + latent rows filled above.
 \end{table*}
 
-\paragraph{Reading the ladder.} The initialisation rung resolves decisively at this budget: from random
-initialisation the 10k-step video model violates topology in $94\%$ of frames (TVR .942, FVD 1641), while the
-same model warm-started from the image checkpoint reaches TVR .169 against the real rows' .116, an order of
-magnitude fewer violations for identical video-stage compute. A seed repeat of the warm-started run lands at
-TVR .183 and FVD 570.7 versus 545.0, so the reported contrasts are large against training-seed variance. The
-table's second lesson is that the two measurement families disagree informatively rather than redundantly: the
-warm-started pixel model has near-real structure but overshoots motion (centroid speed .850 versus the real
-.373), which FVD punishes heavily; the latent rows show the reverse signature---FVD in the low 500s but TVR
-above .8, structurally broken figures rendered smoothly through the codec. A reader ranking these models by
-either number alone would reach opposite conclusions, which is precisely the failure-disentangling behaviour
-the benchmark is designed to expose.
+\paragraph{Reading the ladder.} Initialisation dominates at this budget. From random initialisation the
+10k-step video model violates topology in $94\%$ of frames (TVR .942, FVD 1641); warm-started from the image
+checkpoint, the same model reaches TVR .169 against .116 for the real rows. A training-seed repeat of the
+warm-started run scores TVR .183 and FVD 570.7 versus .169 and 545.0, small against the contrasts above. The
+two measurement families also disagree in opposite directions. The warm-started pixel model has near-real
+structure but too much motion (centroid speed .850 versus .373 real), which FVD penalises heavily. The latent
+rows show the opposite: FVD near 500 with TVR above .8, structurally broken figures rendered smoothly by the
+codec. Ranking by TVR alone and by FVD alone gives opposite orderings; neither is sufficient on its own.
 % REMAINING: extend with the local-mixer and joint-attention pixel rows when their 10k evals land (day queue).
 Changing the prompt under fixed noise has a measurable effect, and the controlled
 left-versus-right wave examples in Figure~\ref{fig:dit-samples} move the requested arm. We treat these as bounded
