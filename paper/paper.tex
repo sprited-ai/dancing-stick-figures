@@ -327,16 +327,23 @@ that carries motion across patch boundaries, in increasing order of direct conne
 baseline (a two-hop relay through per-cell temporal summaries), a zero-initialised local $3{\times}3{\times}3$
 convolutional mixer added to every block (a direct path for neighbouring cells at negligible cost), and joint
 attention over all spatio-temporal tokens---the direct-interaction design used by larger systems. We measure this
-axis in latent space, where 1{,}024 tokens make all three mechanisms essentially cost-matched ($0.17$ vs.\
-$0.19$\,s/step measured for the two attention extremes); at pixel scale joint attention costs $4.7\times$ the
-factorised step in measured wall-clock, and the step-matched pixel-scale runs are deferred to a revision. The second axis varies the representation: matched DiTs
+axis at pixel scale, warm-started from the same image checkpoint, so that mixing-mechanism differences are read in
+the same representation the structural evaluator scores; joint attention costs $4.7\times$ the factorised step in
+measured wall-clock, which we report rather than hide, and the latent block below repeats the two attention extremes
+where 1{,}024 tokens make them essentially cost-matched ($0.17$ vs.\ $0.19$\,s/step). The second axis varies the representation: matched DiTs
 trained in the
 latent space of a separately trained frozen video autoencoder (factorised and joint-attention variants),
 whose generated latents are decoded before evaluation so that codec
 reconstruction cost is part of their scores. To separate that cost from model skill, the table also reports a
 codec-floor row: the real reference windows encoded and decoded by the same frozen codec and scored identically.
 The codec predates the v0.2 curation and seed-disjoint split, so its floor should be read as an optimistic
-estimate; the floor row bounds how much this can matter. Table~\ref{tab:backbone-results} collects these runs; each block of
+estimate; the floor row bounds how much this can matter. A post-hoc audit strengthens this caution: the codec
+reconstructs foregrounds it saw in training with a $63\%$ lower masked error than held-out foregrounds, and
+neutralising its background latent cells degrades foreground reconstruction $33\times$ more than for a
+re-trained reference codec---evidence of memorisation and of foreground information smuggled through background
+latents. The latent rows should therefore be read as a representation-axis illustration under a compromised
+codec, not as the attainable latent-space ceiling; re-trained codecs that pass the same audit (held-out gap
+${\approx}10\%$, smuggling ${\approx}3$--$5\times$) are part of the planned revision. Table~\ref{tab:backbone-results} collects these runs; each block of
 the table names its evaluation protocol explicitly because scores from single frames and from 64-frame windows are
 not the same measurement. Earlier prompt-disjoint v0.1 baselines (including 8-frame UNet variants and an
 autoregressive continuation checkpoint) remain released and documented on the dataset card, but they were trained
@@ -353,18 +360,19 @@ from the single-frame checkpoint above it.}
 \setlength{\tabcolsep}{3.8pt}
 \begin{tabular}{@{}lllrrrrrrrr@{}}\toprule
 Model & Attention & Init. & TVR$\downarrow$ & LIE$\downarrow$ & CPE$\downarrow$ & Speed & Motion frac. & Jerk & FVD$\downarrow$ \\\midrule
-\multicolumn{10}{@{}l}{\textit{Single frames, prompt-conditioned, $n=512$, 30 sampling steps}}\\
-Real validation frames & --- & --- & --- & --- & --- & --- & --- & --- & --- \\
-Image DiT, 30k & factorised & random & --- & --- & --- & --- & --- & --- & --- \\
+\multicolumn{10}{@{}l}{\textit{Single frames, prompt-conditioned, $n=512$, 50 sampling steps}}\\
+Real validation frames & --- & --- & .115 & .093 & .039 & --- & --- & --- & --- \\
+Image DiT, 30k & factorised & random & .128 & .050 & .030 & --- & --- & --- & --- \\
 \addlinespace
 \multicolumn{10}{@{}l}{\textit{64-frame windows at 20 fps, prompt-conditioned, $n=128$ held-out source motions}}\\
 Real reference windows & --- & --- & .116 & .093 & .037 & .373 & .501 & .073 & 115.2 / ref. \\
 Codec reconstruction floor & --- & --- & .137 & .104 & .037 & .380 & .503 & .104 & 124.4 \\
 Video DiT, 10k & factorised & random & --- & --- & --- & --- & --- & --- & --- \\
 Video DiT, 10k & factorised & image & --- & --- & --- & --- & --- & --- & --- \\
-Latent video DiT, 10k & factorised & random & --- & --- & --- & --- & --- & --- & --- \\
-Latent video DiT, 10k & factorised + local mixer & random & --- & --- & --- & --- & --- & --- & --- \\
-Latent video DiT, 10k & joint spatio-temporal & random & --- & --- & --- & --- & --- & --- & --- \\\bottomrule
+Video DiT, 10k & factorised + local mixer & image & --- & --- & --- & --- & --- & --- & --- \\
+Video DiT, 10k & joint spatio-temporal & image & --- & --- & --- & --- & --- & --- & --- \\
+Latent video DiT, 10k & factorised & random & .816 & .398 & .084 & .571 & .647 & .276 & 503.3 \\
+Latent video DiT, 10k & joint spatio-temporal & random & .821 & .408 & .087 & .564 & .635 & .273 & 527.2 \\\bottomrule
 \end{tabular}
 \par\vspace{2pt}\raggedright\scriptsize TVR is topology violation rate, LIE limb inconsistency error, and CPE
 colour-purity error. Speed, motion fraction, and jerk are two-sided reference signals: agreement with the real row,
@@ -374,11 +382,9 @@ windows through the frozen video autoencoder used by the latent rows; latent-mod
 this floor rather than against the real row alone. Real training-split windows score FVD 125.7 against the same
 reference (\S\ref{sec:results}): the seed-disjoint split introduces almost no distribution shift, and 125.7 is also
 the score a pure training-set replay would achieve, so model scores near this band require a memorisation check.
-% TODO(fill tonight): single-frame real/model rows from eval.score_images; video model rows from the win64 protocol
-% evaluations of paper1_v02c_{t2v64_rand10k,t2v64_warm10k,t2v64_local3d_warm10k,
-% t2v16lat_rand10k,t2v16lat_fullst_rand10k} (pixel full-ST deferred to revision); refresh real row from the re-run degenerate_64f_n128.json
-% (train_replay first_frames fix does not change real halves). Also report the L3 seed-1 repeat as a
-% training-seed variance note under the table.
+% REMAINING(2026-08-26): pixel video rows from win64 evals in flight -- t2v64_{warm10k,rand10k,warm10k_s1}
+% running now; local3d + fullst training to 10k on the day queue, evals follow. Seed-1 repeat goes in as a
+% training-seed variance note under the table. Single-frame + latent rows filled above.
 \end{table*}
 
 % TODO(fill tonight): replace with the measured ladder reading (random vs image init; ResUNet and joint-attention
