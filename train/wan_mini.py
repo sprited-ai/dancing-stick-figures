@@ -222,13 +222,16 @@ def main():
                 # alpha mismatch covers opaque<->transparent errors in both directions,
                 # colour term only counts where both agree the pixel is body.
                 x0_hat = ((1 - tt) * x + tt * eps) - tt * pred.float()
-                dec_hat = codec.decode(x0_hat * lat_std + lat_mean,
-                                       output_frames=x.shape[2] * int(meta["temporal_compression"]),
-                                       output_size=(a.size * int(meta["spatial_compression"]),) * 2).clamp(0, 1)
-                with torch.no_grad():
-                    dec_gt = codec.decode(x * lat_std + lat_mean,
-                                          output_frames=dec_hat.shape[2],
-                                          output_size=dec_hat.shape[-2:]).clamp(0, 1)
+                with torch.autocast("cuda", dtype=torch.bfloat16):
+                    dec_hat = codec.decode(x0_hat * lat_std + lat_mean,
+                                           output_frames=x.shape[2] * int(meta["temporal_compression"]),
+                                           output_size=(a.size * int(meta["spatial_compression"]),) * 2)
+                    with torch.no_grad():
+                        dec_gt = codec.decode(x * lat_std + lat_mean,
+                                              output_frames=dec_hat.shape[2],
+                                              output_size=dec_hat.shape[-2:])
+                dec_hat = dec_hat.float().clamp(0, 1)
+                dec_gt = dec_gt.float().clamp(0, 1)
                 a_gt, a_hat = dec_gt[:, 3:4], dec_hat[:, 3:4]
                 mismatch = (a_gt - a_hat).abs()
                 # 10x weight wherever the pixel is foreground OR the two disagree;
