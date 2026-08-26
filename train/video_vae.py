@@ -142,8 +142,8 @@ class DSFCausalVideoVAE(nn.Module):
         super().__init__()
         if temporal_compression not in (1, 2, 4):
             raise ValueError("temporal_compression must be 1, 2, or 4")
-        if spatial_compression not in (4, 8):
-            raise ValueError("spatial_compression must be 4 or 8")
+        if spatial_compression not in (2, 4, 8):
+            raise ValueError("spatial_compression must be 2, 4, or 8")
         if blocks_per_stage < 1:
             raise ValueError("blocks_per_stage must be positive")
         self.temporal_compression = temporal_compression
@@ -157,7 +157,10 @@ class DSFCausalVideoVAE(nn.Module):
         # Encoder: f1t1 -> f2t1 -> f4t{1,2} -> f4t{1,2,4}.
         self.enc_stem = CausalConv3d(4, c0, 3)
         self.enc_stage0 = blocks(c0)
-        self.enc_down_spatial = CausalConv3d(c0, c1, 3, stride=(1, 2, 2))
+        # f2 keeps full resolution through the first transition (stride 1);
+        # the spatiotemporal stage below then provides the single 2x reduction.
+        first_spatial = 1 if spatial_compression == 2 else 2
+        self.enc_down_spatial = CausalConv3d(c0, c1, 3, stride=(1, first_spatial, first_spatial))
         self.enc_stage1 = blocks(c1)
         first_temporal_factor = 1 if temporal_compression == 1 else 2
         self.enc_down_spatiotemporal = CausalConv3d(
@@ -196,7 +199,7 @@ class DSFCausalVideoVAE(nn.Module):
             c2, c1, (first_temporal_factor, 2, 2)
         )
         self.dec_stage1 = blocks(c1)
-        self.dec_up_spatial = CausalUpsample3D(c1, c0, (1, 2, 2))
+        self.dec_up_spatial = CausalUpsample3D(c1, c0, (1, first_spatial, first_spatial))
         self.dec_stage0 = blocks(c0)
         self.dec_norm = ChannelRMSNorm3D(c0)
         self.dec_out = CausalConv3d(c0, 4, 3)

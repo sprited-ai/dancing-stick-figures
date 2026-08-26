@@ -53,6 +53,41 @@ def state_sha256(state: dict[str, torch.Tensor]) -> str:
     return digest.hexdigest()
 
 
+def augment_batch(video: torch.Tensor) -> torch.Tensor:
+    """Translation-led augmentation on premultiplied RGBA [B,4,T,H,W] in [0,1].
+
+    Every sample gets an integer spatial shift (transparent zero padding);
+    half get mild scale jitter; a third get temporal reversal. Horizontal
+    flips and any colour jitter are deliberately excluded because limb
+    colours are part-identity labels.
+    """
+    import torch.nn.functional as F
+    B, C, T, H, W = video.shape
+    out = []
+    for b in range(B):
+        v = video[b]
+        dy, dx = random.randint(-10, 10), random.randint(-10, 10)
+        v = torch.roll(v, shifts=(dy, dx), dims=(2, 3))
+        if dy > 0: v[:, :, :dy].zero_()
+        elif dy < 0: v[:, :, dy:].zero_()
+        if dx > 0: v[:, :, :, :dx].zero_()
+        elif dx < 0: v[:, :, :, dx:].zero_()
+        if random.random() < 0.5:
+            s = random.uniform(0.85, 1.15)
+            h2 = max(8, int(round(H * s)))
+            z = F.interpolate(v, size=(h2, h2), mode="bilinear", align_corners=False)
+            if h2 >= H:
+                top = (h2 - H) // 2
+                v = z[:, :, top:top + H, top:top + W]
+            else:
+                pad = (H - h2) // 2
+                v = F.pad(z, (pad, H - h2 - pad, pad, H - h2 - pad))
+        if random.random() < 0.33:
+            v = torch.flip(v, dims=(1,))
+        out.append(v)
+    return torch.stack(out)
+
+
 def _composite_white(video: torch.Tensor) -> np.ndarray:
     """Premultiplied RGBA [4,T,H,W] in [0,1] -> uint8 RGB [T,H,W,3]."""
     value = video.detach().float().clamp(0, 1).cpu()
@@ -188,7 +223,7 @@ def main() -> None:
     parser.add_argument("--cache", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--temporal-compression", type=int, choices=(1, 2, 4), default=4)
-    parser.add_argument("--spatial-compression", type=int, choices=(4, 8), default=4)
+    parser.add_argument("--spatial-compression", type=int, choices=(2, 4, 8), default=4)
     parser.add_argument("--latent-channels", type=int, default=32)
     parser.add_argument("--base-channels", type=int, default=32)
     parser.add_argument("--blocks-per-stage", type=int, default=2)
@@ -209,6 +244,10 @@ def main() -> None:
         help="allow only --frames to differ when fine-tuning a verified checkpoint",
     )
     parser.add_argument("--posterior-mode", choices=("mean", "sample"), default="sample")
+    parser.add_argument("--augment", action="store_true",
+                        help="heavy translation-led augmentation: per-sample integer shifts "
+                             "(zero/transparent pad), occasional scale jitter and temporal reverse. "
+                             "No flips or colour jitter: limb colours are part labels.")
     parser.add_argument("--milestones", default=DEFAULT_MILESTONES)
     parser.add_argument("--fixed-samples", type=int, default=2)
     parser.add_argument("--alpha-background-weight", type=float, default=1.0)
@@ -358,6 +397,8 @@ def main() -> None:
             iterator = iter(loader)
             video, _ = next(iterator)
         video = ((video.to(device, non_blocking=True) + 1) / 2).clamp(0, 1)
+        if args.augment:
+            video = augment_batch(video)
         kl_weight = args.kl_max * min(1.0, step / max(1, args.kl_warmup))
         optimizer.zero_grad(set_to_none=True)
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=use_amp):

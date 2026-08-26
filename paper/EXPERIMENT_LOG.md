@@ -831,3 +831,22 @@ attributed:
 - Confound note: curriculum AND fg_weight changed together (Jin's call: best-first, variations
   backfilled later). Attribution split deferred.
 - Extension launched: best_stageC_t16lat50k_fg8_s0 (same warm source, 50k steps) + auto eval.
+
+## Latent-track verdict + pivot (2026-08-26 evening, decisions Jin)
+
+- Step-evolution strip (10k->35k, fixed seed) showed only marginal refinement; Jin's call,
+  Claudia concurs: latent @ frozen f8t4d16 + 40M factorised = diminishing returns. 100k
+  continuation killed at ~37k. 50k eval recorded when it lands; L3D and fg2 controls
+  recorded as free hypothesis table entries. No further training on the f8 latent track.
+- Codec forensics recorded earlier tonight: seen-vs-unseen-prompt recon gap (mse 2.82 vs
+  4.60 e-4, tvr .100 vs .185 -- partial memorisation, no augmentation) and off-manifold
+  decode cliff between eps 0.2-0.4. Both feed the v0.3 codec-retraining spec.
+- Live bets: (1) pixel ladder L2/L3/seed-1 (paper rows, tonight); (2) mini Wan-VAE
+  candidate f2t4d4 (results/vae_f2t4d4_aug_40k): spatial_compression=2 support added to
+  DSFCausalVideoVAE, translation-led augmentation (shifts +/-10px transparent pad, scale
+  0.85-1.15, temporal reverse; NO flips/colour jitter -- colours are part labels), 40k,
+  auto floor measurement vs 124.4 (f8). Floor verdict decides whether the latent track
+  revives on a gentler codec (then: verbatim mini-Wan 2.1 blocks, ~40M, patch (1,2,2)).
+- Also implemented today, parked: VideoDiT --patch_t (learned f-t patchify), --conv_stem
+  (end-to-end f8t4 conv stem/head, VAE-free contextual mixing), train/wan_mini.py
+  (Wan 2.1 blocks in our loop). torch.compile smoke passed on sm_120.

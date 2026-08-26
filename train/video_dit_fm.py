@@ -81,6 +81,44 @@ class Local3DMixer(nn.Module):
         return x + h
 
 
+class ConvStem(nn.Module):
+    """Learned f8t4 front-end: overlapping conv downsampling (t x4, s x8) with SiLU,
+    giving VAE-style contextual spatio-temporal mixing without a separately trained
+    codec -- trained end-to-end under the diffusion objective."""
+    def __init__(self, in_ch, dim):
+        super().__init__()
+        c = dim // 4
+        self.net = nn.Sequential(
+            nn.Conv3d(in_ch, c, 3, stride=(2, 2, 2), padding=1), nn.SiLU(),
+            nn.Conv3d(c, 2 * c, 3, stride=(2, 2, 2), padding=1), nn.SiLU(),
+            nn.Conv3d(2 * c, dim, 3, stride=(1, 2, 2), padding=1),
+        )
+
+    def forward(self, x):                        # [B,C,T,H,W] -> [B,T/4,N,dim]
+        h = self.net(x)                          # [B,dim,T/4,H/8,W/8]
+        B, D, T, H, W = h.shape
+        return h.permute(0, 2, 3, 4, 1).reshape(B, T, H * W, D)
+
+
+class ConvHead(nn.Module):
+    """Mirror of ConvStem: upsample tokens back to pixels (t x4, s x8)."""
+    def __init__(self, dim, out_ch):
+        super().__init__()
+        c = dim // 4
+        def up(ci, co, scale):
+            return nn.Sequential(nn.Upsample(scale_factor=scale, mode="nearest"),
+                                 nn.Conv3d(ci, co, 3, padding=1))
+        self.u1 = up(dim, 2 * c, (1, 2, 2)); self.a1 = nn.SiLU()
+        self.u2 = up(2 * c, c, (2, 2, 2)); self.a2 = nn.SiLU()
+        self.u3 = up(c, out_ch, (2, 2, 2))
+        nn.init.zeros_(self.u3[1].weight); nn.init.zeros_(self.u3[1].bias)
+
+    def forward(self, h, side):                  # [B,T/4,N,dim] -> [B,C,T,H,W]
+        B, T, N, D = h.shape
+        x = h.reshape(B, T, side, side, D).permute(0, 4, 1, 2, 3)
+        return self.u3(self.a2(self.u2(self.a1(self.u1(x)))))
+
+
 class Block(nn.Module):
     """DiT block with adaLN-Zero. axis='spatial' attends within frame, 'temporal' across frames."""
     def __init__(self, dim, heads, axis, mlp=4, text_cond=False, local_3d=False):
@@ -131,14 +169,22 @@ def timestep_embedding(t, dim, max_period=10000):
 
 class VideoDiT(nn.Module):
     def __init__(self, size=128, frames=16, patch=4, in_ch=4, dim=384, depth=12, heads=6, n_classes=0, cond_ch=0,
-                 text_dim=0, local_3d=False, full_st=False):
+                 text_dim=0, local_3d=False, full_st=False, patch_t=1, conv_stem=False):
         super().__init__()
+        self.conv_stem = conv_stem
+        if conv_stem:
+            patch, patch_t = 8, 4                                  # stem geometry is fixed f8t4
+        if frames % patch_t:
+            raise ValueError("frames must divide patch_t")
         self.full_st = full_st
-        self.p, self.T, self.S, self.C, self.dim = patch, frames, size, in_ch, dim
+        self.p, self.pt, self.T, self.S, self.C, self.dim = patch, patch_t, frames, size, in_ch, dim
         self.cond_ch = cond_ch                                     # I2V (Seedance §2.2): concat clean/zero frames + binary mask -> in_ch+in_ch+1
         self.N = (size // patch) ** 2
-        self.embed = nn.Linear((in_ch + cond_ch) * patch * patch, dim)
-        self.pos_s = nn.Parameter(torch.zeros(1, 1, self.N, dim)); self.pos_t = nn.Parameter(torch.zeros(1, frames, 1, dim))
+        if conv_stem:
+            self.stem = ConvStem(in_ch + cond_ch, dim)
+            self.head = ConvHead(dim, in_ch)
+        self.embed = nn.Linear((in_ch + cond_ch) * patch * patch * patch_t, dim)
+        self.pos_s = nn.Parameter(torch.zeros(1, 1, self.N, dim)); self.pos_t = nn.Parameter(torch.zeros(1, frames // patch_t, 1, dim))
         nn.init.normal_(self.pos_s, std=0.02); nn.init.normal_(self.pos_t, std=0.02)
         self.temb = nn.Sequential(nn.Linear(256, dim), nn.SiLU(), nn.Linear(dim, dim))
         self.cls = nn.Embedding(n_classes + 1, dim) if n_classes else None
@@ -150,26 +196,26 @@ class VideoDiT(nn.Module):
         ])
         self.nf = nn.LayerNorm(dim, elementwise_affine=False, eps=1e-6)
         self.ada_f = nn.Sequential(nn.SiLU(), nn.Linear(dim, 2 * dim))
-        self.out = nn.Linear(dim, in_ch * patch * patch)
+        self.out = nn.Linear(dim, in_ch * patch * patch * patch_t)
         nn.init.zeros_(self.ada_f[-1].weight); nn.init.zeros_(self.ada_f[-1].bias)
         nn.init.zeros_(self.out.weight); nn.init.zeros_(self.out.bias)
         self.grad_ckpt = False
 
-    def patchify(self, x):                     # [B,C,T,H,W] -> [B,T,N,C*p*p]
-        B, C, T, H, W = x.shape; p = self.p
-        x = x.reshape(B, C, T, H // p, p, W // p, p).permute(0, 2, 3, 5, 1, 4, 6)
-        return x.reshape(B, T, (H // p) * (W // p), C * p * p)
+    def patchify(self, x):                     # [B,C,T,H,W] -> [B,T/pt,N,C*pt*p*p]
+        B, C, T, H, W = x.shape; p, pt = self.p, self.pt
+        x = x.reshape(B, C, T // pt, pt, H // p, p, W // p, p).permute(0, 2, 4, 6, 1, 3, 5, 7)
+        return x.reshape(B, T // pt, (H // p) * (W // p), C * pt * p * p)
 
-    def unpatchify(self, x):                   # [B,T,N,C*p*p] -> [B,C,T,H,W]
-        B, T, N, _ = x.shape; p = self.p; h = w = int(math.sqrt(N))
-        x = x.reshape(B, T, h, w, self.C, p, p).permute(0, 4, 1, 2, 5, 3, 6)
-        return x.reshape(B, self.C, T, h * p, w * p)
+    def unpatchify(self, x):                   # [B,T/pt,N,C*pt*p*p] -> [B,C,T,H,W]
+        B, Tp, N, _ = x.shape; p, pt = self.p, self.pt; h = w = int(math.sqrt(N))
+        x = x.reshape(B, Tp, h, w, self.C, pt, p, p).permute(0, 4, 1, 5, 2, 6, 3, 7)
+        return x.reshape(B, self.C, Tp * pt, h * p, w * p)
 
     def forward(self, x, t, y=None, cond=None, text=None, text_mask=None):
         if self.cond_ch:
             if cond is None: cond = torch.zeros(x.shape[0], self.cond_ch, *x.shape[2:], device=x.device, dtype=x.dtype)
             x = torch.cat([x, cond.to(x.dtype)], 1)
-        h = self.embed(self.patchify(x)) + self.pos_s + self.pos_t[:, : x.shape[2]]
+        h = (self.stem(x) if self.conv_stem else self.embed(self.patchify(x))) + self.pos_s + self.pos_t[:, : x.shape[2] // self.pt]
         c = self.temb(timestep_embedding(t, 256))
         if self.cls is not None: c = c + self.cls(y)
         if self.text_proj is not None:
@@ -181,6 +227,8 @@ class VideoDiT(nn.Module):
             h = checkpoint(blk, h, c, text, text_mask, use_reentrant=False) if (self.grad_ckpt and self.training) else blk(h, c, text, text_mask)
         s, sc = self.ada_f(c).chunk(2, -1)
         h = self.nf(h) * (1 + sc[:, None, None]) + s[:, None, None]
+        if self.conv_stem:
+            return self.head(h, self.S // self.p)
         return self.unpatchify(self.out(h))
 
 
@@ -322,6 +370,7 @@ def main():
     ap.add_argument("--lr", type=float, default=2e-4); ap.add_argument("--dim", type=int, default=384)
     ap.add_argument("--ch", type=int, default=64, help="ResUNet base channels (ignored by DiT)")
     ap.add_argument("--depth", type=int, default=12); ap.add_argument("--heads", type=int, default=6); ap.add_argument("--patch", type=int, default=4)
+    ap.add_argument("--patch_t", type=int, default=1, help="temporal patch: one token spans this many frames (learned f-t patchify, no codec)")
     ap.add_argument("--cond", default="none", choices=["none", "group", "text"]); ap.add_argument("--cfg_drop", type=float, default=0.1)
     ap.add_argument("--text_encoder", default="google-t5/t5-small", help="frozen Hugging Face text encoder for --cond text")
     ap.add_argument("--text_len", type=int, default=32)
@@ -341,6 +390,7 @@ def main():
     ap.add_argument("--fg_weight", type=float, default=1.0, help="soft-alpha foreground loss multiplier; 1 preserves the baseline")
     ap.add_argument("--local_3d", action="store_true", help="add a zero-initialised local 3x3x3 token mixer to every DiT block")
     ap.add_argument("--full_st", action="store_true", help="replace factorised spatial/temporal attention with joint attention over all T*N tokens in every block")
+    ap.add_argument("--conv_stem", action="store_true", help="learned f8t4 conv stem/head instead of linear patchify: VAE-style contextual mixing, end-to-end, no codec")
     a = ap.parse_args()
     early_sample_steps = parse_step_set(a.early_sample_steps)
     if a.preset:
@@ -391,7 +441,7 @@ def main():
     if a.arch == "dit":
         model = VideoDiT(size=a.size, frames=a.frames, patch=a.patch, in_ch=in_ch, dim=a.dim, depth=a.depth, heads=a.heads, n_classes=n_cls,
                          cond_ch=5 if a.i2v_frac > 0 else 0, text_dim=text_dim, local_3d=a.local_3d,
-                         full_st=a.full_st).to(dev)
+                         full_st=a.full_st, patch_t=a.patch_t, conv_stem=a.conv_stem).to(dev)
     else:
         model = UNet3D(ch=a.ch, n_classes=n_cls, size=a.size, cond_ch=5 if a.i2v_frac > 0 else 0,
                        text_dim=text_dim).to(dev)
@@ -405,7 +455,7 @@ def main():
             raise ValueError("--compile is currently supported only for --arch dit")
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
     model_name = "DiT-FM" if a.arch == "dit" else "ResUNet-FM"
-    detail = (f"p{a.patch}" + ("+local3d" if a.local_3d else "") + ("+fullst" if a.full_st else "")) if a.arch == "dit" else f"ch{a.ch}"
+    detail = (("convstem-f8t4" if a.conv_stem else f"p{a.patch}" + (f"+pt{a.patch_t}" if a.patch_t > 1 else "")) + ("+local3d" if a.local_3d else "") + ("+fullst" if a.full_st else "")) if a.arch == "dit" else f"ch{a.ch}"
     print(f"{model_name} params {n_params:.1f}M · {len(ds.clips)} train / {len(vds.clips)} val clips · {a.size}px {detail} · frames {a.frames} · batch {a.batch}×{a.accum} · ckpt {a.grad_ckpt} · shift {a.shift}", flush=True)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.95), weight_decay=0.01, fused=a.fused_adamw)
     step = 0
@@ -461,9 +511,10 @@ def main():
         fg_map = None
         if latent_mode:
             fg_map = x[:, -1:]; x = x[:, :-1]
-        if a.img_frac > 0 and random.random() < a.img_frac:      # image warm-up mix: a random single frame per clip
-            fi = random.randrange(x.shape[2]); x = x[:, :, fi:fi + 1]
-            if fg_map is not None: fg_map = fg_map[:, :, fi:fi + 1]
+        if a.img_frac > 0 and random.random() < a.img_frac:      # image warm-up mix: one temporal patch worth of frames
+            span = 4 if a.conv_stem else max(1, a.patch_t)
+            fi = random.randrange(x.shape[2] - span + 1); x = x[:, :, fi:fi + span]
+            if fg_map is not None: fg_map = fg_map[:, :, fi:fi + span]
         text, text_mask = (None, None)
         if a.cond == "text":
             text, text_mask = text_batch(labels)

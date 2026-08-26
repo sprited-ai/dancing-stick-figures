@@ -108,7 +108,8 @@ def evaluate(run, cache, n=128, dev="cuda", seeds=(0, 1, 2), target_frames=50,
         text_dim = AutoConfig.from_pretrained(a.get("text_encoder", "google-t5/t5-small")).d_model
     if is_dit:
         model = VideoDiT(size=model_size, frames=model_frames, patch=a.get("patch", 4), in_ch=in_ch, dim=a.get("dim", 384), depth=a.get("depth", 12), heads=a.get("heads", 6), n_classes=n_cls, cond_ch=5 if a.get("i2v_frac", 0) > 0 else 0, text_dim=text_dim, local_3d=bool(a.get("local_3d", False)),
-                         full_st=bool(a.get("full_st", False))).to(dev)
+                         full_st=bool(a.get("full_st", False)), patch_t=int(a.get("patch_t", 1)),
+                         conv_stem=bool(a.get("conv_stem", False))).to(dev)
     else:
         model = UNet3D(ch=a.get("ch", 64), n_classes=n_cls, size=S,
                       cond_ch=5 if a.get("ar_ctx", 0) > 0 else 0, text_dim=text_dim,
