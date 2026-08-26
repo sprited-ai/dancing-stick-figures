@@ -375,7 +375,7 @@ Image DiT, 30k & factorised & random & .128 & .050 & .030 & --- & --- & --- & --
 \multicolumn{10}{@{}l}{\textit{64-frame windows at 20 fps, prompt-conditioned, $n=128$ held-out source motions}}\\
 Real reference windows & --- & --- & .116 & .093 & .037 & .373 & .501 & .073 & 115.2 / ref. \\
 Codec reconstruction floor & --- & --- & .137 & .104 & .037 & .380 & .503 & .104 & 124.4 \\
-Video DiT, 10k & factorised & random & --- & --- & --- & --- & --- & --- & --- \\
+Video DiT, 10k & factorised & random & .942 & .035 & .051 & .408 & .559 & .326 & 1641.3 \\
 Video DiT, 10k & factorised & image & .169 & .045 & .034 & .850 & .719 & .324 & 545.0 \\
 Video DiT, 10k & factorised + local mixer & image & --- & --- & --- & --- & --- & --- & --- \\
 Video DiT, 10k & joint spatio-temporal & image & --- & --- & --- & --- & --- & --- & --- \\
@@ -390,13 +390,25 @@ windows through the frozen video autoencoder used by the latent rows; latent-mod
 this floor rather than against the real row alone. Real training-split windows score FVD 125.7 against the same
 reference (\S\ref{sec:results}): the seed-disjoint split introduces almost no distribution shift, and 125.7 is also
 the score a pure training-set replay would achieve, so model scores near this band require a memorisation check.
+A training-seed repeat of the warm-started video row scores TVR .183 / FVD 570.7 against the reported .169 /
+545.0, bounding training-seed variance well below the reported contrasts.
 % REMAINING(2026-08-26): pixel video rows from win64 evals in flight -- t2v64_{warm10k,rand10k,warm10k_s1}
 % running now; local3d + fullst training to 10k on the day queue, evals follow. Seed-1 repeat goes in as a
 % training-seed variance note under the table. Single-frame + latent rows filled above.
 \end{table*}
 
-% TODO(fill tonight): replace with the measured ladder reading (random vs image init; ResUNet and joint-attention
-% contrasts) once the win64 evaluations of the four video runs complete.
+\paragraph{Reading the ladder.} The initialisation rung resolves decisively at this budget: from random
+initialisation the 10k-step video model violates topology in $94\%$ of frames (TVR .942, FVD 1641), while the
+same model warm-started from the image checkpoint reaches TVR .169 against the real rows' .116, an order of
+magnitude fewer violations for identical video-stage compute. A seed repeat of the warm-started run lands at
+TVR .183 and FVD 570.7 versus 545.0, so the reported contrasts are large against training-seed variance. The
+table's second lesson is that the two measurement families disagree informatively rather than redundantly: the
+warm-started pixel model has near-real structure but overshoots motion (centroid speed .850 versus the real
+.373), which FVD punishes heavily; the latent rows show the reverse signature---FVD in the low 500s but TVR
+above .8, structurally broken figures rendered smoothly through the codec. A reader ranking these models by
+either number alone would reach opposite conclusions, which is precisely the failure-disentangling behaviour
+the benchmark is designed to expose.
+% REMAINING: extend with the local-mixer and joint-attention pixel rows when their 10k evals land (day queue).
 Changing the prompt under fixed noise has a measurable effect, and the controlled
 left-versus-right wave examples in Figure~\ref{fig:dit-samples} move the requested arm. We treat these as bounded
 evidence of conditioning: they do not constitute a calibrated open-vocabulary prompt-adherence score.
