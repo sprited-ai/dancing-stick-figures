@@ -30,7 +30,7 @@ from train.video_dit_fm import foreground_weighted_mse, sample_t
 def build_model(a):
     return WanTransformer3DModel(
         patch_size=(a.patch_t, a.patch, a.patch), num_attention_heads=a.heads,
-        attention_head_dim=a.dim // a.heads, in_channels=4, out_channels=4,
+        attention_head_dim=a.dim // a.heads, in_channels=a.channels, out_channels=a.channels,
         text_dim=a.text_dim, freq_dim=256, ffn_dim=4 * a.dim, num_layers=a.depth,
         rope_max_seq_len=8192,
     )
@@ -77,6 +77,8 @@ def main():
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--val_every", type=int, default=500)
+    ap.add_argument("--channels", type=int, default=4,
+                    help="model channels: 4 for pixel RGBA, latent_channels for a latent cache")
     a = ap.parse_args()
     dev = "cuda"
     torch.manual_seed(a.seed)
@@ -87,6 +89,7 @@ def main():
                       first_frames=a.first_frames)
     vds = VideoWindows(a.cache, a.frames, "val", 1, size=a.size, return_text=True,
                        deterministic=True, repeats=1, first_frames=a.first_frames)
+    latent_mode = bool(getattr(ds, "latent", False))
     dl = torch.utils.data.DataLoader(ds, batch_size=a.batch, shuffle=True, num_workers=a.workers,
                                      pin_memory=True, drop_last=True, persistent_workers=True)
     vdl = torch.utils.data.DataLoader(vds, batch_size=a.batch, shuffle=False, num_workers=2)
@@ -107,7 +110,8 @@ def main():
     ema = copy.deepcopy(model).eval().requires_grad_(False)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, fused=True)
     os.makedirs(a.out, exist_ok=True)
-    json.dump(vars(a) | {"arch": "wan_mini_pix", "params_m": n_params},
+    arch = "wan_mini_lat" if latent_mode else "wan_mini_pix"
+    json.dump(vars(a) | {"arch": arch, "params_m": n_params},
               open(os.path.join(a.out, "args.json"), "w"), indent=1)
     from torch.utils.tensorboard import SummaryWriter
     tb = SummaryWriter(os.path.join(a.out, "tb"))
@@ -123,6 +127,7 @@ def main():
             for i, (x, labels) in enumerate(vdl):
                 if i >= 8: break
                 x = x.to(dev)
+                if latent_mode: x = x[:, :-1]
                 t = sample_t(x.shape[0], dev)
                 eps = torch.randn_like(x)
                 tt = t[:, None, None, None, None]
@@ -144,6 +149,9 @@ def main():
             if a.img_frac > 0 and np.random.random() < a.img_frac:
                 span = max(1, a.patch_t)
                 fi = np.random.randint(x.shape[2] - span + 1); x = x[:, :, fi:fi + span]
+            fg_map = None
+            if latent_mode:
+                fg_map, x = x[:, -1:], x[:, :-1]
             txt = text_batch(labels)
             drop = torch.rand(x.shape[0], device=dev) < a.cfg_drop
             if drop.any():
@@ -156,7 +164,11 @@ def main():
                 pred = model(hidden_states=(1 - tt) * x + tt * eps, timestep=t * 1000,
                              encoder_hidden_states=txt, return_dict=False)[0]
             err = (pred.float() - (eps - x)) ** 2
-            loss = foreground_weighted_mse(err, x, a.fg_weight) / a.accum
+            if fg_map is not None:
+                w = 1 + (a.fg_weight - 1) * fg_map.clamp(0, 1)
+                loss = ((err * w).mean() / w.mean().clamp_min(1e-8)) / a.accum
+            else:
+                loss = foreground_weighted_mse(err, x, a.fg_weight) / a.accum
             loss.backward()
         step += 1
         lr = a.lr * min(1.0, step / 1000) * (a.lr_final + (1 - a.lr_final) * 0.5 *
@@ -176,10 +188,10 @@ def main():
             tb.add_scalar("loss/train", loss.item() * a.accum, step)
             if vl is not None: tb.add_scalar("loss/val", vl, step)
         if step % 5000 == 0 or step == a.steps:
-            torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), arch="wan_mini_pix"),
+            torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), arch=arch),
                        os.path.join(a.out, f"ckpt_{step:06d}.pt"))
             torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), step=step,
-                            args=vars(a), arch="wan_mini_pix"), os.path.join(a.out, "ckpt.pt"))
+                            args=vars(a), arch=arch), os.path.join(a.out, "ckpt.pt"))
     print("training done", flush=True)
 
 
