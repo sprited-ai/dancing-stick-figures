@@ -226,8 +226,14 @@ def main():
                                           output_frames=dec_hat.shape[2],
                                           output_size=dec_hat.shape[-2:]).clamp(0, 1)
                 a_gt, a_hat = dec_gt[:, 3:4], dec_hat[:, 3:4]
-                per = (a_gt - a_hat).abs().mean((1, 2, 3, 4)) + \
-                      (a_gt * a_hat * (dec_gt[:, :3] - dec_hat[:, :3]) ** 2).mean((1, 2, 3, 4))
+                mismatch = (a_gt - a_hat).abs()
+                # 10x weight wherever the pixel is foreground OR the two disagree;
+                # colour inside transparency only counts at 0.1
+                w10 = 1 + 9 * (a_gt + mismatch).clamp(0, 1)
+                rgb_err = (dec_gt[:, :3] - dec_hat[:, :3]) ** 2
+                per = ((w10 * mismatch).mean((1, 2, 3, 4)) / w10.mean((1, 2, 3, 4))
+                       + (w10 * a_gt * a_hat * rgb_err).mean((1, 2, 3, 4)) / w10.mean((1, 2, 3, 4))
+                       + 0.1 * ((1 - a_gt) * rgb_err).mean((1, 2, 3, 4)))
                 dloss = a.decode_loss * ((1 - t) * per).mean() / a.accum
                 loss = loss + dloss
             loss.backward()
