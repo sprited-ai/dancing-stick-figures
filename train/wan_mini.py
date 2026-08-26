@@ -80,6 +80,10 @@ def main():
     ap.add_argument("--channels", type=int, default=4,
                     help="model channels: 4 for pixel RGBA, latent_channels for a latent cache")
     ap.add_argument("--compile", action="store_true")
+    ap.add_argument("--decode_loss", type=float, default=0.0,
+                    help="weight of the decode-disagreement auxiliary loss (latent mode only): "
+                         "x0-hat is decoded through the frozen codec and penalised where its "
+                         "alpha/colour disagree with the decoded GT latent, gated by (1-t)")
     ap.add_argument("--video_every", type=int, default=1000,
                     help="log EMA inference samples to TensorBoard every N steps (0 disables)")
     ap.add_argument("--resume", default="", help="ckpt.pt with model+ema+step to continue from")
@@ -134,12 +138,13 @@ def main():
     null_emb_cache = {}
 
     codec = None
-    if a.video_every > 0:
+    if a.video_every > 0 or (a.decode_loss > 0 and latent_mode):
         video_prompts = [vds[i][1] for i in range(0, min(len(vds), 60), 20)]
         if latent_mode:
             from scripts.encode_latent_cache import load_codec
             meta = json.load(open(os.path.join(a.cache, "meta.json")))
             codec, _, _ = load_codec(meta["codec_ckpt"], dev)
+            codec.requires_grad_(False)
             lat_mean = torch.tensor(meta["mean"], device=dev).view(1, -1, 1, 1, 1)
             lat_std = torch.tensor(meta["std"], device=dev).view(1, -1, 1, 1, 1)
 
@@ -208,6 +213,23 @@ def main():
                 loss = ((err * w).mean() / w.mean().clamp_min(1e-8)) / a.accum
             else:
                 loss = foreground_weighted_mse(err, x, a.fg_weight) / a.accum
+            if a.decode_loss > 0 and codec is not None:
+                # decode-disagreement: compare decode(x0-hat) to decode(GT latent);
+                # alpha mismatch covers opaque<->transparent errors in both directions,
+                # colour term only counts where both agree the pixel is body.
+                x0_hat = ((1 - tt) * x + tt * eps) - tt * pred.float()
+                dec_hat = codec.decode(x0_hat * lat_std + lat_mean,
+                                       output_frames=x.shape[2] * int(meta["temporal_compression"]),
+                                       output_size=(a.size * int(meta["spatial_compression"]),) * 2).clamp(0, 1)
+                with torch.no_grad():
+                    dec_gt = codec.decode(x * lat_std + lat_mean,
+                                          output_frames=dec_hat.shape[2],
+                                          output_size=dec_hat.shape[-2:]).clamp(0, 1)
+                a_gt, a_hat = dec_gt[:, 3:4], dec_hat[:, 3:4]
+                per = (a_gt - a_hat).abs().mean((1, 2, 3, 4)) + \
+                      (a_gt * a_hat * (dec_gt[:, :3] - dec_hat[:, :3]) ** 2).mean((1, 2, 3, 4))
+                dloss = a.decode_loss * ((1 - t) * per).mean() / a.accum
+                loss = loss + dloss
             loss.backward()
         step += 1
         lr = a.lr * min(1.0, step / 1000) * (a.lr_final + (1 - a.lr_final) * 0.5 *
@@ -225,6 +247,7 @@ def main():
                    f"ETA {(a.steps - step) * spi / 3600:.1f}h" + (f" val {vl:.4f}" if vl is not None else ""))
             print(msg, flush=True); log.write(msg + "\n"); log.flush()
             tb.add_scalar("loss/train", loss.item() * a.accum, step)
+            if a.decode_loss > 0 and codec is not None: tb.add_scalar("loss/decode_disagree", float(dloss) * a.accum, step)
             if vl is not None: tb.add_scalar("loss/val", vl, step)
         if a.video_every > 0 and step % a.video_every == 0:
             tb_video(step)
