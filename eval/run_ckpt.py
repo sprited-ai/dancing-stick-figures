@@ -91,10 +91,12 @@ def evaluate(run, cache, n=128, dev="cuda", seeds=(0, 1, 2), target_frames=50,
     n_cls = len(ck.get("groups", [])) if a.get("cond") == "group" else 0
     model_frames, model_size = a.get("frames", 16), a.get("size", 128)
     ar_context = a.get("ar_ctx", 0)
-    is_dit = str(ck.get("arch", "")).startswith("dit_fm")
-    is_text = a.get("cond") == "text"
+    arch = str(ck.get("arch", ""))
+    is_dit = arch.startswith("dit_fm")
+    is_wan = arch.startswith("wan_mini")
+    is_text = a.get("cond") == "text" or is_wan
     latent_meta = codec = None
-    if str(ck.get("arch", "")).endswith("_latent"):
+    if arch.endswith("_latent") or arch == "wan_mini_lat":
         latent_meta = json.load(open(os.path.join(a["cache"], "meta.json")))
         from scripts.encode_latent_cache import load_codec
         codec, _, _ = load_codec(latent_meta["codec_ckpt"], dev)
@@ -106,7 +108,11 @@ def evaluate(run, cache, n=128, dev="cuda", seeds=(0, 1, 2), target_frames=50,
     if is_text:
         from transformers import AutoConfig
         text_dim = AutoConfig.from_pretrained(a.get("text_encoder", "google-t5/t5-small")).d_model
-    if is_dit:
+    if is_wan:
+        from argparse import Namespace
+        from train.wan_mini import build_model as wan_build
+        model = wan_build(Namespace(**a)).to(dev)
+    elif is_dit:
         model = VideoDiT(size=model_size, frames=model_frames, patch=a.get("patch", 4), in_ch=in_ch, dim=a.get("dim", 384), depth=a.get("depth", 12), heads=a.get("heads", 6), n_classes=n_cls, cond_ch=5 if a.get("i2v_frac", 0) > 0 else 0, text_dim=text_dim, local_3d=bool(a.get("local_3d", False)),
                          full_st=bool(a.get("full_st", False)), patch_t=int(a.get("patch_t", 1)),
                          conv_stem=bool(a.get("conv_stem", False))).to(dev)
@@ -175,7 +181,13 @@ def evaluate(run, cache, n=128, dev="cuda", seeds=(0, 1, 2), target_frames=50,
             with torch.no_grad():
                 if latent_meta is not None:
                     noise = torch.randn((B, in_ch, model_frames, model_size, model_size), device=dev, generator=g)
-                    z = euler_sample(model, noise.shape, dev, steps=sample_steps, y=ys,
+                    if is_wan:
+                        from train.wan_mini import euler_sample as wan_euler
+                        z = wan_euler(model, noise.shape, dev, prompt_text[i:i + B], None,
+                                      null_text[i:i + B], None, steps=sample_steps,
+                                      cfg=text_cfg, generator=g)
+                    else:
+                        z = euler_sample(model, noise.shape, dev, steps=sample_steps, y=ys,
                                      cfg=text_cfg if is_text else (2.0 if n_cls else 0.0),
                                      null_y=torch.full((B,), n_cls, device=dev) if n_cls else None,
                                      noise=noise, shift=a.get("shift", 1.0),
