@@ -862,3 +862,12 @@ attributed:
   did not fix it; (2) f2t4d4 (gentler 16x compression) should smuggle less -- rerun this
   test on it after training; (3) codec-side mitigations: stronger KL, bg-cell dropout,
   and the new flip/rotation augmentation all tax smuggling.
+
+## 2026-08-25 late evening — mini-VAE verdicts, mini-Wan first row (Jin interactive session)
+
+- f2t4d4 VAE frozen at 10k (Jin visual call + battery): unseen fg MSE 15.2e-4, memorization gap 11.5%, smuggle 2.8x, floor FVD 126.4. 20f->64f window extension deemed unnecessary (no visual diff at 64f recon).
+- f4t4d8 VAE (Wan-proportional geometry, Jin's call) 10k full-aug: unseen 29.9e-4, gap 9.5%, smuggle 5.5x, floor FVD 130.6. Both codecs pass memorization/smuggling; contrast with f8 (63%/33x) is the chapter's receipt.
+- Codec decision: f4t4d8-10k frozen as mini-Wan codec (Wan-like block aspect, 16x16x16 grid, 1/4 tokens); f2 kept as reserve.
+- mini-Wan v1: verbatim Wan 2.1 blocks (diffusers), 13M (dim 256/12L/8H), patch (1,2,2), 1024 tokens, flow matching, fg2, 10k steps (torch.compile 0.10s/it solo). win64: FVD 344.2, TVR .484, ang_path 47.8. Beats dead f8 track (503/.797) decisively; behind pixel prior-gen (198.8). Codec floor 130.6 leaves ~214 to the 13M generator.
+- Terminology: paper now says "flow matching (no reflow)"; rectified-flow kept as alias. wan_mini gained --channels/--compile/--resume/--video_every (TB inference videos).
+- Next: 40M mini-Wan (dim 384/16L) 30k with TB videos running overnight; pixel L2/L3 resumed toward 10k -> auto evals.
