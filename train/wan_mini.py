@@ -80,6 +80,8 @@ def main():
     ap.add_argument("--channels", type=int, default=4,
                     help="model channels: 4 for pixel RGBA, latent_channels for a latent cache")
     ap.add_argument("--compile", action="store_true")
+    ap.add_argument("--video_every", type=int, default=1000,
+                    help="log EMA inference samples to TensorBoard every N steps (0 disables)")
     ap.add_argument("--resume", default="", help="ckpt.pt with model+ema+step to continue from")
     a = ap.parse_args()
     dev = "cuda"
@@ -130,6 +132,33 @@ def main():
           f"tokens {(a.frames // a.patch_t) * (a.size // a.patch) ** 2}", flush=True)
 
     null_emb_cache = {}
+
+    codec = None
+    if a.video_every > 0:
+        video_prompts = [vds[i][1] for i in range(0, min(len(vds), 60), 20)]
+        if latent_mode:
+            from scripts.encode_latent_cache import load_codec
+            meta = json.load(open(os.path.join(a.cache, "meta.json")))
+            codec, _, _ = load_codec(meta["codec_ckpt"], dev)
+            lat_mean = torch.tensor(meta["mean"], device=dev).view(1, -1, 1, 1, 1)
+            lat_std = torch.tensor(meta["std"], device=dev).view(1, -1, 1, 1, 1)
+
+    @torch.no_grad()
+    def tb_video(step):
+        # sample a few val prompts with the EMA model, decode, composite on gray
+        txt = text_batch(video_prompts)
+        nul = text_batch([""] * len(video_prompts))
+        g = torch.Generator(device=dev).manual_seed(7)
+        z = euler_sample(ema, (len(video_prompts), a.channels, a.frames, a.size, a.size),
+                         dev, txt, None, nul, None, steps=50, cfg=3.0, generator=g)
+        if codec is not None:
+            tc, sc = int(meta["temporal_compression"]), int(meta["spatial_compression"])
+            x = codec.decode(z * lat_std + lat_mean, output_frames=a.frames * tc,
+                             output_size=(a.size * sc, a.size * sc)).clamp(0, 1)
+        else:
+            x = ((z + 1) / 2).clamp(0, 1)
+        rgb = x[:, :3] + (1 - x[:, 3:4]) * 0.5                      # gray composite
+        tb.add_video("inference/val_prompts", rgb.permute(0, 2, 1, 3, 4).cpu(), step, fps=20)
 
     def vloss():
         ema.eval(); tot = 0; n = 0
@@ -197,6 +226,8 @@ def main():
             print(msg, flush=True); log.write(msg + "\n"); log.flush()
             tb.add_scalar("loss/train", loss.item() * a.accum, step)
             if vl is not None: tb.add_scalar("loss/val", vl, step)
+        if a.video_every > 0 and step % a.video_every == 0:
+            tb_video(step)
         if step % 5000 == 0 or step == a.steps:
             torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), arch=arch),
                        os.path.join(a.out, f"ckpt_{step:06d}.pt"))
