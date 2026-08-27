@@ -896,3 +896,16 @@ attributed:
 - Paper edits landed: single-frame rows (real .115/.093/.039; image DiT .128/.050/.030), latent rows
   (L6 503.3, L6-ST 527.2), codec-audit caveat (63%/33x vs ~10%/3-5x), pixel-ST prose. Remaining: 4 pixel video
   rows + ladder paragraph once day-queue evals land.
+
+## 2026-08-26 evening — ladder closed, paper pass 3
+
+- Fixed eval race (wait_done fired on the "step 10000" log line before ckpt_010000 finished writing; both
+  local3d and fullst full evals silently scored the 9k ckpt). Re-evaluated both at 10k.
+- Final win64 rows (n=128, seeds 3): local3d TVR .158 / FVD 407.0; fullst TVR .240 / FVD 558.9.
+  Mixing rung: local mixer > factorised (545.0) > joint-ST, with joint at 4.7x step cost — global
+  connectivity does not pay for itself at 10k steps.
+- Paper: v2 full rewrite promoted to paper.tex (8p -> 6p, plain register), pass-3 per-paragraph review
+  applied. Number audit caught two stale claims: 40-frame window description (now 64 frames / 3.2 s
+  everywhere) and "0.85-GB" tier (actual 0.79 GB, 4 places). Open flag: table real-real FVD 115.2
+  (fvd_64f_n128.json) vs run_ckpt internal 114.7 — Jin to decide.
+- Table complete; ladder-reading paragraph final. GPU idle after reeval; all queue scripts done.
