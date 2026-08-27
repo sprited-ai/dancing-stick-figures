@@ -25,17 +25,16 @@ pdfkeywords={video generation, benchmark, synthetic dataset, structural evaluati
 
 \begin{document}\raggedbottom\maketitle\vspace{-1.25em}
 \begin{abstract}
-Training a video generation model is hard to learn by doing. Real video datasets are large, the process behind
-each frame is unknown, and one aggregate score rarely says why a generated video failed. \textbf{Dancing Stick
-Figures} is a synthetic video dataset with a deterministic renderer, built so that the whole experiment fits on
-one GPU. It contains 1,340 six-second motions rendered from three cameras: 4,020 videos and 482,400 labelled
-frames. Every frame stays linked to the joints, camera, body parameters, depth, surface normals, part labels,
-and source motion that produced it, so evaluation has an answer key. Rule-based measurements check whether
-coloured limbs stay connected and how position and pose change over time. Controlled corruptions test what each
-measurement can and cannot see; in a 120-frame study, playing videos backward leaves the time-symmetric motion
-signals unchanged and scores FVD 79.3 where real--real scores 80.5. The release includes a 0.85-GB $64^2$
-training tier, a $32^2$ route, fixed evaluation manifests, checkpoints, and a Colab lesson that trains an image
-generator and then a video generator.
+Learning video generation by training models yourself is hard. Real video datasets are large, the process
+behind each frame is unknown, and one aggregate score rarely says why a generated video failed. \textbf{Dancing
+Stick Figures} is a synthetic video dataset with a deterministic renderer, built so that the whole experiment
+fits on one GPU. It contains 1,340 six-second motions rendered from three cameras. Every frame stays linked to
+the joints, camera, body parameters, depth, surface normals, part labels, and source motion that produced it,
+so evaluation has an answer key. Rule-based measurements check whether coloured limbs stay connected and how
+position and pose change over time. Controlled corruptions test what each measurement can and cannot see: in a
+120-frame study, playing videos backward leaves the time-symmetric motion signals unchanged and scores FVD 79.3
+where real--real scores 80.5. The release includes a 0.79-GB $64^2$ training tier, fixed evaluation manifests,
+checkpoints, and a Colab lesson.
 \end{abstract}
 
 \section{Introduction}
@@ -43,31 +42,27 @@ Video generation is easy to encounter and hard to study. Systems such as Seedanc
 H3~\cite{gao2025seedance,minimax2026h3} publish results and sometimes weights, but a learner still runs into
 three walls:
 \begin{itemize}[leftmargin=*,nosep]
-\item \textbf{Data.} Without the training data, a reader cannot reconstruct the learning problem or trace a
-failure back to it. The exact data, filters, and recipe behind a strong model are rarely released together.
-\item \textbf{Experimentation.} Frontier training needs large corpora, heavy compute, and pretrained codecs and
-encoders. What remains affordable is prompting and fine-tuning. Retraining a controlled variant in an afternoon
-is not.
+\item \textbf{Data.} The exact data, filters, and recipe behind a strong model are rarely released together,
+so a failure cannot be traced back to what the model saw.
+\item \textbf{Experimentation.} Frontier training needs large corpora, heavy compute, and pretrained codecs.
+What stays affordable is prompting and fine-tuning, not retraining a controlled variant.
 \item \textbf{Evaluation.} ``Better'' can mean cleaner frames, an intact body, plausible motion, or prompt
-adherence, and these change independently. An aggregate score does not say which one changed or which component
-broke it.
+adherence; these change independently, and an aggregate score does not say which one changed.
 \end{itemize}
 
 The question this paper addresses is practical: can someone with a single GPU train video generation models
 from scratch on a small but meaningful dataset, and study their behaviour through repeated, controlled
-experiments? That requires three things. The full image-to-video path must fit one consumer GPU or a Colab
-runtime. A run must produce inspectable multi-second samples in hours, not days. And evaluation must measure
-visible failures directly, with known blind spots.
+experiments? That requires the full image-to-video path to fit one consumer GPU or a Colab runtime, a run to
+produce inspectable multi-second samples in hours, and evaluation that measures visible failures directly,
+with known blind spots.
 
-Dancing Stick Figures is built to those constraints. It is a \emph{dataset and renderer}: articulated motions
-whose rendered frames stay connected to their exact generating state. It is an \emph{evaluation suite}: fixed
-manifests, rule-based structural measurements, and controlled corruptions that test the measurements
-themselves. And it ships reference models and a Colab workflow that trains an image generator, transfers its
-spatial weights to a video generator, trains it, samples multi-second videos, and diagnoses the failures.
+Dancing Stick Figures is built to those constraints: a dataset and renderer whose frames stay connected to
+their generating state, an evaluation suite whose measurements are themselves tested, and reference models
+with a Colab workflow that runs the whole path.
 
 The release contributes:
 \begin{enumerate}
-\item a label-rich video dataset with a 0.85-GB $64^2$ tier, an optional $32^2$ tier, the motion, camera, and
+\item a label-rich video dataset with a 0.79-GB $64^2$ tier, an optional $32^2$ tier, the motion, camera, and
 body parameters behind every frame, and a deterministic renderer;
 \item a seed-disjoint evaluation protocol, structural evaluator, and controlled corruption suite; and
 \item image and video trainers, checkpoints, and an end-to-end Colab curriculum.
@@ -92,9 +87,8 @@ buffers that generated it.}\label{fig:loop}
 \end{figure*}
 
 \section{Related Work}
-Several lines of work provide synthetic video, human-motion supervision, or decomposed evaluation. Dancing
-Stick Figures combines data, renderer, reference models, and measurements in one experiment a reader can rerun
-and alter.
+Several lines of work provide synthetic video, human-motion supervision, or decomposed evaluation; none
+packages them as one experiment a reader can rerun and alter.
 
 \paragraph{Small and controlled video.} Moving MNIST~\cite{srivastava2015unsupervised} made temporal prediction
 cheap, but has no articulated structure or language conditioning. Kubric and MOVi~\cite{greff2022kubric} showed
@@ -109,14 +103,14 @@ failures, and relate them back to known motion and rendering state.
 
 \paragraph{Training data for video generation.} HumanVid~\cite{wang2024humanvid} and
 MiraData~\cite{ju2024miradata} improve the coverage and transparency of video training data at scale. They do
-not aim to make pretraining itself a short experiment. Our 0.85-GB tier makes the opposite trade: narrow visual
+not aim to make pretraining itself a short experiment. Our 0.79-GB tier makes the opposite trade: narrow visual
 scope for a pipeline that can be inspected end to end. Synthetic data has also been used to improve large
 generators directly~\cite{zhao2025synthetic,jin2026dynavid}; those works target a different compute regime, one
 where the reader inherits a large pretrained model rather than training the generator themselves.
 
 \paragraph{Human motion as source data.} AMASS~\cite{mahmood2019amass} and HumanML3D~\cite{guo2022humanml3d}
-support motion modelling but specify no pixel renderer or visual evaluation. We use articulated motion as
-source material and simplify appearance so that generated pixels can be related to joints and limbs.
+support motion modelling without a pixel renderer or visual evaluation; we use articulated motion as source
+material and simplify appearance so generated pixels can be related to joints and limbs.
 
 \paragraph{Evaluation of generated video.} FVD~\cite{unterthiner2018fvd} is a useful distributional distance,
 but it responds more to frame content than to temporal corruption~\cite{ge2024fvdbias}. T2V-CompBench and
@@ -130,10 +124,8 @@ We generated one motion per seed 0--9 for each of 143 prompts in six groups (dan
 transition, idle, sport) with NVIDIA ARDY~\cite{zhao2026ardy}. Each motion is six seconds at 20 fps. A
 z-buffered capsule renderer with $4\times$ supersampling emits three deterministic orthographic views. Nine
 prompts were removed by visual curation because their motions do not visibly perform the requested action in
-this domain: near-static failures (\emph{sways to slow music}), motion the renderer cannot show (\emph{shakes
-their head no}; the head is a filled circle), absent or unrecognisable actions (\emph{yoga warrior pose},
-\emph{yoga tree pose}, \emph{sit up}, \emph{push up}, \emph{standing long jump}), and interactions with objects
-that do not exist in the render (\emph{climbs over a low wall}, \emph{lies down on the floor}). The release
+this domain, for example \emph{shakes their head no} (the head is a filled circle), \emph{push up} (the action
+does not appear), and \emph{climbs over a low wall} (the wall does not exist in the render). The release
 contains 134 prompts; the exclusion list ships with per-prompt reasons. Prompts whose stillness is correct (the
 idle group) are kept even when the low-motion QA flag fires. Table~\ref{tab:data} summarises the data. Seeds
 0--7 train, seed 8 validates, seed 9 tests: every prompt appears in all three splits, and no source motion
@@ -174,22 +166,18 @@ domain uses one visual style, one figure per frame, orthographic cameras, and at
 builder records two motion-quality flags (\texttt{frozen}, \texttt{levitation}); flagged samples stay in the
 release so filtering choices are explicit.
 
-The configurations are compute tiers of one dataset. $128^2$ keeps the most detail; the 0.85-GB $64^2$ tier is
-the primary training tier; $32^2$ supports smoke tests and rapid ablations. Reported structural results use
-$64^2$, where the thin coloured limbs remain measurable.
-
-The motion release supports rebuilding the full visual dataset without ARDY: a script re-derives body and
-camera settings from each clip identifier and reruns the public renderer. A verifier checks metadata exactly
-and compares rendered colour, segmentation, visibility, depth, and normals within declared tolerances.
+The configurations are compute tiers of one dataset. $128^2$ keeps the most detail; the 0.79-GB $64^2$ tier is
+the primary training tier; $32^2$ supports smoke tests. Reported structural results use $64^2$, where the thin
+coloured limbs remain measurable. The motion release supports rebuilding the full visual dataset without ARDY;
+\S\ref{sec:access} describes the rebuild and its verification.
 
 \section{Tasks and failure diagnostics}
 \paragraph{Video task.} Each clip has 120 frames at 20 fps, and dataset-level evaluation uses the complete
-clip. The reference models train on a declared window view: 40 consecutive frames at a random offset within the
-first 64 frames of each clip. The 40-frame length matches ARDY's two-second generation window and keeps the
-training tensor small; the first-64-frame restriction concentrates training where the prompted action occurs,
-because ARDY does not pace an action to the requested duration. The window rows in
-Table~\ref{tab:backbone-results} compare generated windows with real windows drawn under the same manifest
-rule.
+clip. The reference models train on a declared window view: the first 64 frames of each clip (3.2 seconds).
+This restriction keeps the training tensor within one GPU and concentrates training where the prompted action
+occurs, because ARDY does not pace an action to the requested duration and later frames often idle. The window
+rows in Table~\ref{tab:backbone-results} compare generated 64-frame windows with real windows drawn under the
+same manifest rule.
 
 \paragraph{Structural answer key.} Each arm and leg uses a fixed pair of colours. The evaluator converts a
 frame into eight limb-colour masks and reports:
@@ -327,7 +315,7 @@ the representation the evaluator scores. A separately trained video VAE adds a t
 generator errors with codec artifacts, as the audited codec above shows. The core Colab therefore follows the
 pixel-space route.
 
-\section{Accessibility and reproducibility}
+\section{Accessibility and reproducibility}\label{sec:access}
 The repository releases the generator, cache builder, trainers, sampling code, evaluator, corruptions, FVD
 evaluation, checkpoints, and comparison script. The notebook inspects the data, builds a cache, trains the
 image generator, transfers its spatial weights, trains the video generator, samples a multi-second GIF, and
@@ -348,7 +336,7 @@ each 10k-step 64-frame video run peaks below 10\,GB with gradient checkpointing 
 card. Measured step times are 3.4\,s for the factorised run (two runs sharing the GPU) and 1.07\,s for the
 local-mixer run (exclusive). Disabling checkpointing raises the local-mixer peak to 55.1\,GB and lowers its
 step to 0.82\,s; that trade only pays on large workstation cards. Step times transfer across GPUs only
-approximately. The earlier UNet lesson completed on a hosted Tesla T4; hardware numbers are reported for the
+approximately. An earlier UNet lesson completed on a hosted Tesla T4; hardware numbers are reported for the
 hardware they were recorded on.
 
 Our code is MIT and the dataset is CC0-1.0. Motions were generated with ARDY's 20-fps Core model (checkpoint
@@ -359,16 +347,14 @@ Model Agreement}, which permits derivative works and claims no ownership of outp
 \section{Limitations and next evaluations}\label{sec:future}
 The domain is narrow by design: one raster style, one figure, orthographic cameras, no real-video proxy. The
 colour-based evaluator measures visible topology, not bone length, joint angles, left/right semantics, or
-biomechanics. The motions inherit ARDY's capabilities and biases; the nine-prompt curation removed what
-inspection found, but we have not human-validated every remaining motion, and ARDY does not pace actions to the
-requested duration. The seed-disjoint test measures in-domain generation under unseen motion realisations, not
+biomechanics. The motions inherit ARDY's capabilities and biases, and we have not human-validated every
+remaining motion. The seed-disjoint test measures in-domain generation under unseen motion realisations, not
 zero-shot prompts or human motion at large. The colour metrics do not establish prompt adherence. Three
 sampling seeds quantify generation noise for one checkpoint, not training variation or scaling.
 
-The most direct extension is a learned rig estimator with calibrated per-joint confidence: map a generated
-video back to a rig, re-render it, and compare. That would expose rig-space failures (bone length, joint
-angles, foot contact) and rendered-space disagreement, but its scores would need validation on controlled
-malformations before use as evidence.
+The most direct extension is a learned rig estimator: map a generated video back to a rig, re-render it, and
+compare, exposing rig-space failures such as unstable bone length or foot contact. Its scores would need
+validation on controlled malformations before use as evidence.
 
 \section{Conclusion}
 Dancing Stick Figures makes a complete video-generation experiment small enough to run and concrete enough to
