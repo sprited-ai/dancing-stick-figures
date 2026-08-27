@@ -274,8 +274,8 @@ Real reference windows & --- & --- & .116 & .093 & .037 & .373 & .501 & .073 & 1
 Codec reconstruction floor & --- & --- & .137 & .104 & .037 & .380 & .503 & .104 & 124.4 \\
 Video DiT, 10k & factorised & random & .942 & .035 & .051 & .408 & .559 & .326 & 1641.3 \\
 Video DiT, 10k & factorised & image & .169 & .045 & .034 & .850 & .719 & .324 & 545.0 \\
-Video DiT, 10k & factorised + local mixer & image & --- & --- & --- & --- & --- & --- & --- \\
-Video DiT, 10k & joint spatio-temporal & image & --- & --- & --- & --- & --- & --- & --- \\
+Video DiT, 10k & factorised + local mixer & image & .158 & .045 & .032 & .515 & .609 & .205 & 407.0 \\
+Video DiT, 10k & joint spatio-temporal & image & .240 & .065 & .035 & .556 & .610 & .221 & 558.9 \\
 Latent video DiT, 10k & factorised & random & .816 & .398 & .084 & .571 & .647 & .276 & 503.3 \\
 Latent video DiT, 10k & joint spatio-temporal & random & .821 & .408 & .087 & .564 & .635 & .273 & 527.2 \\\bottomrule
 \end{tabular}
@@ -285,7 +285,6 @@ target. The codec-floor row passes the real windows through the frozen autoencod
 latent scores should be read against it. Real training-split windows score FVD 125.7 against the same
 reference, which is also what a training-set replay would score, so models near this band need a memorisation
 check. A training-seed repeat of the warm-started video row scores TVR .183 / FVD 570.7 against .169 / 545.0.
-% REMAINING(2026-08-26): local-mixer and joint-attention pixel rows land tonight (day queue).
 \end{table*}
 
 \paragraph{Reading the ladder.} Initialisation dominates at this budget. From random weights the 10k-step video
@@ -294,8 +293,11 @@ against .116 real. The seed repeat (.183, 570.7) shows these contrasts are large
 variance. The two measurement families also disagree in opposite directions. The warm-started pixel model has
 near-real structure but too much motion (centroid speed .850 vs.\ .373 real), which FVD punishes. The latent
 rows are the opposite: FVD near 500, TVR above .8, broken figures rendered smoothly by the codec. Ranking by
-TVR alone and by FVD alone gives opposite orderings.
-% REMAINING: extend with the local-mixer and joint-attention pixel rows when their evals land.
+TVR alone and by FVD alone gives opposite orderings. The mixing rung also orders cleanly: the local mixer
+improves on the factorised baseline in structure and motion at once (TVR .158 vs.\ .169, centroid speed .515
+vs.\ .850, FVD 407 vs.\ 545), while joint attention, at $4.7\times$ the step cost, is worse on every measure
+(TVR .240, FVD 559). Direct neighbour connectivity helps when it is nearly free; global connectivity does not
+pay for itself within this step budget.
 Changing the prompt under fixed noise has a measurable effect, and the paired wave examples in
 Figure~\ref{fig:dit-samples} move the requested arm. This is bounded evidence of conditioning, not a calibrated
 prompt-adherence score.
