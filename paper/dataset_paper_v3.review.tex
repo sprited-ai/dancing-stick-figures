@@ -1,8 +1,8 @@
-\documentclass[10pt,twocolumn]{article}
+\documentclass[11pt]{article}
 \usepackage[letterpaper,top=0.64in,bottom=0.68in,left=0.66in,right=0.66in,columnsep=0.24in]{geometry}
 \usepackage[T1]{fontenc}\usepackage{lmodern}\usepackage{microtype}\usepackage{graphicx}\usepackage{booktabs}
 \usepackage{array}\usepackage{caption}\usepackage{xcolor}\usepackage{enumitem}\usepackage{tikz}
-\usepackage{balance}
+\usepackage{balance}\usepackage{setspace}\usepackage[mathlines]{lineno}
 \usetikzlibrary{positioning}
 \usepackage[hidelinks]{hyperref}\usepackage{url}
 \definecolor{sprited}{HTML}{6337C7}\definecolor{teal}{HTML}{008C95}\definecolor{pale}{HTML}{F3F0FA}\definecolor{muted}{HTML}{555555}
@@ -23,7 +23,7 @@ pdfkeywords={video generation, benchmark, synthetic dataset, structural evaluati
 \href{https://colab.research.google.com/github/sprited-ai/dancing-stick-figures/blob/main/notebooks/dancing_stick_figures_colab_v0_3.ipynb}{Colab}}
 \date{}
 
-\begin{document}\raggedbottom\maketitle\vspace{-1.25em}
+\begin{document}\doublespacing\linenumbers\raggedbottom\maketitle\vspace{-1.25em}
 \begin{abstract}
 End-to-end study of video generation---training a model, inspecting its samples, and explaining its
 failures---faces three practical obstacles: datasets are large, the process behind each frame is unknown,
