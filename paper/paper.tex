@@ -26,7 +26,7 @@ pdfkeywords={video generation, benchmark, synthetic dataset, structural evaluati
 \begin{document}\raggedbottom\maketitle\vspace{-1.25em}
 \begin{abstract}
 End-to-end study of video generation---training a model, inspecting its samples, and explaining its
-failures---faces three practical obstacles: datasets are large, the process behind each frame is unknown,
+failures---faces three practical obstacles: datasets are large, the true scene and motion behind each frame are unrecorded,
 and aggregate scores do not say why a video failed. \textbf{Dancing Stick Figures} is a synthetic video dataset
 with a deterministic renderer, built so that the whole experiment fits on one GPU. It contains 1,340 six-second motions rendered from three cameras. Every frame stays linked to
 the joints, camera, body parameters, depth, surface normals, part labels, and source motion that produced it,
