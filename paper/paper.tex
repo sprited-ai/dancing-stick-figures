@@ -25,10 +25,10 @@ pdfkeywords={video generation, benchmark, synthetic dataset, structural evaluati
 
 \begin{document}\raggedbottom\maketitle\vspace{-1.25em}
 \begin{abstract}
-Learning video generation by training models yourself is hard. Real video datasets are large, the process
-behind each frame is unknown, and one aggregate score rarely says why a generated video failed. \textbf{Dancing
-Stick Figures} is a synthetic video dataset with a deterministic renderer, built so that the whole experiment
-fits on one GPU. It contains 1,340 six-second motions rendered from three cameras. Every frame stays linked to
+End-to-end study of video generation---training a model, inspecting its samples, and explaining its
+failures---is out of reach for most researchers: datasets are large, the process behind each frame is unknown,
+and aggregate scores do not say why a video failed. \textbf{Dancing Stick Figures} is a synthetic video dataset
+with a deterministic renderer, built so that the whole experiment fits on one GPU. It contains 1,340 six-second motions rendered from three cameras. Every frame stays linked to
 the joints, camera, body parameters, depth, surface normals, part labels, and source motion that produced it,
 so evaluation has an answer key. Rule-based measurements check whether coloured limbs stay connected and how
 position and pose change over time. Controlled corruptions test what each measurement can and cannot see: in a
@@ -38,9 +38,9 @@ checkpoints, and a Colab lesson.
 \end{abstract}
 
 \section{Introduction}
-Video generation is easy to encounter and hard to study. Systems such as Seedance and MiniMax
-H3~\cite{gao2025seedance,minimax2026h3} publish results and sometimes weights, but a learner still runs into
-three walls:
+Strong video generation systems such as Seedance and MiniMax H3~\cite{gao2025seedance,minimax2026h3} publish
+results and sometimes weights, yet access to those artifacts is not the same as the ability to study them.
+Three barriers separate the two:
 \begin{itemize}[leftmargin=*,nosep]
 \item \textbf{Data.} The exact data, filters, and recipe behind a strong model are rarely released together,
 so a failure cannot be traced back to what the model saw.
