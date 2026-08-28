@@ -4,8 +4,9 @@ most FVD implementations. Videos: uint8 [N,T,H,W,3] RGB (composite premultiplied
     from eval.fvd import fvd
     d = fvd(real_videos, fake_videos, device="cuda")
 
-Notes: I3D wants T>=9 (we use 16), 224x224 input (we resize), and >=~256 videos per set for a
-stable estimate — report N and use the same N for real and fake. FVD is only comparable within
+Notes: this I3D wrapper requires at least 16 input frames (the native paper protocol supplies all
+120), resizes frames to 224x224, and benefits from large matched sample sets. Report N and use the
+same N for real and fake. FVD is only comparable within
 this exact setup (I3D weights, resize, N, T).
 """
 from __future__ import annotations
@@ -51,7 +52,7 @@ def features(videos: np.ndarray, device="cuda", bs=16) -> np.ndarray:
 def frechet(mu1, s1, mu2, s2):
     from scipy import linalg
     diff = mu1 - mu2
-    covmean, _ = linalg.sqrtm(s1.dot(s2), disp=False)
+    covmean = linalg.sqrtm(s1.dot(s2))
     if not np.isfinite(covmean).all():
         off = np.eye(s1.shape[0]) * 1e-6
         covmean = linalg.sqrtm((s1 + off).dot(s2 + off))
@@ -65,7 +66,12 @@ def stats(feats):
 
 def fvd(real: np.ndarray, fake: np.ndarray, device="cuda") -> float:
     fr, ff = features(real, device), features(fake, device)
-    return frechet(*stats(fr), *stats(ff))
+    return fvd_from_features(fr, ff)
+
+
+def fvd_from_features(real_features: np.ndarray, fake_features: np.ndarray) -> float:
+    """FVD from cached embeddings, so a reference set is embedded only once."""
+    return frechet(*stats(real_features), *stats(fake_features))
 
 
 def rgba_premult_to_rgb(x: np.ndarray) -> np.ndarray:

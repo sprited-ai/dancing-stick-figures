@@ -4,10 +4,10 @@
     m = score_frame(rgba_uint8_128x128x4)   # dict of metrics (0 = perfect)
 
 Metrics (all from the colour image alone, no labels needed):
-  tvr   topology violation rate: per limb colour, #connected components != 1 (0..1 over the 12 colours),
+  tvr   topology violation rate: per limb colour, #connected components != 1 (0..1 over the 8 limb colours),
         plus missing extremities (head, 2 hands, 2 feet colours absent)
   lie   limb-identity error v0: adjacency graph of colours vs skeleton adjacency. Each distal colour must
-        touch its proximal colour; each proximal colour must touch ink. Score = fraction of the 12
+        touch its proximal colour; each proximal colour must touch ink. Score = fraction of the 8
         expected adjacencies that are missing. NOTE: a full left<->right chain swap preserves adjacency and
         is NOT detected here (needs geometry -> SRE with the pose regressor). Partial swaps are.
   cpe   colour purity error: fraction of foreground (alpha>0.5) pixels farther than TAU from every palette
@@ -103,11 +103,71 @@ def _axis_angle(mask):
     return a % np.pi
 
 
+def transition_series(frames_thw4: np.ndarray) -> dict:
+    """Return frame-transition signals for seam/within-chunk diagnosis.
+
+    Velocity arrays are aligned to their destination frame (indices 1..T-1),
+    and acceleration/jerk arrays to indices 2..T-1.
+    """
+    labs = [label_colours(f) for f in frames_thw4]
+    cents = []
+    for _, fg in labs:
+        ys, xs = np.nonzero(fg)
+        cents.append((xs.mean(), ys.mean()) if len(xs) >= 10 else (np.nan, np.nan))
+    c = np.asarray(cents, np.float64)
+    centroid_speed = np.linalg.norm(np.diff(c, axis=0), axis=1)
+    centroid_accel = np.linalg.norm(np.diff(c, n=2, axis=0), axis=1)
+
+    angle_steps = []
+    for i, name in enumerate(NAMES):
+        if name == "ink": continue
+        ang = np.asarray([_axis_angle(lab == i) for lab, _ in labs])
+        d = np.diff(ang)
+        angle_steps.append((d + np.pi / 2) % np.pi - np.pi / 2)
+    angle_steps = np.asarray(angle_steps)
+    def finite_mean_axis0(values):
+        finite = np.isfinite(values)
+        return np.divide(np.nansum(values, axis=0), finite.sum(axis=0),
+                         out=np.full(values.shape[1], np.nan), where=finite.sum(axis=0) > 0)
+    angle_speed = finite_mean_axis0(np.abs(angle_steps))
+    angle_jerk = finite_mean_axis0(np.abs(np.diff(angle_steps, axis=1)))
+    return {
+        "centroid_speed": centroid_speed,
+        "centroid_accel": centroid_accel,
+        "angle_speed": angle_speed,
+        "angle_jerk": angle_jerk,
+    }
+
+
+def score_seams(frames_thw4: np.ndarray, seam_frames) -> dict:
+    """Split transition signals at true AR seams versus within chunks.
+
+    ``seam_frames`` contains destination frame indices, e.g. 16 denotes the
+    transition 15->16. Missing/undefined signals remain NaN rather than being
+    silently replaced by a favourable value.
+    """
+    seam_frames = set(int(x) for x in seam_frames)
+    series = transition_series(frames_thw4)
+    out = {}
+    for name, values in series.items():
+        start = 1 if name.endswith("speed") else 2
+        indices = np.arange(start, start + len(values))
+        seam_mask = np.asarray([i in seam_frames for i in indices])
+        for split, mask in (("seam", seam_mask), ("within", ~seam_mask)):
+            chosen = values[mask]
+            finite = chosen[np.isfinite(chosen)]
+            out[f"{split}_{name}"] = float(finite.mean()) if finite.size else np.nan
+    return out
+
+
 def score_video(frames_thw4: np.ndarray) -> dict:
     """[T,H,W,4] -> per-frame means (tvr/lie/cpe/fg) + per-video temporal metrics:
       mass_drift    std/mean over time of each colour's pixel count (limbs appearing/disappearing)
-      head_jitter   mean |Δ centroid of ink+all fg| between consecutive frames, px (a held or smoothly moving
-                    figure: small; per-frame re-rolls: large)
+      centroid_speed mean |Δ foreground centroid|, px; this is motion amount, not a one-sided error
+      centroid_accel mean |Δ² foreground centroid|, px; high values indicate abrupt motion
+      motion_fraction fraction of transitions whose centroid moves by more than 0.25 px
+      head_jitter   legacy alias for centroid_speed (kept for checkpoint/result compatibility)
+      angle_speed   mean absolute first angular difference of limb principal axes
       angle_jerk    mean over limb colours of mean |second difference| of the limb's principal-axis angle, rad
                     (smooth arcs: small)
       height_var    std over time of the figure's vertical extent / mean extent (figure shouldn't change size)
@@ -125,16 +185,33 @@ def score_video(frames_thw4: np.ndarray) -> dict:
         cents.append((xs.mean(), ys.mean())); heights.append(ys.max() - ys.min())
     c = np.array(cents); h = np.array(heights)
     d = np.linalg.norm(np.diff(c, axis=0), axis=1)
-    out["head_jitter"] = float(np.nanmean(d)) if np.isfinite(d).any() else 1e3
+    speed = float(np.nanmean(d)) if np.isfinite(d).any() else 1e3
+    out["centroid_speed"] = speed
+    out["head_jitter"] = speed
+    accel = np.linalg.norm(np.diff(c, n=2, axis=0), axis=1)
+    out["centroid_accel"] = float(np.nanmean(accel)) if np.isfinite(accel).any() else 1e3
+    valid_d = d[np.isfinite(d)]
+    out["motion_fraction"] = float(np.mean(valid_d > 0.25)) if valid_d.size else 0.0
     out["height_var"] = float(np.nanstd(h) / max(np.nanmean(h), 1)) if np.isfinite(h).any() else 1.0
-    jerks = []
+    speeds, jerks, paths = [], [], []
     for i, n in enumerate(NAMES):
         if n == "ink": continue
         ang = np.array([_axis_angle(l == i) for l, _ in labs])
-        if np.isfinite(ang).sum() < 3: continue
+        if np.isfinite(ang).sum() < 3:
+            out[f"ang_path_{n}"] = 0.0
+            continue
         # unwrap on the half-circle
         dd = np.diff(ang); dd = (dd + np.pi / 2) % np.pi - np.pi / 2
+        v = np.abs(dd); v = v[np.isfinite(v)]
+        if v.size: speeds.append(float(v.mean()))
         j = np.abs(np.diff(dd)); j = j[np.isfinite(j)]
         if j.size: jerks.append(float(j.mean()))
+        # angular odometer: total principal-axis angle travelled over the clip, rad.
+        # Absence and freezing both read 0 -- read beside mass_drift/tvr.
+        path = float(v.sum()) if v.size else 0.0
+        out[f"ang_path_{n}"] = path
+        paths.append(path)
+    out["angle_speed"] = float(np.mean(speeds)) if speeds else 0.0
     out["angle_jerk"] = float(np.mean(jerks)) if jerks else 1.0
+    out["ang_path_total"] = float(np.sum(paths)) if paths else 0.0
     return out

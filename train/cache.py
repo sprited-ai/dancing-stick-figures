@@ -27,11 +27,16 @@ def main():
     # pass 1: metadata only -> global order (clip_id, frame_idx)
     meta = []                                                     # (clip, fi, split, group, text, qa, file_idx, row_idx)
     for fi_, f in enumerate(files):
-        t = pq.read_table(f, columns=["clip_id", "frame_idx", "split", "group", "text", "qa_flags"])
+        names = set(pq.read_schema(f).names)
+        columns = ["clip_id", "frame_idx", "split", "group", "text"]
+        if "qa_flags" in names:
+            columns.append("qa_flags")
+        t = pq.read_table(f, columns=columns)
         d = t.to_pydict()
         for r in range(t.num_rows):
             if keep and d["split"][r] not in keep: continue
-            meta.append((d["clip_id"][r], d["frame_idx"][r], d["split"][r], d["group"][r], d["text"][r], d["qa_flags"][r], fi_, r))
+            qa = d["qa_flags"][r] if "qa_flags" in d else ""
+            meta.append((d["clip_id"][r], d["frame_idx"][r], d["split"][r], d["group"][r], d["text"][r], qa, fi_, r))
     meta.sort(key=lambda m: (m[0], m[1]))
     N = len(meta); pos = {(m[6], m[7]): k for k, m in enumerate(meta)}
     S = Image.open(io.BytesIO(pq.read_table(files[0], columns=["color"]).slice(0, 1).column("color")[0].as_py()["bytes"])).size[0]
