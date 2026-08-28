@@ -1,0 +1,541 @@
+\documentclass[10pt,twocolumn]{article}
+\usepackage[letterpaper,top=0.64in,bottom=0.68in,left=0.66in,right=0.66in,columnsep=0.24in]{geometry}
+\usepackage[T1]{fontenc}\usepackage{lmodern}\usepackage{microtype}\usepackage{graphicx}\usepackage{booktabs}
+\usepackage{array}\usepackage{caption}\usepackage{xcolor}\usepackage{enumitem}\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage[hidelinks]{hyperref}\usepackage{url}
+\definecolor{sprited}{HTML}{6337C7}\definecolor{teal}{HTML}{008C95}\definecolor{pale}{HTML}{F3F0FA}\definecolor{muted}{HTML}{555555}
+\hypersetup{colorlinks=true,linkcolor=sprited,citecolor=sprited,urlcolor=sprited,
+pdftitle={Dancing Stick Figures: A Synthetic Video Dataset, Generation Harness, and Diagnostic Evaluation Suite},
+pdfauthor={Jin Hyuk Cho},pdfsubject={Synthetic video dataset, generation harness, and diagnostic evaluation suite},
+pdfkeywords={video generation, benchmark, synthetic dataset, structural evaluation, education}}
+\captionsetup{font=small,labelfont=bf,skip=4pt}\setlist{nosep,leftmargin=*}
+\setlength{\parindent}{1em}\setlength{\parskip}{0pt}\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{7pt plus 2pt minus 2pt}\setlength{\intextsep}{7pt plus 2pt minus 2pt}\renewcommand{\arraystretch}{1.08}
+
+\title{\vspace{-1.5em}\textbf{Dancing Stick Figures: A Synthetic Video Dataset,\\Generation Harness, and Diagnostic Evaluation Suite}}
+\author{Jin Hyuk Cho\\Sprited\\\small\href{mailto:jin@sprited.ai}{jin@sprited.ai} $\cdot$
+\href{https://orcid.org/0009-0001-1896-8242}{ORCID 0009-0001-1896-8242}\\[-2pt]
+\small\href{https://huggingface.co/datasets/sprited/dancing-stick-figures}{Dataset} $\cdot$
+\href{https://github.com/sprited-ai/dancing-stick-figures}{Code} $\cdot$
+\href{https://huggingface.co/sprited/dancing-stick-figures-baselines}{Models} $\cdot$
+\href{https://colab.research.google.com/github/sprited-ai/dancing-stick-figures/blob/main/notebooks/dancing_stick_figures_colab_v0_3.ipynb}{Colab}}
+\date{}
+
+\begin{document}\raggedbottom\maketitle\vspace{-1.25em}
+\begin{abstract}
+When a video-generation failure appears only after a long training run, testing a proposed fix may require
+training again. Evaluation compounds that cost: open-ended generation has no single correct output, and an
+aggregate score does not by itself establish whether a sample succeeds or which property failed. \textbf{Dancing
+Stick Figures} is a synthetic video dataset with a deterministic dataset-generation harness and a $64^2$, 64-frame
+reference task designed for practical repeated training on a single workstation GPU. It contains 1,340 six-second source motions,
+each rendered from three cameras, for 4,020 video clips.
+Every frame retains its generating state (ARDY cskel27 joint positions, camera, body parameters, and source motion) together with
+per-pixel depth, surface normals, and part labels. The fixed limb palette and this recorded state support
+dataset-specific metrics for visible topology and part-wise motion---targeted diagnostics, not a complete
+correctness label. We validate these metrics with controlled rig corruptions and frame-order perturbations,
+exposing their sensitivities and blind spots. The release includes a 0.79-GB $64^2$ training tier, fixed
+evaluation manifests, checkpoints, and a Colab workflow that reruns the reference training pipeline at
+reduced budget, targeting a 16\,GB Tesla T4.
+\end{abstract}
+
+\section{Introduction}
+A researcher who sets out to study video generation by training models can find every ingredient in public:
+datasets, training code, pretrained components, benchmarks. The harder problem is knowing where to start.
+These artifacts were built for different regimes and must be chosen and connected, and there is rarely one
+compact package that says what to download, what to train on what, which intermediate artifact to inspect,
+and what the result demonstrates. Three barriers recur:
+\begin{itemize}[leftmargin=*,nosep]
+\item \textbf{Entry point.} Datasets, trainers, pretrained components, and benchmarks each exist, but the
+end-to-end path between them is fragmented, and the data and recipes behind strong models are rarely released
+with enough provenance to trace a failure back to what the model saw.
+\item \textbf{Iteration cost.} The complete training path for frontier systems such as Seedance and MiniMax
+H3~\cite{gao2025seedance,minimax2026h3} runs through large corpora, heavy compute, pretrained codecs, and often
+proprietary artifacts; controlled retraining there is impractical. A failure that appears only after
+training---for example, motion that becomes static late in a clip---can make each attempted diagnosis
+another expensive run.
+\item \textbf{Diagnosis.} Open-ended generation has no single correct output, while failures differ: motion
+may become static, flicker, or lose smoothness; subject appearance may drift; and the action may miss the
+prompt. These correspond to distinct evaluation dimensions such as dynamic degree, temporal flickering,
+motion smoothness, subject consistency, and prompt adherence~\cite{huang2023vbench}; one aggregate score
+cannot identify which property failed.
+\end{itemize}
+
+Procedural generation exposes variables that are usually unavailable in collected video. Each rendered frame
+is linked to its source motion, rig and body, camera, renderer, depth, surface normals, and part labels. We
+can change one variable at a time, rerender the clip, and observe which diagnostics react.
+
+Can a researcher train reference models from scratch on a single workstation GPU and then iterate on them through
+short, controlled cycles? Each cycle should expose a named failure, change one mechanism, and rerun the
+same diagnostic. The release supports that workflow with a connected end-to-end route, an image checkpoint
+used to initialise the video model's spatial weights, runs short enough to repeat and vary, and diagnostics
+with known blind spots.
+
+Dancing Stick Figures answers the entry-point problem with one connected route: download and inspect a
+dataset whose frames stay linked to their generating state, train a 64-frame prompt-conditioned video
+generator, and diagnose the samples with dataset-specific metrics that are themselves
+validated. Each stage leaves an inspectable artifact.
+
+The release contributes:
+\begin{enumerate}
+\item a label-rich video dataset released at $128^2$ and in a 0.79-GB $64^2$ tier, with the motion, camera,
+and body parameters behind every frame, and a deterministic dataset-generation harness;
+\item a seed-disjoint evaluation protocol and dataset-specific topology and motion metrics, validated with a
+controlled corruption suite; and
+\item image and video trainers, checkpoints, and a reduced-budget Colab workflow that reruns the reference
+training pipeline end to end.
+\end{enumerate}
+
+\begin{figure*}[t]\centering
+\begin{tikzpicture}[font=\small,node distance=6mm and 6mm,
+art/.style={draw=sprited,rounded corners=2pt,fill=pale,align=center,minimum height=8mm,inner xsep=6pt},
+op/.style={draw=teal,thick,rounded corners=2pt,fill=white,align=center,minimum height=8mm,inner xsep=6pt},
+diag/.style={draw=teal,rounded corners=2pt,fill=teal!10,align=center,minimum height=8mm,inner xsep=6pt},
+corr/.style={draw=muted,dashed,rounded corners=2pt,fill=white,align=center,minimum height=8mm,inner xsep=6pt},
+grp/.style={font=\scriptsize\itshape,text=muted},
+arr/.style={-latex,thick,draw=muted},
+darr/.style={-latex,thick,draw=muted,dashed}]
+\node[art] (src) {134 prompts\\1,340 source motions};
+\node[op,right=of src] (harness) {dataset-generation harness\\body + camera + rendering};
+\node[art,right=of harness] (data) {4,020 video clips\\state + depth/normals/parts};
+\node[op,below=9mm of harness] (train) {reference training\\image pretraining\\64-frame video training};
+\node[art,right=of train] (ckpt) {checkpoints\\+ generated samples};
+\node[diag,right=of ckpt] (eval) {evaluation signals\\topology + part-wise motion\\secondary: FVD};
+\node[corr,below=6mm of eval] (corrupt) {controlled corruptions\\rig edits + frame order};
+\draw[arr] (src)--(harness);
+\draw[arr] (harness)--(data);
+\draw[arr] (data.south) -- ++(0,-3.5mm) -| (train.north);
+\draw[arr] (train)--(ckpt);
+\draw[arr] (ckpt)--(eval);
+\draw[arr] (data.east) -| (eval.north) node[grp,pos=0.5,anchor=north west,xshift=1.5mm,align=left]{recorded state\\+ real references};
+\draw[darr] (corrupt.north)--(eval.south) node[grp,midway,right=1mm]{stress-test sensitivity};
+\node[grp,above=1mm of src.north west,anchor=south west] {data construction};
+\node[grp,below=1mm of train.south west,anchor=north west] {reference experiment};
+\node[grp,below=1mm of corrupt.south west,anchor=north west] {diagnostic validation};
+\end{tikzpicture}
+\caption{System map of the release. The released dataset is an artifact of the dataset-generation harness
+applied to the released prompts and source motions. Reference training consumes the dataset and produces
+model artifacts: checkpoints and generated samples. Recorded state and real references from the dataset,
+together with generated samples, feed the evaluation signals; controlled corruptions validate what those
+signals detect and miss.}\label{fig:loop}
+\end{figure*}
+
+\section{Related Work}
+
+\paragraph{Controlled synthetic data.} Moving MNIST~\cite{srivastava2015unsupervised} made temporal
+prediction cheap to study, while Kubric and MOVi~\cite{greff2022kubric} programmatically render scenes with
+dense ground truth for scene understanding. SURREAL~\cite{varol2017surreal} and BEDLAM~\cite{black2023bedlam}
+extend synthetic rendering to articulated people at a scale and realism aimed at perception. Dancing Stick
+Figures focuses on text-conditioned videos of a single stick figure. The small, controlled domain makes
+end-to-end retraining affordable and lets us test the failure diagnostics with known corruptions.
+
+\paragraph{Video training data and motion sources.} HumanVid~\cite{wang2024humanvid} and
+MiraData~\cite{ju2024miradata} broaden the coverage of video training data, while
+AMASS~\cite{mahmood2019amass} and HumanML3D~\cite{guo2022humanml3d} release motion representations. Dancing
+Stick Figures connects these layers in one compact release: text-conditioned source trajectories are
+rendered into video while preserving the correspondence among prompts, joints, camera and body parameters,
+limb labels, and pixels. ARDY~\cite{zhao2026ardy} supplies the upstream 27-joint trajectories; it is not
+evaluated by our video diagnostics. This pairing lets the released pixels train a video model, the known
+limb structure define dataset-specific measurements, and controlled corruptions test what those measurements
+detect.
+
+\paragraph{Evaluation of generated video.} FVD~\cite{unterthiner2018fvd} is widely reported as a
+distributional comparison in video-generation benchmarks~\cite{ho2022vdm}. It is not a
+diagnostic of whether an individual video succeeds: its I3D features have a documented content bias and can
+be under-sensitive to temporal corruption~\cite{ge2024fvdbias}. Our controlled study uses FVD as a
+conventional coarse reference and tests that limitation directly in this domain.
+VBench~\cite{huang2023vbench} demonstrates the value of separating video quality into diagnostic dimensions.
+Our setting adds recorded generating state, which lets us apply known corruptions and test which
+dataset-specific signals respond.
+
+\section{Dataset and generation pipeline}\label{sec:data}
+We generated one motion per seed 0--9 for each of 143 prompts in six groups (dance, gesture, locomotion,
+transition, idle, sport) using NVIDIA ARDY~\cite{zhao2026ardy}. Its Core model returns batchable 20-fps
+trajectories on a fixed 27-joint skeleton, matching the harness input without skeleton conversion. Each
+trajectory retains its prompt association, while body shape, camera, and raster appearance are applied
+later under deterministic control. Each motion is six seconds at 20 fps.
+
+The released motion table lets users rebuild or vary the rendered
+dataset without running ARDY. For additional source-motion generation, we pin ARDY v0.2.0 and
+\texttt{nvidia/ARDY-Core-RP-20FPS-Horizon40} at Hugging Face revision
+\texttt{abe6c43beb28c867c950acb824b9c4ef3d63fb76}. The released motion table remains the canonical input for
+reproducing the published dataset. The resulting motion distribution and prompt response inherit ARDY's
+capabilities and biases. Licensing and provenance are detailed in \S\ref{sec:access}.
+
+A z-buffered capsule renderer with $4\times$ supersampling emits three deterministic orthographic views.
+The release records 143 candidate prompts; nine are marked for exclusion with per-prompt reasons, leaving
+134 in the dataset. Selection is at prompt level, so all seeds of retained prompts remain. Table~\ref{tab:data} summarises the release. Seeds 0--7 train, seed
+8 validates, and seed 9 tests: every released prompt appears in all three splits, and no source motion
+crosses a split boundary (Table~\ref{tab:splits}). Because selection considered realisations across seeds,
+held-out evaluation measures unseen motion realisations of known, selected prompts, not unseen-prompt
+generalisation.
+
+\begin{table}[t]\centering\caption{Dataset configurations and storage footprint. A motion is rendered from three views; \texttt{frames} and
+\texttt{mini} store one record per rendered frame, \texttt{motion} one record per source
+motion.}\label{tab:data}\small
+\begin{tabular}{@{}lrrr@{}}\toprule Configuration & Records & Resolution & Size \\\midrule
+\texttt{frames} & 482,400 & $128^2$ & 4.4 GB \\
+\texttt{mini} & 482,400 & $64^2$ & 0.79 GB \\
+\texttt{motion} & 1,340 & 27 joints & 0.33 GB \\\bottomrule\end{tabular}\end{table}
+
+\begin{table}[t]\centering
+\caption{Seed-disjoint splits. Each split contains all 134 prompts; source motions are disjoint by seed.}
+\label{tab:splits}\scriptsize
+\begin{tabular}{@{}lrrrr@{}}\toprule
+Split & Prompts & Motions & Videos & Frames \\\midrule
+Train & 134 & 1,072 & 3,216 & 385,920 \\
+Validation & 134 & 134 & 402 & 48,240 \\
+Test & 134 & 134 & 402 & 48,240 \\
+All & 134 & 1,340 & 4,020 & 482,400 \\\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{paper/figs/dataset_anatomy_sqlite_pass.pdf}
+\caption{One released motion---\texttt{A person waves goodbye with both hands.}---viewed through the
+dataset. (a) The same representative pose from front, three-quarter, and side cameras. (b) Five frames at
+equal increments of pose-space motion, so an idle tail cannot dominate the strip. (c) The same frame with
+part segmentation, depth, camera-space normals, and projected joints. Each record also stores its prompt,
+source-motion identifier, seed, camera, and body parameters.}
+\label{fig:dataset-anatomy}
+\end{figure*}
+
+The generator samples limb length, scale, stroke, and camera yaw and pitch deterministically from
+\texttt{clip\_id}. It stores 3D and projected joints, visibility, camera and body parameters, RGBA, 16-bit
+depth, camera-space normals, 27-part segmentation, and the raw motion (Figure~\ref{fig:dataset-anatomy});
+the dataset card is the schema reference. Released rendering parameters span 50--58 pixels/m, 3--5-pixel
+strokes, $-3^\circ$--$10^\circ$ camera pitch, and .92--1.08 per-bone scale multipliers. The six groups
+contain 33 dance, 29 gesture, 21 locomotion, 13 transition, 10 idle, and 28 sport prompts. The builder
+records two motion-quality flags: \texttt{frozen} (mean joint speed below 0.02\,m/s) and \texttt{levitation}
+(root ever above 1.6\,m). Of 1,340 source motions, 58 are marked frozen (41 from the idle group) and one
+levitation; flagged samples stay in the release so filtering choices are explicit. Across 4,020 rendered
+clips, the median foreground fraction is .059 (5th--95th percentiles .043--.077). After deduplicating views
+by retaining camera 0 once per source motion, median centroid speed is .269 pixels/frame (.058--.635) and
+summed projected-rig part angular path is 24.75 rad (2.37--94.99). The largest train--validation or
+train--test Kolmogorov--Smirnov distance across these three quantities is .106.
+
+The released configurations are two resolutions of one dataset: $128^2$ keeps the most detail, and the 0.79-GB
+$64^2$ tier is the primary training tier; a derived $32^2$ cache view supports smoke tests. Reported structural
+results use $64^2$, where the thin coloured limbs remain measurable. The motion release supports rerendering
+the released motions into the full visual dataset without ARDY. \S\ref{sec:access} describes the rebuild
+and its verification.
+
+\section{Reference benchmark and evaluation protocol}
+\paragraph{Generation setup.} We use the dataset to define a compact reference benchmark for
+prompt-conditioned video generation. Each public clip has 120 frames at 20 fps. Every benchmark and
+diagnostic experiment in this paper uses the fixed first 64-frame window at native 20 fps, matching the
+reference-model output. The reference models are 64-frame-window models: they train on, and generate, only the fixed first 64
+frames of each clip (3.2 seconds), never the complete six-second clip. The window rows in
+Table~\ref{tab:backbone-results} compare generated 64-frame windows with real windows drawn under the same
+manifest rule. The fixed early window is a computational choice that reduces the training tensor; the
+resulting memory use depends on architecture and gradient checkpointing, with measurements in
+\S\ref{sec:access}.
+
+\paragraph{Structural diagnostics.} Each arm and leg uses a fixed pair of colours. The evaluator converts a
+frame into eight limb-colour masks and reports:
+\begin{itemize}\setlength\itemsep{0pt}
+    \item \textbf{Topology violation rate (TVR):} limb colours missing or split into multiple components;
+    \item \textbf{Limb-identity error (LIE):} expected colour adjacencies that are absent;
+    \item \textbf{Colour-purity error (CPE):} foreground pixels outside the rendering palette;
+    \item \textbf{Foreground fraction:} pixels occupied by the figure; and
+    \item \textbf{Clean rate:} frames with both TVR and LIE at zero.
+\end{itemize}
+Implementation uses 8-connected components (a 3-by-3 neighbourhood) for TVR. For LIE, an expected colour
+pair is adjacent when two iterations of 3-by-3 dilation of the proximal mask overlap the distal mask, giving
+a two-pixel Chebyshev tolerance. Foreground means alpha above 127; palette assignment requires Euclidean RGB
+distance below 60, and a colour mask with fewer than four assigned pixels is treated as absent. Video-level
+TVR, LIE, and CPE are means over frames.
+On one deterministic $64^2$ frame from each of the 4,020 released clips, threshold 60 assigns 96.4\% of the
+evaluator's alpha-gated foreground pixels and reaches 98.2\% class accuracy among assigned pixels and
+91.1\% macro IoU against the released segmentation mapped to the evaluator classes. In a threshold sweep
+from 20 to 100, threshold 60 is within 0.1 percentage point of the best macro IoU; the alpha${>}127$
+evaluator foreground gate excludes 17.2\% of segmentation-labelled foreground pixels, a
+foreground-definition scope difference rather than a classification error.
+Figure~\ref{fig:topology-metric-examples} shows one isolated trigger for each score.
+These are dataset-specific metrics that exploit the fixed limb colours: they query specific structural
+properties of the rendered figure, and none is a complete correctness judgement. For video, the evaluator adds
+colour-mass drift, centroid speed and acceleration, motion fraction, angular speed and jerk, and height
+variation; some track the whole foreground, others individual limbs. Centroid speed is the mean foreground-centroid displacement in
+pixels per frame; motion fraction is the fraction of frame transitions whose centroid displacement exceeds the
+released 0.25-pixel threshold; angular jerk averages the absolute second differences of each limb's
+principal-axis angle. These are image-space diagnostics, not biomechanics. The motion quantities are
+two-sided reference signals: zero can mean a stopped video, and large values can mean jitter. Agreement with
+the real reference, not a small value, is the target.
+
+\begin{figure*}[t]\centering
+\includegraphics[width=0.98\textwidth]{paper/figs/topology_metric_examples.pdf}
+\caption{Controlled examples of the three structural scores at the released $64^2$ evaluation resolution. All
+four panels derive from the same rendered frame and are scored by the released evaluator. A detached
+limb-colour component raises TVR by $1/8$; translating one distal colour mask beyond the two-pixel adjacency
+tolerance raises LIE by $1/8$; recolouring foreground pixels outside the palette raises CPE. The clean CPE is
+non-zero because some antialiased boundary pixels fall outside the RGB-distance tolerance. These edits
+illustrate the score definitions; they are not generated-video samples.}
+\label{fig:topology-metric-examples}
+\end{figure*}
+
+Occlusion produces non-zero topology scores even on real rendered frames, so scores on real rendered frames
+are a \emph{real reference}, not an error floor. A deterministic manifest selects one camera per source
+motion---so correlated views of the same motion never enter as independent samples---and keeps the two
+128-video reference halves motion-disjoint. For completeness, we report FVD~\cite{unterthiner2018fvd} as a
+secondary coarse distributional reference, not a primary measure of video quality or a diagnostic score. We
+composite RGBA onto white, resize to $224^2$, and extract 400-dimensional features with the standard
+Kinetics-400 I3D TorchScript network. Because that network was trained on natural action videos and this
+study has only 128 held-out source motions, values are comparable only within this fixed implementation,
+window length, and sample count; close differences require uncertainty analysis.
+
+\paragraph{Controlled validation.} Five deterministic structural corruptions were applied to 500 held-out
+frames re-rendered from their stored labels, and scored against the same frames uncorrupted. A partial
+left/right limb swap raises LIE from .063 to .266; an extra arm raises TVR from .176 to .261. A whole-limb
+swap preserves the colour graph and is not detected; bone stretching and hand deletion are also missed, because
+the metrics measure topology, not proportions or end-effectors. Temporal corruptions (freeze, shuffle, loop,
+reverse) are evaluated in \S\ref{sec:results}.
+
+\begin{figure*}[t]\centering
+\includegraphics[width=0.96\textwidth]{paper/figs/failure_modes_64f.pdf}
+\caption{Controlled study on protocol-matched first-64-frame windows ($n=128$ per set). \emph{Freeze}
+repeats window frame 1, \emph{shuffle} permutes the 64 selected frames, \emph{reverse} reverses the order of
+those same 64 frames, \emph{first 8 looped} repeats window frames 1--8. (a) Freezing zeroes the motion
+signals; shuffling and looping create excess acceleration and angular jerk; reversal changes neither.
+(b) Against the 114.7 real--real reference, FVD scores freezing 620.8, shuffling 520.7, reversal 120.1, and
+looping 418.2.}
+\label{fig:failures}\end{figure*}
+
+\section{Diagnostic validation and reference results}\label{sec:results}
+
+\paragraph{Metric stress test.} Figure~\ref{fig:failures} reports the 64-frame study on protocol-matched
+first-64-frame windows ($n=128$ per set). The real reference half B has centroid speed .373, centroid
+acceleration .415, and angular jerk .073. Freezing zeroes all motion signals. Shuffling raises the three
+signals to 1.802, 3.244, and .420; looping the first eight frames gives .336, .498, and .083. Reversal
+changes neither the frame set nor any of the time-symmetric hand-designed signals. FVD scores the
+corruptions against the 114.7 real--real reference at 620.8 for freezing, 520.7 for shuffling, 418.2 for
+looping, and 120.1 for reversal. Across 30 paired resamples of 64 videos from the 128-video source set, the
+paired FVD difference under reversal is $5.24\pm5.24$ (mean $\pm$ standard deviation; range $-5.76$ to
+$15.74$), positive in 25/30 resamples. The hand-designed signals are reversal-invariant by construction,
+and this FVD responds only weakly and inconsistently to reversal; neither certifies directionally correct
+motion.
+
+\paragraph{Part-wise localisation check.} We applied a topology-preserving arm-chain freeze at four
+severities to 24 unflagged test motions, using camera 0 once per source motion. For each clip, the arm with
+greater clean rendered angular path was selected; its local bone directions were blended toward their
+first-frame values while attachment and bone lengths were preserved. The median reduction in the two
+affected colour-part angular paths increased from 1.51 to 4.69, 8.61, and 9.11 rad across severities .25,
+.5, .75, and 1.0. Median absolute change across the other six limb parts remained .006--.011 rad; the
+affected reduction exceeded that change in 18/24, 23/24, 22/24, and 23/24 clips. At full severity, the
+95\% clip-bootstrap intervals are 4.58--16.43 rad for affected reduction and .001--.032 rad for unaffected
+absolute change. Median absolute TVR and LIE changes at full severity are .031 and .001, respectively: the
+part-wise signal localises this arm-chain edit, while severe pose changes can still alter visible topology
+through occlusion.
+
+\paragraph{I3D embedding sanity check.} We validated the released FVD protocol at the distribution level on
+the final v0.2 release (camera 0 only, first 64 frames at the native frame rate, 134 prompts $\times$ 10
+seeds), using ten deterministic matched-$N$ partitions with $N{=}650$ videos per set. Splitting the same
+prompt roster by motion seed gives median FVD 26.37 (range 23.72--30.13), close to the random-video-half
+baseline of 24.61 (21.39--28.03), while disjoint group-balanced prompt rosters give 47.82 (39.51--57.32);
+the same-roster value was lower in 10/10 partitions. FVD therefore responds to dataset-level
+action-composition change and is relatively insensitive to seed variation, but it is not a per-video or
+prompt-correctness score. We also tested the per-video I3D features directly, as pairwise Euclidean
+distances rather than FVD. Among 256 clean clips, 123 same-prompt, different-seed pairs have median
+distance 24.21 against 32.82 for matched different-prompt pairs within the same broad motion group; a
+same-prompt pair is closer in 80.4\% of balanced comparisons, and nearest-neighbour prompt identity is
+18.4\% against a .38\% random baseline. Paired clean-to-corruption median distances are 29.09 for freezing,
+27.52 for shuffling, and 28.46 for looping, but only 9.34 for reversal: the embedding carries prompt-linked
+action information and reacts to several temporal corruptions, while reversal remains comparatively weak.
+
+\paragraph{Released reference models.} Every released denoiser uses velocity-prediction flow matching on a
+linear interpolant (often called rectified flow, though we apply no reflow step)~\cite{peebles2023dit,lipman2023flow},
+but the losses are not identical. The image and pixel-video DiTs minimise velocity MSE with each pixel
+weighted by $1+\alpha$, where $\alpha$ is the ground-truth soft alpha, and normalise by the mean weight.
+Mini-Wan uses the latent-space and decoded-space losses described below. Each model uses a frozen T5-small
+encoder attached through cross-attention.
+\begin{itemize}[leftmargin=*,nosep]
+\item \textbf{Image DiT.} The 39.9M-parameter factorised backbone ($4\times4$ frame patches, alternating
+spatial and temporal attention blocks) run with $T{=}1$; its checkpoint supplies the spatial and text
+weights for image initialisation, an established practice~\cite{ho2022vdm,singer2023makeavideo}.
+\item \textbf{Pixel video DiTs.} The same 39.9M factorised backbone with $T{=}64$. The video rows separate
+random versus image-checkpoint initialisation and, among warm-started models, factorised attention versus a
+local $3{\times}3{\times}3$ convolutional mixer (a zero-initialised depthwise-plus-pointwise 3D convolution
+per block, about 1.9M extra parameters) versus joint attention over all spatio-temporal tokens.
+\item \textbf{Dancing Stick Figures Mini-Wan 40M.} Our strongest released video reference has 39.4M
+trainable denoiser parameters and uses the Diffusers \texttt{WanTransformer3DModel}, retaining its Wan block
+stack: full self-attention over latent video tokens with 3D rotary position encoding and text
+cross-attention~\cite{wan2025}. The scale and interface
+hyperparameters are adapted: width 384, 16 layers, 6 heads, $(1,2,2)$ patches, and 8 latent channels on a
+$16\times16\times16$ grid, with frozen T5-small conditioning. It is trained from random weights and uses no
+pretrained Wan weights. Its latent velocity MSE gives alpha-derived foreground latent cells weight 2 and
+background cells weight 1, again normalised by the mean weight. An auxiliary term of weight 1 decodes both
+the predicted clean latent and the target latent through a separately trained frozen video codec. The term,
+gated by $(1-t)$, combines alpha disagreement, squared RGB disagreement where target and prediction are
+foreground, and a 0.1-weighted background RGB penalty. The codec uses fourfold temporal and spatial
+compression with eight latent channels (f4t4d8). This is a compact Wan-architecture reference, not a
+Wan2.1 reproduction. We release checkpoints from
+the same run at 10k and 30k steps; the 30k checkpoint is the primary reference.
+\item \textbf{Codec control.} Real windows encoded and decoded by that same f4t4d8 codec, separating codec
+cost from model skill.
+\end{itemize}
+
+An audit of the frozen f4t4d8 codec bounds its role: held-out foreground reconstruction MSE is 9.5\% higher
+than training-prompt MSE, and neutralising background latent cells raises foreground error $5.5\times$. The
+mini-Wan row therefore includes both generator and codec error, and it cannot support a general
+pixel-versus-latent claim.
+
+Table~\ref{tab:backbone-results} collects the runs. Each block names its protocol, because single-frame and
+64-frame scores are different measurements. Figure~\ref{fig:dit-samples} shows the warm-started model.
+
+\begin{table*}[t]
+\centering
+\caption{Reference comparisons on the released seed-disjoint data. All learned models use the same released
+$64^2$ training videos and velocity-prediction flow matching as the primary objective, but they are not
+loss-matched: the pixel DiTs use alpha-weighted velocity MSE, while Mini-Wan also uses the decoded-RGBA
+auxiliary term described in the text. Pixel video models are shown at a common 10k-step budget;
+Mini-Wan 40M is shown at both 10k and its primary 30k release checkpoint from the same run. The single-frame
+model trains for 30k steps, and the codec-floor row (real windows through the frozen f4t4d8 codec used by
+Mini-Wan) involves no training. Rows report reference outcomes rather than a loss-controlled architecture
+ablation. ``Image'' initialisation
+copies compatible spatial and text weights from the single-frame checkpoint. Params counts trainable
+denoiser parameters and exclude the frozen text encoder and, for Mini-Wan, the separately trained codec.}
+\label{tab:backbone-results}
+\scriptsize
+\setlength{\tabcolsep}{2.8pt}
+\begin{tabular}{@{}lcllrrrrrrr@{}}\toprule
+Model & Params & Attention & Init. & TVR$\downarrow$ & LIE$\downarrow$ & CPE$\downarrow$ & Speed & Motion frac. & Jerk & FVD$\downarrow$ \\\midrule
+\multicolumn{11}{@{}l}{\textit{Single frames, prompt-conditioned, $n=512$, 50 sampling steps}}\\
+Real validation frames & --- & --- & --- & .115 & .093 & .039 & --- & --- & --- & --- \\
+Image DiT, 30k & 39.9M & factorised & random & .128 & .050 & .030 & --- & --- & --- & --- \\
+\addlinespace
+\multicolumn{11}{@{}l}{\textit{64-frame windows at 20 fps, prompt-conditioned, $n=128$ held-out source motions}}\\
+Real reference windows & --- & --- & --- & .116 & .093 & .037 & .373 & .501 & .073 & 114.7 / ref. \\
+Codec reconstruction floor & --- & --- & --- & .153 & .118 & .053 & .383 & .507 & .106 & 127.1 \\
+Video DiT, 10k & 39.9M & factorised & random & .942 & .035 & .051 & .408 & .559 & .326 & 1641.3 \\
+Video DiT, 10k & 39.9M & factorised & image & .169 & .045 & .034 & .850 & .719 & .324 & 545.0 \\
+Video DiT, 10k & 41.8M & factorised + local mixer & image & .158 & .045 & .032 & .515 & .609 & .205 & 407.0 \\
+Video DiT, 10k & 39.9M & joint spatio-temporal & image & .240 & .065 & .035 & .556 & .610 & .221 & 558.9 \\
+Mini-Wan 40M, 10k & 39.4M & Wan full 3D & random & .371 & .176 & .085 & .520 & .571 & .197 & 274.6 \\
+Mini-Wan 40M, 30k & 39.4M & Wan full 3D & random & .199 & .101 & .058 & .423 & .534 & .148 & 182.6 \\\bottomrule
+\end{tabular}
+\par\vspace{2pt}\raggedright\scriptsize TVR is topology violation rate, LIE limb-identity error, CPE
+colour-purity error. Speed, motion fraction, and jerk are two-sided signals: agreement with the real row is the
+target. The codec-floor row passes the real windows through the frozen f4t4d8 codec used by the Mini-Wan
+rows; its score should be read against them. FVD is included only as a secondary coarse distributional reference.
+With $n=128$ and I3D features trained on Kinetics-400, it is not a calibrated stick-figure quality score and
+should not by itself rank nearby rows. Real training-split windows score FVD 125.5 against the same
+reference, which is also what a training-set replay would score, so models near this band need a memorisation
+check. A training-seed repeat of the warm-started video row scores TVR .183 / FVD 570.7 against .169 / 545.0.
+All table and diagnostic FVD values directly composite premultiplied RGBA over white before I3D embedding.
+\end{table*}
+
+\paragraph{Reading the comparisons.} The largest observed contrast in the dataset-specific topology score is
+between random and image initialisation. From random weights the 10k-step video model violates topology in
+$94\%$ of frames (TVR .942); warm-started, the same model reaches TVR .169 against .116 real. A single
+training-seed repeat of the warm-started row scores TVR .183, consistent with that direction but
+insufficient to estimate training variance. The Mini-Wan rows change representation, backbone, and training
+objective relative to the pixel rows, so their difference does not isolate any of these factors; within the same Mini-Wan run,
+continuing from 10k to 30k improves TVR from .371 to .199 and FVD from 274.6 to 182.6. Within the warm-started
+pixel block, the local-mixer run reports TVR .158 and centroid speed .515, compared with .169 and .850 for the
+factorised baseline; joint attention reports .240 and .556. Each architecture has one training run at one
+budget.
+Figure~\ref{fig:dit-samples} provides representative warm-started samples spanning locomotion, gesture,
+transition, and dance prompts.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{paper/figs/reference_generation_pairs.pdf}
+\caption{Released clips and representative 10k-step DiT samples for locomotion, gesture, transition, and
+dance prompts. Each block shows frames 0/21/42/63 from a released clip and an independently seeded generation
+(50 Euler steps, guidance 3). The panel is qualitative and is not a prompt-adherence measurement.}
+\label{fig:dit-samples}
+\vspace{-3pt}
+\end{figure*}
+
+\paragraph{Why pixel space.} For this release, at $32^2$--$64^2$, pixel-space training is practical and keeps
+thin-limb errors in the representation the evaluator scores. A separately trained video VAE adds a training
+stage and, as the audit of this released codec shows, can confound generator errors with codec artifacts. The
+core Colab therefore follows the pixel-space route; it is a choice for this dataset and this codec.
+
+\section{Accessibility and reproducibility}\label{sec:access}
+The repository releases the dataset-generation harness, cache builder, trainers, sampling code, evaluator, corruptions, FVD
+evaluation, checkpoints, and comparison script. The Colab notebook is a reduced-budget reproduction of the
+reference two-stage training pipeline, not a reproduction of the released checkpoints' quality: with the same code
+and architecture it inspects the data, builds a cache, trains the image generator for 2k steps (the reference
+run: 30k), transfers its spatial weights, trains the video generator for 2k steps (reference: 10k), samples a
+multi-second GIF, and compares scores against real references. $32^2$ is a derived smoke-test view; $64^2$ is
+the reference dataset tier and model resolution. Each stage leaves an inspectable artifact before the next
+begins.
+
+The motion release supports rebuilding the visual records from the public motion table: the rebuild script
+recomputes body and camera settings from each \texttt{clip\_id} and reruns the public renderer, without ARDY.
+It rebuilds rendered frames from released motions; it does not regenerate the source motions. The verifier was
+run over all 514,800 $128^2$ frames of the pre-curation generation---a superset containing every one of the
+482,400 released frames: every motion and metadata label matches; colour and segmentation
+pixels agree on 99.88\% and 99.92\% of comparisons; joint visibility, the least stable field, agrees on
+99.50\%; depth and normals exceed 99.99\%. A 360-frame check against the released $64^2$ tier passes its
+declared agreement thresholds. The same script can rerender with seeded overrides to body scale, stroke, or
+camera, recorded in the manifest.
+
+Reference runs were measured on one NVIDIA RTX PRO 6000 Blackwell (96\,GB). The 30k-step image stage ran at
+0.10\,s/step with a 10.5\,GB peak; each checkpointed 10k-step 64-frame video run peaked below 10\,GB.
+Step times were measured under different sharing conditions: 3.4\,s/step for the factorised run while two
+jobs shared the GPU, and 1.07\,s/step for the local-mixer run with exclusive access. The promoted
+local-mixer run itself disabled checkpointing, peaking at 55.1\,GB with a 0.82\,s step time; that setting
+requires a large-memory card.
+
+Our code is MIT and the dataset is CC0-1.0. Motions were generated with ARDY's 20-fps Core model. ARDY's
+code is Apache-2.0; its checkpoints are distributed under the
+\href{https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-agreement/}{NVIDIA Open
+Model Agreement}, which permits derivative works and does not assert ownership of model outputs. The released
+frames are procedurally rendered and the released source motions are ARDY model outputs from text prompts; no
+directly captured human images or motion sequences are included in this release.
+
+\section{Limitations and future work}\label{sec:future}
+The domain is narrow by design: one raster style, one figure, orthographic cameras, no real-video proxy. The
+reference models train and generate only the fixed first 64 frames of each clip: this fixes one temporal
+position, can bias models toward early-clip motion, omits actions that complete late, and means no result
+here claims full six-second generation. The colour-based evaluator measures visible topology, not bone
+length, joint angles, left/right semantics, or biomechanics; its measured blind spots include whole-limb
+swaps, proportion changes, and time reversal. The arm-chain localisation study covers one topology-preserving motion edit; localisation for other body
+parts and failure types remains untested. The
+motions inherit ARDY's capabilities and biases; curation
+was prompt-level over inspected realisations from every seed, and we have not human-validated every remaining
+motion. The seed-disjoint test measures in-domain generation under unseen motion realisations of known
+prompts, not zero-shot prompts or human motion at large, and the colour metrics do not establish prompt
+adherence. Each model row in Table~\ref{tab:backbone-results} is a single training run evaluated with three
+sampling seeds; the one training-seed repeat is not a variance estimate, and no row carries a scaling claim.
+
+A learned rig estimator is future work that follows from these blind spots: mapping a generated video back to
+a rig and re-rendering it could expose rig-space failures the colour metrics miss, such as unstable bone
+length or end-effector errors. Its scores would need validation on controlled malformations before use as
+evidence.
+
+\section{Conclusion}
+Dancing Stick Figures links every released frame to its generating state and uses that state to define
+dataset-specific topology and motion measurements. The released workflow trains a prompt-conditioned
+64-frame video generator and evaluates its outputs with those measurements. Controlled corruptions reveal
+their limits: the structural signals are time-symmetric, and the released FVD protocol does not separate
+reversed clips from real--real variability. Directionally correct motion therefore requires evidence beyond
+any single reported score.
+
+\begin{thebibliography}{99}\footnotesize
+\setlength{\itemsep}{0pt}
+\setlength{\parskip}{0pt}
+\bibitem{srivastava2015unsupervised} N. Srivastava et al. Unsupervised Learning of Video Representations using LSTMs. \emph{ICML}, 2015.
+\bibitem{greff2022kubric} K. Greff et al. Kubric: A Scalable Dataset Generator. \emph{CVPR}, 2022.
+\bibitem{varol2017surreal} G. Varol et al. Learning From Synthetic Humans. \emph{CVPR}, 2017.
+\bibitem{black2023bedlam} M. J. Black et al. BEDLAM: A Synthetic Dataset of Bodies Exhibiting Detailed Lifelike Animated Motion. \emph{CVPR}, 2023.
+\bibitem{wang2024humanvid} Z. Wang et al. HumanVid: Demystifying Training Data for Camera-controllable Human Image Animation. \emph{NeurIPS Datasets and Benchmarks}, 2024.
+\bibitem{ju2024miradata} X. Ju et al. MiraData: A Large-Scale Video Dataset with Long Durations and Structured Captions. \emph{NeurIPS Datasets and Benchmarks}, 2024.
+\bibitem{mahmood2019amass} N. Mahmood et al. AMASS: Archive of Motion Capture as Surface Shapes. \emph{ICCV}, 2019.
+\bibitem{guo2022humanml3d} C. Guo et al. Generating Diverse and Natural 3D Human Motions from Text. \emph{CVPR}, 2022.
+\bibitem{gao2025seedance} Y. Gao et al. Seedance 1.0: Exploring the Boundaries of Video Generation Models. arXiv:2506.09113, 2025.
+\bibitem{minimax2026h3} MiniMax. MiniMax H3: An Open Model Breaking the Boundaries Between Tasks and Modalities.
+\href{https://www.minimax.io/blog/minimax-h3}{Model release page}, 2026.
+\bibitem{zhao2026ardy} K. Zhao et al. ARDY: Autoregressive Diffusion with Hybrid Representation for Interactive Human Motion Generation. arXiv:2607.08741, 2026.
+\bibitem{unterthiner2018fvd} T. Unterthiner et al. Towards Accurate Generative Models of Video: A New Metric and Challenges. arXiv:1812.01717, 2018.
+\bibitem{ge2024fvdbias} S. Ge et al. On the Content Bias in Fr\'echet Video Distance. \emph{CVPR}, 2024.
+\bibitem{peebles2023dit} W. Peebles and S. Xie. Scalable Diffusion Models with Transformers. \emph{ICCV}, 2023.
+\bibitem{lipman2023flow} Y. Lipman et al. Flow Matching for Generative Modeling. \emph{ICLR}, 2023.
+\bibitem{ho2022vdm} J. Ho et al. Video Diffusion Models. \emph{NeurIPS}, 2022.
+\bibitem{singer2023makeavideo} U. Singer et al. Make-A-Video: Text-to-Video Generation without Text-Video Data. \emph{ICLR}, 2023.
+\bibitem{huang2023vbench} Z. Huang et al. VBench: Comprehensive Benchmark Suite for Video Generative Models. arXiv:2311.17982, 2023.
+\bibitem{wan2025} Team Wan et al. Wan: Open and Advanced Large-Scale Video Generative Models. arXiv:2503.20314, 2025.
+\end{thebibliography}
+\end{document}
