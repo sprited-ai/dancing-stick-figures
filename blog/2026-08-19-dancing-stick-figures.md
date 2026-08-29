@@ -2,10 +2,10 @@
 title: "I built an MNIST for video diffusion — and trained a 5-second dancer on a free Colab"
 subtitle: "Dancing Stick Figures: a tiny, fully-labelled video dataset, one beginner route from noise to motion, and a robot that counts limbs"
 tags: machine-learning, generative-ai, deep-learning, dataset, opensource
-cover: https://huggingface.co/sprited/dancing-stick-figures-baselines/resolve/main/unet_ar64_interim_rollout.gif
+cover: https://huggingface.co/sprited/dancing-stick-figures-baselines/resolve/main/unet_ar64_rollout.gif
 ---
 
-![Eight stick figures dancing for 5.6 seconds, generated chunk by chunk by a 46 M-parameter diffusion model](https://huggingface.co/sprited/dancing-stick-figures-baselines/resolve/main/unet_ar64_interim_rollout.gif)
+![Eight stick figures dancing for 5.6 seconds, generated chunk by chunk by a 46 M-parameter diffusion model](https://huggingface.co/sprited/dancing-stick-figures-baselines/resolve/main/unet_ar64_rollout.gif)
 
 *Every one of these dancers was drawn from pure noise by a model that trained for a few hours on one GPU. And for every frame in the training data, we know exactly where each arm and leg really is — so a small program can grade the model instead of a human squinting at GIFs.*
 
