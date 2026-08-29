@@ -16,8 +16,6 @@ import numpy as np
 import torch, torch.nn as nn, torch.nn.functional as F
 from torch.utils.checkpoint import checkpoint
 from train.video_ddpm import VideoWindows, UNet3D, to_gif, worker_init, PRESETS
-
-
 def atomic_torch_save(obj, path):
     """Write a checkpoint completely before replacing the visible target."""
     tmp = f"{path}.tmp.{os.getpid()}"
