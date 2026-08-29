@@ -38,6 +38,8 @@ import os, sys, subprocess, glob, time
 V03_STARTED = time.time()
 if not os.path.exists("dancing-stick-figures"):
     !git clone -q https://github.com/sprited-ai/dancing-stick-figures
+else:
+    !git -C dancing-stick-figures pull -q  # refresh a clone left over from an earlier session
 %cd dancing-stick-figures
 !pip install -q -r train/requirements.txt 2>&1 | tail -1
 DATA_DOWNLOAD_ATTEMPTS = 3
@@ -104,11 +106,37 @@ First we unpack the frames into a fast cache. Then we train the DiT with one fra
 This stage teaches spatial structure before temporal modelling begins. Samples are saved every 500 steps so you can inspect the learning curve.
 """,
     10: r"""
-#@title Train the image DiT — 2,000 steps
-import time
-STEPS = 2000  #@param {type:"integer"}
+#@title Train the image DiT — show validation and samples every 500 steps
+import glob, os, subprocess, sys, time
+from IPython.display import display
+from PIL import Image
+STEPS = 5000  #@param {type:"integer"}
+REPORT_EVERY = 500
 image_started = time.perf_counter()
-!python -m train.video_dit_fm --cache data/cache --out $IMAGE_RUN --arch dit --size $IMAGE_SIZE --frames 1 --stride 1 --first_frames 64 --batch $IMAGE_BATCH --steps $STEPS --dim 384 --depth 12 --heads 6 --patch 4 --cond text --cfg_drop 0.1 --fg_weight 2 --grad_ckpt --fast --workers 2 --sample_every 500 --val_every 500 2>&1 | grep --line-buffered -v Warning | grep --line-buffered "^cached\|^init\|^step\|wrote\|params\|Error\|Traceback"
+cmd = [sys.executable, "-u", "-m", "train.video_dit_fm",
+       "--cache", "data/cache", "--out", IMAGE_RUN, "--arch", "dit",
+       "--size", str(IMAGE_SIZE), "--frames", "1", "--stride", "1",
+       "--first_frames", "64", "--batch", str(IMAGE_BATCH),
+       "--steps", str(STEPS), "--dim", "384", "--depth", "12",
+       "--heads", "6", "--patch", "4", "--cond", "text",
+       "--cfg_drop", "0.1", "--fg_weight", "2", "--fast", "--compile",
+       "--workers", "2", "--sample_every", str(REPORT_EVERY),
+       "--val_every", str(REPORT_EVERY)]
+shown_mtime = {p: os.path.getmtime(p) for p in glob.glob(f"{IMAGE_RUN}/sample_0*.png")}
+process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                           text=True, bufsize=1, env={**os.environ, "PYTHONUNBUFFERED": "1"})
+for line in process.stdout:
+    if line.startswith(("cached", "init", "step", "wrote", "params", "Error", "Traceback")):
+        print(line, end="", flush=True)
+    current = {p: os.path.getmtime(p) for p in glob.glob(f"{IMAGE_RUN}/sample_0*.png")}
+    for sample_path in sorted(p for p, mtime in current.items() if mtime > shown_mtime.get(p, 0)):
+        if "raw" not in sample_path:
+            print(f"\n{os.path.basename(sample_path)}")
+            display(Image.open(sample_path).resize((512, 512), Image.Resampling.NEAREST))
+    shown_mtime = current
+return_code = process.wait()
+if return_code:
+    raise subprocess.CalledProcessError(return_code, cmd)
 IMAGE_WALL_SECONDS = time.perf_counter() - image_started
 print(f"image stage wall time: {IMAGE_WALL_SECONDS / 60:.1f} min")
 """,
@@ -120,7 +148,7 @@ for f in sorted(glob.glob(f"{IMAGE_RUN}/sample_0*.png")):
     print(f.split("/")[-1]); display(Image.open(f).resize((512, 512), Image.NEAREST))
 """,
     12: r"""
-> **Why do early samples look rough?** Two thousand steps are enough to expose the complete training loop, not to equal the released reference checkpoint. The longer reference image stage runs for 30,000 steps. Your image checkpoint is still useful: it supplies the spatial weights for the video stage below.
+> **Why do early samples look rough?** The default 5,000-step exercise exposes the complete training loop but does not match the released 30,000-step reference checkpoint. Your image checkpoint is still useful: it supplies the spatial weights for the video stage below.
 """,
     13: r"""
 ## 3 · 🎬 Make it move — train a 3.2-second video generator
@@ -141,7 +169,24 @@ INIT_CKPT = f"{IMAGE_RUN}/ckpt.pt"
 assert os.path.exists(INIT_CKPT), f"Missing {INIT_CKPT}; finish image training first."
 VSTEPS = 2000  #@param {type:"integer"}
 video_started = time.perf_counter()
-!python -m train.video_dit_fm --cache data/cache --out $VIDEO_RUN --arch dit --size $IMAGE_SIZE --frames $VIDEO_FRAMES --stride $FRAME_STRIDE --first_frames 64 --batch $VIDEO_BATCH --steps $VSTEPS --dim 384 --depth 12 --heads 6 --patch 4 --cond text --cfg_drop 0.1 --fg_weight 2 --img_frac 0.1 --i2v_frac 0.2 --init $INIT_CKPT --grad_ckpt --fast --workers 2 --sample_every $VSTEPS --val_every 500 2>&1 | grep --line-buffered -v Warning | grep --line-buffered "^cached\|^init\|^step\|wrote\|params\|Error\|Traceback"
+video_cmd = [sys.executable, "-u", "-m", "train.video_dit_fm",
+             "--cache", "data/cache", "--out", VIDEO_RUN, "--arch", "dit",
+             "--size", str(IMAGE_SIZE), "--frames", str(VIDEO_FRAMES),
+             "--stride", str(FRAME_STRIDE), "--first_frames", "64",
+             "--batch", str(VIDEO_BATCH), "--steps", str(VSTEPS),
+             "--dim", "384", "--depth", "12", "--heads", "6", "--patch", "4",
+             "--cond", "text", "--cfg_drop", "0.1", "--fg_weight", "2",
+             "--img_frac", "0.1", "--i2v_frac", "0.2", "--init", INIT_CKPT,
+             "--grad_ckpt", "--fast", "--workers", "2",
+             "--sample_every", str(VSTEPS), "--val_every", "500"]
+video_process = subprocess.Popen(video_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                 text=True, bufsize=1, env={**os.environ, "PYTHONUNBUFFERED": "1"})
+for line in video_process.stdout:
+    if line.startswith(("cached", "init", "step", "wrote", "params", "Error", "Traceback")):
+        print(line, end="", flush=True)
+video_return_code = video_process.wait()
+if video_return_code:
+    raise subprocess.CalledProcessError(video_return_code, video_cmd)
 VIDEO_WALL_SECONDS = time.perf_counter() - video_started
 print(f"video stage wall time: {VIDEO_WALL_SECONDS / 60:.1f} min")
 """,

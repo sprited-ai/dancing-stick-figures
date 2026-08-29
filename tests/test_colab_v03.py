@@ -31,12 +31,12 @@ def test_v03_separates_public_clips_from_the_first_64_frame_protocol():
     assert "120 frames at 20 fps" in text
     assert "first 64 frames" in text and "native 20 fps" in text
     assert "first-64-frame window" in text
-    assert "--arch dit" in text
+    assert "--arch dit" in text or '"--arch", "dit"' in text
     assert "--frames 1" in text or '\"--frames\", \"1\"' in text
-    assert "--frames $VIDEO_FRAMES --stride $FRAME_STRIDE" in text
-    assert "--init $INIT_CKPT" in text
-    assert "--cond text" in text
-    assert "--i2v_frac 0.2" in text
+    assert "--frames $VIDEO_FRAMES --stride $FRAME_STRIDE" in text or '"--frames", str(VIDEO_FRAMES)' in text
+    assert "--init $INIT_CKPT" in text or '"--init", INIT_CKPT' in text
+    assert "--cond text" in text or '"--cond", "text"' in text
+    assert "--i2v_frac 0.2" in text or '"--i2v_frac", "0.2"' in text
     assert "eval.post_eval_t2v" in text
     assert "V03_COMPLETE=1" in text
 
