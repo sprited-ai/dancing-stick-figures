@@ -51,3 +51,12 @@ def test_v03_keeps_setup_and_diagnostics_in_order():
     score_index = next(i for i, source in enumerate(cells) if "Measure visible structure" in source)
     completion_index = next(i for i, source in enumerate(cells) if "Verification record" in source)
     assert image_index < video_index < score_index < completion_index
+
+
+def test_v03_reports_the_current_budget_and_propagates_training_failures():
+    _, text = notebook_text()
+    assert "STEPS = 5000" in text
+    assert "default 5,000-step exercise" in text
+    assert "Two thousand steps" not in text
+    assert "raise subprocess.CalledProcessError(return_code, cmd)" in text
+    assert "raise subprocess.CalledProcessError(video_return_code, video_cmd)" in text
