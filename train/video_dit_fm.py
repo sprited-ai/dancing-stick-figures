@@ -18,6 +18,17 @@ from torch.utils.checkpoint import checkpoint
 from train.video_ddpm import VideoWindows, UNet3D, to_gif, worker_init, PRESETS
 
 
+def atomic_torch_save(obj, path):
+    """Write a checkpoint completely before replacing the visible target."""
+    tmp = f"{path}.tmp.{os.getpid()}"
+    try:
+        torch.save(obj, tmp)
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+
 # ----------------------------------------------------------------- model
 def modulate(x, shift, scale):
     return x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
@@ -269,6 +280,36 @@ def foreground_weighted_mse(err, clean_video, foreground_weight=1.0):
     return (err * weights).mean() / weights.mean().clamp_min(1e-8)
 
 
+def rgba_x0_disagreement(predicted_clean, clean_video, t):
+    """Observable-space auxiliary used by the Mini-Wan decode-loss run.
+
+    Pixel models already operate in RGBA space, so this applies the same alpha
+    mismatch, foreground-colour, and weak background-colour terms directly to
+    predicted x0 instead of passing it through a codec. Inputs use the
+    trainer's [-1, 1] range; ``t`` is one scalar per video.
+    """
+    predicted = ((predicted_clean.float() + 1) / 2).clamp(0, 1)
+    target = ((clean_video.float() + 1) / 2).clamp(0, 1)
+    alpha_target, alpha_predicted = target[:, 3:4], predicted[:, 3:4]
+    mismatch = (alpha_target - alpha_predicted).abs()
+    weights = 1 + 9 * (alpha_target + mismatch).clamp(0, 1)
+    rgb_error = (target[:, :3] - predicted[:, :3]) ** 2
+    dims = (1, 2, 3, 4)
+    normalizer = weights.mean(dims).clamp_min(1e-8)
+    alpha_term = (weights * mismatch).mean(dims) / normalizer
+    foreground_colour = (weights * alpha_target * alpha_predicted * rgb_error).mean(dims) / normalizer
+    background_colour = 0.1 * ((1 - alpha_target) * rgb_error).mean(dims)
+    per_video = alpha_term + foreground_colour + background_colour
+    return ((1 - t.float()) * per_video).mean()
+
+
+def optimizer_step_due(micro_step, accumulation):
+    """Whether this zero-based microbatch completes an optimizer update."""
+    if accumulation < 1:
+        raise ValueError("accumulation must be >= 1")
+    return (micro_step + 1) % accumulation == 0
+
+
 def parse_step_set(spec):
     """Parse a comma-separated, non-negative milestone list."""
     if not spec:
@@ -368,6 +409,14 @@ def main():
                     help="restrict training/validation windows to the first N frames of each clip (0 = whole clip)")
     ap.add_argument("--batch", type=int, default=8); ap.add_argument("--steps", type=int, default=60000)
     ap.add_argument("--lr", type=float, default=2e-4); ap.add_argument("--dim", type=int, default=384)
+    ap.add_argument("--optimizer_beta2", type=float, default=0.95,
+                    help="AdamW beta2; use .999 to match Mini-Wan")
+    ap.add_argument("--grad_clip", type=float, default=1.0,
+                    help="gradient-norm clip; 0 disables clipping")
+    ap.add_argument("--ema_max", type=float, default=0.0,
+                    help="fixed EMA cap; 0 preserves the legacy .999/.9995 schedule")
+    ap.add_argument("--optimizer_steps", action="store_true",
+                    help="count --steps as optimizer updates rather than microbatches")
     ap.add_argument("--ch", type=int, default=64, help="ResUNet base channels (ignored by DiT)")
     ap.add_argument("--depth", type=int, default=12); ap.add_argument("--heads", type=int, default=6); ap.add_argument("--patch", type=int, default=4)
     ap.add_argument("--patch_t", type=int, default=1, help="temporal patch: one token spans this many frames (learned f-t patchify, no codec)")
@@ -375,6 +424,8 @@ def main():
     ap.add_argument("--text_encoder", default="google-t5/t5-small", help="frozen Hugging Face text encoder for --cond text")
     ap.add_argument("--text_len", type=int, default=32)
     ap.add_argument("--sample_every", type=int, default=2000); ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--checkpoint_every", type=int, default=0,
+                    help="write the rolling full-state ckpt.pt at this interval without running inference (0 = sample checkpoints only)")
     ap.add_argument("--early_sample_steps", default="", help="comma-separated extra inference/checkpoint steps, e.g. 0,1,5,10,25,50,100,250")
     ap.add_argument("--resume", default=""); ap.add_argument("--preset", default="", choices=[""] + list(PRESETS))
     ap.add_argument("--lr_final", type=float, default=0.1, help="cosine decays to this fraction of --lr")
@@ -383,11 +434,15 @@ def main():
     ap.add_argument("--seed", type=int, default=0); ap.add_argument("--val_every", type=int, default=500)
     ap.add_argument("--fast", action="store_true", help="cudnn.benchmark, tf32-high, channels_last_3d (UNet), fused AdamW, foreach EMA")
     ap.add_argument("--compile", action="store_true", help="torch.compile per block (regional); test on sm_120 first")
+    ap.add_argument("--timing_breakdown", action="store_true",
+                    help="log low-overhead data/prep/forward/loss/backward/optimizer/EMA timings every 50 updates")
     ap.add_argument("--shift", type=float, default=1.0, help="timestep shift (>1 = more noise; try 3 at 128/16f)")
     ap.add_argument("--img_frac", type=float, default=0.0, help="fraction of batches that are single frames (T=1 image warm-up mix)")
     ap.add_argument("--i2v_frac", type=float, default=0.0, help="fraction of video batches conditioned on the clean first frame (Seedance I2V, channel-concat + mask); enables cond channels")
     ap.add_argument("--noise_corr", type=float, default=0.0, help="PYoCo mixed noise: eps = sqrt(1-b)*shared + sqrt(b)*per-frame; 0 = iid")
     ap.add_argument("--fg_weight", type=float, default=1.0, help="soft-alpha foreground loss multiplier; 1 preserves the baseline")
+    ap.add_argument("--rgba_aux_loss", type=float, default=0.0,
+                    help="weight of Mini-Wan-matched x0 RGBA disagreement loss (pixel mode only)")
     ap.add_argument("--local_3d", action="store_true", help="add a zero-initialised local 3x3x3 token mixer to every DiT block")
     ap.add_argument("--full_st", action="store_true", help="replace factorised spatial/temporal attention with joint attention over all T*N tokens in every block")
     ap.add_argument("--conv_stem", action="store_true", help="learned f8t4 conv stem/head instead of linear patchify: VAE-style contextual mixing, end-to-end, no codec")
@@ -408,6 +463,8 @@ def main():
     ds = VideoWindows(a.cache, a.frames, "train", a.stride, size=a.size, return_text=a.cond == "text",
                       first_frames=a.first_frames)
     latent_mode = ds.latent
+    if latent_mode and a.rgba_aux_loss > 0:
+        raise ValueError("--rgba_aux_loss is for direct-RGBA models; latent models must decode before applying it")
     in_ch = int(json.load(open(os.path.join(a.cache, "meta.json")))["channels"]) if latent_mode else 4
     if latent_mode and (a.i2v_frac > 0 or a.noise_corr > 0):
         raise ValueError("latent caches do not support --i2v_frac or --noise_corr")
@@ -457,7 +514,7 @@ def main():
     model_name = "DiT-FM" if a.arch == "dit" else "ResUNet-FM"
     detail = (("convstem-f8t4" if a.conv_stem else f"p{a.patch}" + (f"+pt{a.patch_t}" if a.patch_t > 1 else "")) + ("+local3d" if a.local_3d else "") + ("+fullst" if a.full_st else "")) if a.arch == "dit" else f"ch{a.ch}"
     print(f"{model_name} params {n_params:.1f}M · {len(ds.clips)} train / {len(vds.clips)} val clips · {a.size}px {detail} · frames {a.frames} · batch {a.batch}×{a.accum} · ckpt {a.grad_ckpt} · shift {a.shift}", flush=True)
-    opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.95), weight_decay=0.01, fused=a.fused_adamw)
+    opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, a.optimizer_beta2), weight_decay=0.01, fused=a.fused_adamw)
     step = 0
     if a.resume:
         ck = torch.load(a.resume, map_location=dev); model.load_state_dict(ck["model"]); ema.load_state_dict(ck["ema"]); opt.load_state_dict(ck["opt"]); step = ck["step"]
@@ -494,19 +551,27 @@ def main():
         generator = torch.Generator(device=dev).manual_seed(1234)
         preview_noise = mixed_noise((preview_n, 4, a.frames, a.size, a.size), dev, a.noise_corr, generator).cpu()
         to_gif(preview_noise, os.path.join(a.out, "sample_000000.gif"))
-        torch.save(dict(ema=ema.state_dict(), step=0, args=vars(a), groups=ds.groups,
-                        arch=("dit_fm_t2v" if a.cond == "text" else "dit_fm") if a.arch == "dit" else ("resunet_fm_t2v" if a.cond == "text" else "resunet_fm")),
-                   os.path.join(a.out, "ckpt_000000.pt"))
+        atomic_torch_save(dict(ema=ema.state_dict(), step=0, args=vars(a), groups=ds.groups,
+                               arch=("dit_fm_t2v" if a.cond == "text" else "dit_fm") if a.arch == "dit" else ("resunet_fm_t2v" if a.cond == "text" else "resunet_fm")),
+                          os.path.join(a.out, "ckpt_000000.pt"))
         json.dump(dict(step=0, kind="zero-output initialization (noise is unchanged)", seed=1234,
                        prompts=diverse_text_prompts(vds, preview_n) if a.cond == "text" else None,
                        output=f"sample_000000.{preview_ext}"),
                   open(os.path.join(a.out, "sample_manifest_000000.json"), "w"), indent=2)
         print("  wrote sample_000000.gif", flush=True)
 
-    t0 = time.time(); step0 = step; it = iter(dl); ema_loss = None
+    t0 = time.time(); step0 = step; micro_step = 0; it = iter(dl); ema_loss = None
+    timing_records = []
+    timing_data_ms = 0.0
+    timing_updates = 0
     while step < a.steps:
+        data_started = time.perf_counter()
         try: x, labels = next(it)
         except StopIteration: it = iter(dl); x, labels = next(it)
+        if a.timing_breakdown:
+            timing_data_ms += (time.perf_counter() - data_started) * 1000.0
+            timing_marks = [torch.cuda.Event(enable_timing=True) for _ in range(7)]
+            timing_marks[0].record()
         x = x.to(dev, non_blocking=True)
         fg_map = None
         if latent_mode:
@@ -538,35 +603,87 @@ def main():
             shared = torch.randn_like(x[:, :, :1]).expand_as(x)
             eps = math.sqrt(1 - a.noise_corr) * shared + math.sqrt(a.noise_corr) * eps
         xt = (1 - tt) * x + tt * eps
-        prog = max(0.0, (step - 1000) / max(1, a.steps - 1000))
-        lr = a.lr * min(1.0, (step + 1) / 1000) * (a.lr_final + (1 - a.lr_final) * 0.5 * (1 + math.cos(math.pi * prog)))
+        schedule_step = step + 1
+        cosine_step = schedule_step if a.optimizer_steps else step
+        prog = max(0.0, (cosine_step - 1000) / max(1, a.steps - 1000))
+        lr = a.lr * min(1.0, schedule_step / 1000) * (a.lr_final + (1 - a.lr_final) * 0.5 * (1 + math.cos(math.pi * prog)))
         for g in opt.param_groups: g["lr"] = lr
+        if a.timing_breakdown: timing_marks[1].record()
         with torch.autocast("cuda", dtype=torch.bfloat16):
             pred = model(xt, t, y, cond, text, text_mask)
+        if a.timing_breakdown: timing_marks[2].record()
         err = (pred.float() - (eps - x)) ** 2
         loss = (latent_weighted_mse(err, fg_map, a.fg_weight) if latent_mode
                 else foreground_weighted_mse(err, x, a.fg_weight)) / a.accum
+        rgba_aux = None
+        if a.rgba_aux_loss > 0:
+            x0_hat = xt - tt * pred.float()
+            rgba_aux = a.rgba_aux_loss * rgba_x0_disagreement(x0_hat, x, t) / a.accum
+            loss = loss + rgba_aux
         with torch.no_grad():                                   # diagnostics only
             fgm = (fg_map > 0.5).float() if latent_mode else (x[:, 3:4] > -0.9).float()
             fg_loss = float((err * fgm).sum() / fgm.sum().clamp_min(1))
             per = err.flatten(1).mean(1)
             lb = float(per[t > 0.8].mean()) if (t > 0.8).any() else float("nan")   # near noise
             hb = float(per[t < 0.2].mean()) if (t < 0.2).any() else float("nan")   # near data
+        if a.timing_breakdown: timing_marks[3].record()
         loss.backward()
-        if (step + 1) % a.accum != 0:
-            step += 1; continue
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step(); opt.zero_grad(set_to_none=True)
+        if a.timing_breakdown: timing_marks[4].record()
+        if a.optimizer_steps:
+            if not optimizer_step_due(micro_step, a.accum):
+                if a.timing_breakdown: timing_records.append(timing_marks[:5])
+                micro_step += 1
+                continue
+            micro_step += 1
+        elif (step + 1) % a.accum != 0:
+            if a.timing_breakdown: timing_records.append(timing_marks[:5])
+            step += 1
+            continue
+        if a.grad_clip > 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), a.grad_clip)
+        opt.step(); opt.zero_grad(set_to_none=True)
+        if a.timing_breakdown: timing_marks[5].record()
         loss = loss * a.accum
+        if a.optimizer_steps:
+            step += 1
         with torch.no_grad():
-            d = min(0.999 if step < 5000 else 0.9995, (1 + step) / (10 + step))
+            if a.ema_max > 0:
+                d = min(a.ema_max, (1 + step) / (10 + step))
+            else:
+                d = min(0.999 if step < 5000 else 0.9995, (1 + step) / (10 + step))
             if a.fast: torch._foreach_lerp_(list(ema.parameters()), list(model.parameters()), 1 - d)
             else:
                 for pe, pm in zip(ema.parameters(), model.parameters()): pe.lerp_(pm, 1 - d)
-        step += 1
+        if a.timing_breakdown:
+            timing_marks[6].record()
+            timing_records.append(timing_marks)
+            timing_updates += 1
+        if not a.optimizer_steps:
+            step += 1
         ema_loss = loss.item() if ema_loss is None else 0.98 * ema_loss + 0.02 * loss.item()
         if step == 10 or step % 50 == 0:
             spi = (time.time() - t0) / max(1, step - step0)
             msg = f"step {step} loss {ema_loss:.4f} fg {fg_loss:.4f} t>.8 {lb:.4f} t<.2 {hb:.4f} lr {lr:.2e} {spi:.2f}s/it peak {torch.cuda.max_memory_allocated()/1e9:.1f}GB ETA {(a.steps-step)*spi/3600:.1f}h"
+            timing_values = None
+            if a.timing_breakdown and timing_updates:
+                torch.cuda.synchronize()
+                sums = dict(prep=0.0, fwd=0.0, loss=0.0, bwd=0.0, opt=0.0, ema=0.0)
+                for marks in timing_records:
+                    sums["prep"] += marks[0].elapsed_time(marks[1])
+                    sums["fwd"] += marks[1].elapsed_time(marks[2])
+                    sums["loss"] += marks[2].elapsed_time(marks[3])
+                    sums["bwd"] += marks[3].elapsed_time(marks[4])
+                    if len(marks) == 7:
+                        sums["opt"] += marks[4].elapsed_time(marks[5])
+                        sums["ema"] += marks[5].elapsed_time(marks[6])
+                timing_values = {k: v / timing_updates for k, v in sums.items()}
+                timing_values["data"] = timing_data_ms / timing_updates
+                msg += (" timing_ms " + " ".join(
+                    f"{key}={timing_values[key]:.1f}"
+                    for key in ("data", "prep", "fwd", "loss", "bwd", "opt", "ema")
+                ))
+                timing_records.clear(); timing_data_ms = 0.0; timing_updates = 0
+            if rgba_aux is not None: msg += f" rgba_aux {float(rgba_aux * a.accum):.4f}"
             vl = vloss() if (vdl is not None and step % a.val_every == 0) else None
             if vl is not None: msg += f" val {vl:.4f}"
             print(msg, flush=True); log.write(msg + "\n"); log.flush()
@@ -574,8 +691,20 @@ def main():
                 tb.add_scalar("loss/train_ema", ema_loss, step); tb.add_scalar("lr", lr, step)
                 tb.add_scalar("loss/fg", fg_loss, step); tb.add_scalar("loss/t_gt_0.8", lb, step); tb.add_scalar("loss/t_lt_0.2", hb, step)
                 tb.add_scalar("perf/s_per_it", spi, step); tb.add_scalar("perf/peak_gb", torch.cuda.max_memory_allocated() / 1e9, step)
+                if timing_values is not None:
+                    for key, value in timing_values.items(): tb.add_scalar(f"timing_ms/{key}", value, step)
                 if vl is not None: tb.add_scalar("loss/val", vl, step)
-        if (step in early_sample_steps or step % a.sample_every == 0 or step == a.steps) and not latent_mode:
+        sample_due = step in early_sample_steps or step % a.sample_every == 0 or step == a.steps
+        if a.checkpoint_every > 0 and step % a.checkpoint_every == 0 and not sample_due:
+            arch_tag = ((('dit_fm_fullst_t2v' if a.cond == 'text' else 'dit_fm_fullst') if a.full_st
+                         else ('dit_fm_local3d_t2v' if a.cond == 'text' else 'dit_fm_local3d') if a.local_3d
+                         else ('dit_fm_t2v' if a.cond == 'text' else 'dit_fm')) if a.arch == 'dit'
+                        else ('resunet_fm_t2v' if a.cond == 'text' else 'resunet_fm'))
+            atomic_torch_save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step,
+                                   args=vars(a), groups=ds.groups, arch=arch_tag),
+                              os.path.join(a.out, "ckpt.pt"))
+            print(f"  wrote rolling ckpt.pt at step {step}", flush=True)
+        if sample_due and not latent_mode:
             early_preview = step in early_sample_steps and step % a.sample_every != 0 and step != a.steps
             NS, CH = ((4, 4) if early_preview else ((64, 32) if a.frames == 1 else ((4, 1) if a.frames >= 32 else (16, 8))))
             sample_nfe = 20 if early_preview else 50
@@ -622,19 +751,19 @@ def main():
                          else ("dit_fm_local3d_t2v" if a.cond == "text" else "dit_fm_local3d") if a.local_3d
                          else ("dit_fm_t2v" if a.cond == "text" else "dit_fm")) if a.arch == "dit"
                         else ("resunet_fm_t2v" if a.cond == "text" else "resunet_fm"))
-            torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
-                       os.path.join(a.out, "ckpt.pt"))
-            torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
-                       os.path.join(a.out, f"ckpt_{step:06d}.pt"))
+            atomic_torch_save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
+                              os.path.join(a.out, "ckpt.pt"))
+            atomic_torch_save(dict(ema=ema.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
+                              os.path.join(a.out, f"ckpt_{step:06d}.pt"))
             print(f"  wrote sample_{step:06d}.gif", flush=True)
-        elif latent_mode and (step in early_sample_steps or step % a.sample_every == 0 or step == a.steps):
+        elif latent_mode and sample_due:
             # Latent runs skip pixel previews (decode happens in offline evaluation) but still checkpoint.
             arch_tag = (("dit_fm_fullst_t2v_latent" if a.full_st else "dit_fm_t2v_latent") if a.cond == "text"
                         else ("dit_fm_fullst_latent" if a.full_st else "dit_fm_latent"))
-            torch.save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
-                       os.path.join(a.out, "ckpt.pt"))
-            torch.save(dict(ema=ema.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
-                       os.path.join(a.out, f"ckpt_{step:06d}.pt"))
+            atomic_torch_save(dict(model=model.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
+                              os.path.join(a.out, "ckpt.pt"))
+            atomic_torch_save(dict(ema=ema.state_dict(), step=step, args=vars(a), groups=ds.groups, arch=arch_tag),
+                              os.path.join(a.out, f"ckpt_{step:06d}.pt"))
             print(f"  wrote ckpt_{step:06d}.pt", flush=True)
 
 

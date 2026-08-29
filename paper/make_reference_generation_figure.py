@@ -1,6 +1,7 @@
-"""Pair released clips with fixed-noise DiT samples for the same prompts."""
+"""Pair released clips with representative 30k-step Pixel DiT samples."""
 from __future__ import annotations
 
+import argparse
 import io
 from pathlib import Path
 
@@ -12,18 +13,21 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data/v1"
-GENERATIONS = ROOT / "output/inference/paper1_v02c_qual/qual_suite_rgba.npz"
+GENERATION_STRIP = (
+    ROOT / "paper/results/figure1_factorised_image30k_preview/prompt_diverse_grid_strip.png"
+)
 OUT = ROOT / "paper/figs/reference_generation_pairs"
 
-# Prompt index, released clip, and matched (source-frame, model-frame) keyframes.
-# The v0.2 model jointly generates the complete 64-frame native-cadence window,
-# so model frames map 1:1 onto the first 64 source frames.
-FRAMES_1TO1 = ((0, 0), (20, 20), (42, 42), (63, 63))
-PAIRS = (
-    ("wave left", 0, "gesture/a_person_waves_hello_with_the_left_hand_s1/c0", FRAMES_1TO1),
-    ("wave right", 1, "gesture/a_person_waves_hello_with_the_right_hand_s1/c0", FRAMES_1TO1),
-    ("run forward", 2, "locomotion/a_person_runs_forward_s0/c0", FRAMES_1TO1),
-    ("walk backward", 3, "locomotion/a_person_walks_backwards_s1/c0", FRAMES_1TO1),
+# The saved strip contains four prompt rows and four 64x64 frame columns after
+# a 192-pixel text margin. Its manifest records frames 0/21/42/63.
+STRIP_CELL = 64
+STRIP_MARGIN = 192
+FRAMES = (0, 21, 42, 63)
+BLOCKS = (
+    ("run forward", 0, "locomotion/a_person_runs_forward_s0/c0"),
+    ("wave left", 1, "gesture/a_person_waves_hello_with_the_left_hand_s0/c0"),
+    ("sit down", 2, "transitions/a_person_sits_down_on_a_chair_s0/c0"),
+    ("dance", 3, "dance/a_person_dances_energetically_waving_arms_and_stepping_side__s0/c0"),
 )
 
 plt.rcParams.update(
@@ -44,10 +48,18 @@ def decode(cell):
     return np.asarray(white.convert("RGB"))
 
 
-def on_white(rgba):
-    rgb = rgba[..., :3].astype(np.float32)
-    alpha = rgba[..., 3:4].astype(np.float32) / 255.0
-    return np.clip(rgb * alpha + 255.0 * (1.0 - alpha), 0, 255).astype(np.uint8)
+def load_strip(path):
+    image = np.asarray(Image.open(path).convert("RGB"))
+    expected = (4 * STRIP_CELL, STRIP_MARGIN + len(FRAMES) * STRIP_CELL, 3)
+    if image.shape != expected:
+        raise RuntimeError(f"unexpected strip shape for {path}: {image.shape} != {expected}")
+    return image
+
+
+def strip_cell(strip, row, column):
+    y0 = row * STRIP_CELL
+    x0 = STRIP_MARGIN + column * STRIP_CELL
+    return strip[y0 : y0 + STRIP_CELL, x0 : x0 + STRIP_CELL]
 
 
 def crop_display(image, border_fraction=0.125):
@@ -67,6 +79,11 @@ def style_frame(ax):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--generation-strip", type=Path, default=GENERATION_STRIP)
+    parser.add_argument("--out", type=Path, default=OUT)
+    parser.add_argument("--row-label", default="DiT")
+    options = parser.parse_args()
     shards = [
         path
         for split in ("train", "val", "test")
@@ -76,20 +93,18 @@ def main():
         columns=["clip_id", "frame_idx", "color"]
     ).to_pylist()
     by_clip = {}
-    wanted = {clip_id for _, _, clip_id, _ in PAIRS}
+    wanted = {clip_id for _, _, clip_id in BLOCKS}
     for row in rows:
         if row["clip_id"] in wanted:
             by_clip.setdefault(row["clip_id"], {})[row["frame_idx"]] = row
 
-    generated = np.load(GENERATIONS)["rgba"]
-    if generated.ndim != 5 or generated.shape[1] < 64 or generated.shape[-1] != 4:
-        raise RuntimeError(f"unexpected generated-video shape: {generated.shape}")
+    generated = load_strip(options.generation_strip)
 
     fig = plt.figure(figsize=(12.6, 1.7), facecolor="white")
     outer = fig.add_gridspec(
-        1, len(PAIRS), left=0.008, right=0.997, top=0.985, bottom=0.008, wspace=0.02
+        1, len(BLOCKS), left=0.008, right=0.997, top=0.985, bottom=0.008, wspace=0.02
     )
-    for block, (label, sample_index, clip_id, frames) in enumerate(PAIRS):
+    for block, (label, strip_row, clip_id) in enumerate(BLOCKS):
         if len(by_clip.get(clip_id, {})) != 120:
             raise RuntimeError(f"expected a complete released clip for {clip_id}")
         block_grid = outer[0, block].subgridspec(
@@ -100,24 +115,24 @@ def main():
         title.axis("off")
         title.text(0, 0.55, label, fontsize=8.2, fontweight="bold", va="center")
 
-        for row_index, row_label in enumerate(("dataset", "DiT"), start=1):
+        for row_index, row_label in enumerate(("dataset", options.row_label), start=1):
             label_ax = fig.add_subplot(block_grid[row_index, 0])
             label_ax.axis("off")
             label_ax.text(0.96, 0.5, row_label, ha="right", va="center", color="#333333")
-            for column, (source_frame, model_frame) in enumerate(frames):
+            for column, source_frame in enumerate(FRAMES):
                 ax = fig.add_subplot(block_grid[row_index, column + 1])
                 image = (
                     decode(by_clip[clip_id][source_frame]["color"])
-                    if row_label == "dataset"
-                    else on_white(generated[sample_index, model_frame])
+                    if row_index == 1
+                    else strip_cell(generated, strip_row, column)
                 )
                 ax.imshow(crop_display(image), interpolation="nearest")
                 style_frame(ax)
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT.with_suffix(".pdf"), dpi=300, bbox_inches="tight", pad_inches=0.01)
-    fig.savefig(OUT.with_suffix(".png"), dpi=220, bbox_inches="tight", pad_inches=0.01)
-    print(OUT.with_suffix(".pdf"))
+    options.out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(options.out.with_suffix(".pdf"), dpi=300, bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(options.out.with_suffix(".png"), dpi=220, bbox_inches="tight", pad_inches=0.01)
+    print(options.out.with_suffix(".pdf"))
 
 
 if __name__ == "__main__":

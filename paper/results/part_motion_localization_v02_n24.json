@@ -1,0 +1,1200 @@
+{
+  "bootstrap_draws": 2000,
+  "by_severity": {
+    "0.25": {
+      "fraction_target_drop_exceeds_unaffected_change": 0.75,
+      "lie_abs_change": {
+        "bootstrap_ci95": [
+          0.0,
+          0.002083333333333344
+        ],
+        "median": 0.0010416666666666664
+      },
+      "target_path_drop": {
+        "bootstrap_ci95": [
+          0.07452551393518014,
+          4.617193691751238
+        ],
+        "median": 1.5124280400233836
+      },
+      "tvr_abs_change": {
+        "bootstrap_ci95": [
+          0.003124999999999989,
+          0.008333333333333304
+        ],
+        "median": 0.00416666666666668
+      },
+      "unaffected_part_abs_change": {
+        "bootstrap_ci95": [
+          0.0018675956562222613,
+          0.01887244520718845
+        ],
+        "median": 0.005633733191696097
+      }
+    },
+    "0.5": {
+      "fraction_target_drop_exceeds_unaffected_change": 0.9583333333333334,
+      "lie_abs_change": {
+        "bootstrap_ci95": [
+          0.0,
+          0.00416666666666668
+        ],
+        "median": 0.0
+      },
+      "target_path_drop": {
+        "bootstrap_ci95": [
+          2.133952990086664,
+          7.85129927048761
+        ],
+        "median": 4.689461711541686
+      },
+      "tvr_abs_change": {
+        "bootstrap_ci95": [
+          0.004166666666666666,
+          0.018229166666666657
+        ],
+        "median": 0.008854166666666663
+      },
+      "unaffected_part_abs_change": {
+        "bootstrap_ci95": [
+          0.0007478786067599922,
+          0.017833526580066206
+        ],
+        "median": 0.010197355682640612
+      }
+    },
+    "0.75": {
+      "fraction_target_drop_exceeds_unaffected_change": 0.9166666666666666,
+      "lie_abs_change": {
+        "bootstrap_ci95": [
+          0.0,
+          0.0062500000000000056
+        ],
+        "median": 0.0005208333333333315
+      },
+      "target_path_drop": {
+        "bootstrap_ci95": [
+          4.593453599733714,
+          15.487772212184609
+        ],
+        "median": 8.607366082000903
+      },
+      "tvr_abs_change": {
+        "bootstrap_ci95": [
+          0.008333333333333331,
+          0.04062500000000002
+        ],
+        "median": 0.01874999999999999
+      },
+      "unaffected_part_abs_change": {
+        "bootstrap_ci95": [
+          0.0025022506172910726,
+          0.023275775010931216
+        ],
+        "median": 0.009054409309622886
+      }
+    },
+    "1.0": {
+      "fraction_target_drop_exceeds_unaffected_change": 0.9583333333333334,
+      "lie_abs_change": {
+        "bootstrap_ci95": [
+          0.0,
+          0.006249999999999999
+        ],
+        "median": 0.0005208333333333315
+      },
+      "target_path_drop": {
+        "bootstrap_ci95": [
+          4.584480989407308,
+          16.42806239938738
+        ],
+        "median": 9.110029371749023
+      },
+      "tvr_abs_change": {
+        "bootstrap_ci95": [
+          0.012499999999999983,
+          0.042708333333333334
+        ],
+        "median": 0.03072916666666664
+      },
+      "unaffected_part_abs_change": {
+        "bootstrap_ci95": [
+          0.0014372420198159135,
+          0.03207679061888946
+        ],
+        "median": 0.011249553286615921
+      }
+    }
+  },
+  "camera_policy": "camera 0, one rendered view per source motion",
+  "clip_sampling": "seeded round-robin across groups; QA-flagged motions excluded",
+  "corruption": "blend local arm-chain directions toward frame 0 while preserving attachment and bone lengths",
+  "n_clips": 24,
+  "records": [
+    {
+      "clean_target_path": 38.80384943614823,
+      "clip_id": "dance/a_person_does_the_worm_s9/c0",
+      "lie_abs_change": 0.018750000000000017,
+      "selected_side": "L",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 9.239694730021668,
+      "tvr_abs_change": 0.008333333333333304,
+      "unaffected_part_abs_change": 0.030511579984598598
+    },
+    {
+      "clean_target_path": 38.80384943614823,
+      "clip_id": "dance/a_person_does_the_worm_s9/c0",
+      "lie_abs_change": 0.010416666666666685,
+      "selected_side": "L",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 18.323033097647052,
+      "tvr_abs_change": 0.023958333333333304,
+      "unaffected_part_abs_change": 0.026698216490474103
+    },
+    {
+      "clean_target_path": 38.80384943614823,
+      "clip_id": "dance/a_person_does_the_worm_s9/c0",
+      "lie_abs_change": 0.012500000000000011,
+      "selected_side": "L",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 23.61981885528137,
+      "tvr_abs_change": 0.05104166666666665,
+      "unaffected_part_abs_change": 0.03757854084735657
+    },
+    {
+      "clean_target_path": 38.80384943614823,
+      "clip_id": "dance/a_person_does_the_worm_s9/c0",
+      "lie_abs_change": 0.013541666666666674,
+      "selected_side": "L",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 25.963117783863844,
+      "tvr_abs_change": 0.06458333333333333,
+      "unaffected_part_abs_change": 0.0246754321184303
+    },
+    {
+      "clean_target_path": 28.15665238753789,
+      "clip_id": "gesture/a_person_stretches_out_both_arms_wide_s9/c0",
+      "lie_abs_change": 0.022916666666666696,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 9.242548061110003,
+      "tvr_abs_change": 0.010416666666666685,
+      "unaffected_part_abs_change": 0.3931466423522753
+    },
+    {
+      "clean_target_path": 28.15665238753789,
+      "clip_id": "gesture/a_person_stretches_out_both_arms_wide_s9/c0",
+      "lie_abs_change": 0.021875000000000033,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 22.875716223857612,
+      "tvr_abs_change": 0.012500000000000011,
+      "unaffected_part_abs_change": 0.2871026051285682
+    },
+    {
+      "clean_target_path": 28.15665238753789,
+      "clip_id": "gesture/a_person_stretches_out_both_arms_wide_s9/c0",
+      "lie_abs_change": 0.018750000000000044,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 25.60068243045227,
+      "tvr_abs_change": 0.04062500000000002,
+      "unaffected_part_abs_change": 0.06519579536195282
+    },
+    {
+      "clean_target_path": 28.15665238753789,
+      "clip_id": "gesture/a_person_stretches_out_both_arms_wide_s9/c0",
+      "lie_abs_change": 0.018750000000000044,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 26.118131802270103,
+      "tvr_abs_change": 0.06979166666666667,
+      "unaffected_part_abs_change": 0.08382947445597766
+    },
+    {
+      "clean_target_path": 4.667400257593373,
+      "clip_id": "idle/a_person_stands_and_looks_around_s9/c0",
+      "lie_abs_change": 0.0020833333333333537,
+      "selected_side": "L",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.49063454698836484,
+      "tvr_abs_change": 0.03437499999999999,
+      "unaffected_part_abs_change": 0.00631506959237127
+    },
+    {
+      "clean_target_path": 4.667400257593373,
+      "clip_id": "idle/a_person_stands_and_looks_around_s9/c0",
+      "lie_abs_change": 0.00416666666666668,
+      "selected_side": "L",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.8439290314727905,
+      "tvr_abs_change": 0.03541666666666665,
+      "unaffected_part_abs_change": 0.017124968877375617
+    },
+    {
+      "clean_target_path": 4.667400257593373,
+      "clip_id": "idle/a_person_stands_and_looks_around_s9/c0",
+      "lie_abs_change": 0.0062500000000000056,
+      "selected_side": "L",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.83366137025615,
+      "tvr_abs_change": 0.03854166666666664,
+      "unaffected_part_abs_change": 0.019269997220808466
+    },
+    {
+      "clean_target_path": 4.667400257593373,
+      "clip_id": "idle/a_person_stands_and_looks_around_s9/c0",
+      "lie_abs_change": 0.008333333333333345,
+      "selected_side": "L",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.32623751746434526,
+      "tvr_abs_change": 0.036458333333333315,
+      "unaffected_part_abs_change": 0.05463961285872243
+    },
+    {
+      "clean_target_path": 8.292825446926203,
+      "clip_id": "locomotion/a_person_walks_forward_slowly_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": false,
+      "target_path_drop": -0.6890665704793726,
+      "tvr_abs_change": 0.008333333333333331,
+      "unaffected_part_abs_change": 0.002983267102561952
+    },
+    {
+      "clean_target_path": 8.292825446926203,
+      "clip_id": "locomotion/a_person_walks_forward_slowly_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.3606807704094228,
+      "tvr_abs_change": 0.004166666666666652,
+      "unaffected_part_abs_change": 0.00027103804796454095
+    },
+    {
+      "clean_target_path": 8.292825446926203,
+      "clip_id": "locomotion/a_person_walks_forward_slowly_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": false,
+      "target_path_drop": -0.25235624783700983,
+      "tvr_abs_change": 0.013541666666666646,
+      "unaffected_part_abs_change": 0.019134365360374606
+    },
+    {
+      "clean_target_path": 8.292825446926203,
+      "clip_id": "locomotion/a_person_walks_forward_slowly_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.7419410796961117,
+      "tvr_abs_change": 0.012499999999999983,
+      "unaffected_part_abs_change": 0.02497848871551815
+    },
+    {
+      "clean_target_path": 34.33799661096454,
+      "clip_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": false,
+      "target_path_drop": -3.678255732978,
+      "tvr_abs_change": 0.03125,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 34.33799661096454,
+      "clip_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 2.133952990086664,
+      "tvr_abs_change": 0.05937500000000001,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 34.33799661096454,
+      "clip_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 25.48319755959602,
+      "tvr_abs_change": 0.07708333333333334,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 34.33799661096454,
+      "clip_id": "sport/a_person_jumps_up_and_down_with_arms_raised_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 31.184672891958648,
+      "tvr_abs_change": 0.037500000000000006,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 9.151919413623679,
+      "clip_id": "transitions/a_person_picks_something_up_from_the_floor_s9/c0",
+      "lie_abs_change": 0.0010416666666666664,
+      "selected_side": "L",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.07452551393518014,
+      "tvr_abs_change": 0.0,
+      "unaffected_part_abs_change": 0.002399366602890233
+    },
+    {
+      "clean_target_path": 9.151919413623679,
+      "clip_id": "transitions/a_person_picks_something_up_from_the_floor_s9/c0",
+      "lie_abs_change": 0.0010416666666666664,
+      "selected_side": "L",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.3572726111934985,
+      "tvr_abs_change": 0.0062500000000000056,
+      "unaffected_part_abs_change": 0.007843643073285
+    },
+    {
+      "clean_target_path": 9.151919413623679,
+      "clip_id": "transitions/a_person_picks_something_up_from_the_floor_s9/c0",
+      "lie_abs_change": 0.004166666666666666,
+      "selected_side": "L",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.6097291222430679,
+      "tvr_abs_change": 0.0072916666666666685,
+      "unaffected_part_abs_change": 0.009547940943554415
+    },
+    {
+      "clean_target_path": 9.151919413623679,
+      "clip_id": "transitions/a_person_picks_something_up_from_the_floor_s9/c0",
+      "lie_abs_change": 0.006249999999999999,
+      "selected_side": "L",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.7903108293679102,
+      "tvr_abs_change": 0.004166666666666652,
+      "unaffected_part_abs_change": 0.009707924901239581
+    },
+    {
+      "clean_target_path": 47.409669429511546,
+      "clip_id": "dance/a_person_does_the_sprinkler_dance_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 4.617193691751238,
+      "tvr_abs_change": 0.0,
+      "unaffected_part_abs_change": 0.008346825690322154
+    },
+    {
+      "clean_target_path": 47.409669429511546,
+      "clip_id": "dance/a_person_does_the_sprinkler_dance_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 23.13656157429571,
+      "tvr_abs_change": 0.001041666666666663,
+      "unaffected_part_abs_change": 0.010138286075975186
+    },
+    {
+      "clean_target_path": 47.409669429511546,
+      "clip_id": "dance/a_person_does_the_sprinkler_dance_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 38.35390235719864,
+      "tvr_abs_change": 0.001041666666666663,
+      "unaffected_part_abs_change": 0.008560877675691358
+    },
+    {
+      "clean_target_path": 47.409669429511546,
+      "clip_id": "dance/a_person_does_the_sprinkler_dance_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 43.74189273960139,
+      "tvr_abs_change": 0.01145833333333332,
+      "unaffected_part_abs_change": 0.010001287610192774
+    },
+    {
+      "clean_target_path": 12.074719960209862,
+      "clip_id": "gesture/a_person_blows_a_kiss_s9/c0",
+      "lie_abs_change": 0.009375000000000005,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": false,
+      "target_path_drop": -14.081115025704678,
+      "tvr_abs_change": 0.00416666666666668,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 12.074719960209862,
+      "clip_id": "gesture/a_person_blows_a_kiss_s9/c0",
+      "lie_abs_change": 0.009375000000000005,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 5.764430026311963,
+      "tvr_abs_change": 0.012500000000000011,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 12.074719960209862,
+      "clip_id": "gesture/a_person_blows_a_kiss_s9/c0",
+      "lie_abs_change": 0.009375000000000005,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 9.331069855776542,
+      "tvr_abs_change": 0.03645833333333334,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 12.074719960209862,
+      "clip_id": "gesture/a_person_blows_a_kiss_s9/c0",
+      "lie_abs_change": 0.009375000000000005,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 10.811803338095924,
+      "tvr_abs_change": 0.048958333333333326,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 9.39438511247296,
+      "clip_id": "idle/a_person_stands_and_taps_their_foot_s9/c0",
+      "lie_abs_change": 0.030208333333333337,
+      "selected_side": "L",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 2.558280292707279,
+      "tvr_abs_change": 0.052083333333333315,
+      "unaffected_part_abs_change": 0.039931942943613574
+    },
+    {
+      "clean_target_path": 9.39438511247296,
+      "clip_id": "idle/a_person_stands_and_taps_their_foot_s9/c0",
+      "lie_abs_change": 0.03749999999999998,
+      "selected_side": "L",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 3.416998957945284,
+      "tvr_abs_change": 0.07499999999999996,
+      "unaffected_part_abs_change": 0.05080573217256079
+    },
+    {
+      "clean_target_path": 9.39438511247296,
+      "clip_id": "idle/a_person_stands_and_taps_their_foot_s9/c0",
+      "lie_abs_change": 0.044791666666666646,
+      "selected_side": "L",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 4.593453599733714,
+      "tvr_abs_change": 0.0864583333333333,
+      "unaffected_part_abs_change": 0.04020617498956155
+    },
+    {
+      "clean_target_path": 9.39438511247296,
+      "clip_id": "idle/a_person_stands_and_taps_their_foot_s9/c0",
+      "lie_abs_change": 0.044791666666666646,
+      "selected_side": "L",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 4.584480989407308,
+      "tvr_abs_change": 0.09270833333333334,
+      "unaffected_part_abs_change": 0.03208317296981781
+    },
+    {
+      "clean_target_path": 8.201644456484727,
+      "clip_id": "locomotion/a_person_walks_while_looking_at_their_phone_s9/c0",
+      "lie_abs_change": 0.0020833333333333337,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": false,
+      "target_path_drop": -5.429245922664576,
+      "tvr_abs_change": 0.003124999999999989,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 8.201644456484727,
+      "clip_id": "locomotion/a_person_walks_while_looking_at_their_phone_s9/c0",
+      "lie_abs_change": 0.005208333333333333,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": false,
+      "target_path_drop": -3.8098366568470183,
+      "tvr_abs_change": 0.010416666666666657,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 8.201644456484727,
+      "clip_id": "locomotion/a_person_walks_while_looking_at_their_phone_s9/c0",
+      "lie_abs_change": 0.057291666666666664,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": false,
+      "target_path_drop": -5.1957695658858185,
+      "tvr_abs_change": 0.002083333333333326,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 8.201644456484727,
+      "clip_id": "locomotion/a_person_walks_while_looking_at_their_phone_s9/c0",
+      "lie_abs_change": 0.003125,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": false,
+      "target_path_drop": -1.4185340440680205,
+      "tvr_abs_change": 0.002083333333333326,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 12.505501627289785,
+      "clip_id": "sport/a_person_lifts_weights_overhead_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 2.251110312848404,
+      "tvr_abs_change": 0.05729166666666666,
+      "unaffected_part_abs_change": 0.033557935315062126
+    },
+    {
+      "clean_target_path": 12.505501627289785,
+      "clip_id": "sport/a_person_lifts_weights_overhead_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 6.579535929499452,
+      "tvr_abs_change": 0.10729166666666667,
+      "unaffected_part_abs_change": 0.0545989650650797
+    },
+    {
+      "clean_target_path": 12.505501627289785,
+      "clip_id": "sport/a_person_lifts_weights_overhead_s9/c0",
+      "lie_abs_change": 0.001041666666666663,
+      "selected_side": "L",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 9.132460246181925,
+      "tvr_abs_change": 0.06666666666666665,
+      "unaffected_part_abs_change": 0.05844127908240856
+    },
+    {
+      "clean_target_path": 12.505501627289785,
+      "clip_id": "sport/a_person_lifts_weights_overhead_s9/c0",
+      "lie_abs_change": 0.001041666666666663,
+      "selected_side": "L",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 9.931718339509347,
+      "tvr_abs_change": 0.060416666666666674,
+      "unaffected_part_abs_change": 0.05621362798268348
+    },
+    {
+      "clean_target_path": 4.96033867000887,
+      "clip_id": "transitions/a_person_stands_up_from_kneeling_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": false,
+      "target_path_drop": -0.0400604332150265,
+      "tvr_abs_change": 0.00416666666666668,
+      "unaffected_part_abs_change": 0.0030352135864546805
+    },
+    {
+      "clean_target_path": 4.96033867000887,
+      "clip_id": "transitions/a_person_stands_up_from_kneeling_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.5678836199453543,
+      "tvr_abs_change": 0.003124999999999989,
+      "unaffected_part_abs_change": 0.0031480127166183536
+    },
+    {
+      "clean_target_path": 4.96033867000887,
+      "clip_id": "transitions/a_person_stands_up_from_kneeling_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.9446221157238726,
+      "tvr_abs_change": 0.008333333333333331,
+      "unaffected_part_abs_change": 0.01245078665256875
+    },
+    {
+      "clean_target_path": 4.96033867000887,
+      "clip_id": "transitions/a_person_stands_up_from_kneeling_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 1.1331878093050238,
+      "tvr_abs_change": 0.005208333333333315,
+      "unaffected_part_abs_change": 0.0014372420198159135
+    },
+    {
+      "clean_target_path": 20.733757006209057,
+      "clip_id": "dance/a_person_does_the_shopping_cart_dance_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 6.312927762557914,
+      "tvr_abs_change": 0.001041666666666663,
+      "unaffected_part_abs_change": 0.0018675956562222613
+    },
+    {
+      "clean_target_path": 20.733757006209057,
+      "clip_id": "dance/a_person_does_the_shopping_cart_dance_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 11.994830010278942,
+      "tvr_abs_change": 0.001041666666666663,
+      "unaffected_part_abs_change": 0.010936301065097057
+    },
+    {
+      "clean_target_path": 20.733757006209057,
+      "clip_id": "dance/a_person_does_the_shopping_cart_dance_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 15.487772212184609,
+      "tvr_abs_change": 0.004166666666666652,
+      "unaffected_part_abs_change": 0.00821798510985546
+    },
+    {
+      "clean_target_path": 20.733757006209057,
+      "clip_id": "dance/a_person_does_the_shopping_cart_dance_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 16.42806239938738,
+      "tvr_abs_change": 0.0062500000000000056,
+      "unaffected_part_abs_change": 0.012174361979566228
+    },
+    {
+      "clean_target_path": 10.17020364520253,
+      "clip_id": "gesture/a_person_waves_goodbye_with_both_hands_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 2.153086409026767,
+      "tvr_abs_change": 0.001041666666666663,
+      "unaffected_part_abs_change": 0.112038675508168
+    },
+    {
+      "clean_target_path": 10.17020364520253,
+      "clip_id": "gesture/a_person_waves_goodbye_with_both_hands_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 5.4712504179149875,
+      "tvr_abs_change": 0.02708333333333332,
+      "unaffected_part_abs_change": 0.40606098731527834
+    },
+    {
+      "clean_target_path": 10.17020364520253,
+      "clip_id": "gesture/a_person_waves_goodbye_with_both_hands_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 7.790927920302806,
+      "tvr_abs_change": 0.044791666666666646,
+      "unaffected_part_abs_change": 0.3997240205913723
+    },
+    {
+      "clean_target_path": 10.17020364520253,
+      "clip_id": "gesture/a_person_waves_goodbye_with_both_hands_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 8.315003722264393,
+      "tvr_abs_change": 0.036458333333333315,
+      "unaffected_part_abs_change": 0.4281676917412285
+    },
+    {
+      "clean_target_path": 11.73941140372336,
+      "clip_id": "idle/a_person_stands_and_scratches_their_head_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.006807656249413263,
+      "tvr_abs_change": 0.001041666666666663,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 11.73941140372336,
+      "clip_id": "idle/a_person_stands_and_scratches_their_head_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 3.500563202412552,
+      "tvr_abs_change": 0.01354166666666666,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 11.73941140372336,
+      "clip_id": "idle/a_person_stands_and_scratches_their_head_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 8.743149413796402,
+      "tvr_abs_change": 0.042708333333333334,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 11.73941140372336,
+      "clip_id": "idle/a_person_stands_and_scratches_their_head_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 9.905055021233654,
+      "tvr_abs_change": 0.042708333333333334,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 6.621633519041737,
+      "clip_id": "locomotion/a_person_walks_and_turns_around_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.7245573387111404,
+      "tvr_abs_change": 0.002083333333333333,
+      "unaffected_part_abs_change": 0.005509771538163566
+    },
+    {
+      "clean_target_path": 6.621633519041737,
+      "clip_id": "locomotion/a_person_walks_and_turns_around_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 1.4748136062279107,
+      "tvr_abs_change": 0.003124999999999996,
+      "unaffected_part_abs_change": 0.010256425289306037
+    },
+    {
+      "clean_target_path": 6.621633519041737,
+      "clip_id": "locomotion/a_person_walks_and_turns_around_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 2.0763165658912768,
+      "tvr_abs_change": 0.04479166666666666,
+      "unaffected_part_abs_change": 0.006585917847010754
+    },
+    {
+      "clean_target_path": 6.621633519041737,
+      "clip_id": "locomotion/a_person_walks_and_turns_around_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 1.7560344912470311,
+      "tvr_abs_change": 0.05729166666666666,
+      "unaffected_part_abs_change": 0.003254521568867297
+    },
+    {
+      "clean_target_path": 15.833655486214564,
+      "clip_id": "sport/a_person_throws_a_ball_underhand_s9/c0",
+      "lie_abs_change": 0.004166666666666666,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 6.844996841391357,
+      "tvr_abs_change": 0.006250000000000033,
+      "unaffected_part_abs_change": 0.0057576948452286265
+    },
+    {
+      "clean_target_path": 15.833655486214564,
+      "clip_id": "sport/a_person_throws_a_ball_underhand_s9/c0",
+      "lie_abs_change": 0.0062500000000000056,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 7.85129927048761,
+      "tvr_abs_change": 0.0031250000000000444,
+      "unaffected_part_abs_change": 0.00980619457624258
+    },
+    {
+      "clean_target_path": 15.833655486214564,
+      "clip_id": "sport/a_person_throws_a_ball_underhand_s9/c0",
+      "lie_abs_change": 0.01145833333333332,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 8.471582750205403,
+      "tvr_abs_change": 0.015625,
+      "unaffected_part_abs_change": 0.004256622627822153
+    },
+    {
+      "clean_target_path": 15.833655486214564,
+      "clip_id": "sport/a_person_throws_a_ball_underhand_s9/c0",
+      "lie_abs_change": 0.010416666666666657,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 7.910833656678751,
+      "tvr_abs_change": 0.012500000000000011,
+      "unaffected_part_abs_change": 0.013097923886866111
+    },
+    {
+      "clean_target_path": 4.379150801360124,
+      "clip_id": "transitions/a_person_turns_around_180_degrees_s9/c0",
+      "lie_abs_change": 0.0010416666666666664,
+      "selected_side": "L",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 0.38350182544866085,
+      "tvr_abs_change": 0.02395833333333333,
+      "unaffected_part_abs_change": 0.03375118209736135
+    },
+    {
+      "clean_target_path": 4.379150801360124,
+      "clip_id": "transitions/a_person_turns_around_180_degrees_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 1.5357192678581701,
+      "tvr_abs_change": 0.029166666666666674,
+      "unaffected_part_abs_change": 0.032683931772995146
+    },
+    {
+      "clean_target_path": 4.379150801360124,
+      "clip_id": "transitions/a_person_turns_around_180_degrees_s9/c0",
+      "lie_abs_change": 0.002083333333333333,
+      "selected_side": "L",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 2.2467487805607504,
+      "tvr_abs_change": 0.03333333333333334,
+      "unaffected_part_abs_change": 0.04976215113253246
+    },
+    {
+      "clean_target_path": 4.379150801360124,
+      "clip_id": "transitions/a_person_turns_around_180_degrees_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "L",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 2.1302006378371976,
+      "tvr_abs_change": 0.021875000000000006,
+      "unaffected_part_abs_change": 0.05363188085511587
+    },
+    {
+      "clean_target_path": 53.74042606691668,
+      "clip_id": "dance/a_person_does_the_charleston_s9/c0",
+      "lie_abs_change": 0.0020833333333333537,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 8.857819298730426,
+      "tvr_abs_change": 0.004166666666666652,
+      "unaffected_part_abs_change": 0.0569071679520509
+    },
+    {
+      "clean_target_path": 53.74042606691668,
+      "clip_id": "dance/a_person_does_the_charleston_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 25.50742372344733,
+      "tvr_abs_change": 0.011458333333333293,
+      "unaffected_part_abs_change": 0.05474101825161052
+    },
+    {
+      "clean_target_path": 53.74042606691668,
+      "clip_id": "dance/a_person_does_the_charleston_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 40.30404940821201,
+      "tvr_abs_change": 0.021874999999999978,
+      "unaffected_part_abs_change": 0.05775736328650538
+    },
+    {
+      "clean_target_path": 53.74042606691668,
+      "clip_id": "dance/a_person_does_the_charleston_s9/c0",
+      "lie_abs_change": 0.005208333333333343,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 43.2610236387533,
+      "tvr_abs_change": 0.03437499999999996,
+      "unaffected_part_abs_change": 0.05850663044781997
+    },
+    {
+      "clean_target_path": 12.957324148695044,
+      "clip_id": "gesture/a_person_salutes_s9/c0",
+      "lie_abs_change": 0.0010416666666666667,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 1.6441861448493205,
+      "tvr_abs_change": 0.004166666666666666,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 12.957324148695044,
+      "clip_id": "gesture/a_person_salutes_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 7.55696735001246,
+      "tvr_abs_change": 0.0072916666666666685,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 12.957324148695044,
+      "clip_id": "gesture/a_person_salutes_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 10.057743878693842,
+      "tvr_abs_change": 0.002083333333333326,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 12.957324148695044,
+      "clip_id": "gesture/a_person_salutes_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 11.015172624248661,
+      "tvr_abs_change": 0.026041666666666664,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 9.699056503605991,
+      "clip_id": "idle/a_person_stands_and_nods_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": false,
+      "target_path_drop": -0.08990253795910252,
+      "tvr_abs_change": 0.001041666666666663,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 9.699056503605991,
+      "clip_id": "idle/a_person_stands_and_nods_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 3.907673005168385,
+      "tvr_abs_change": 0.001041666666666663,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 9.699056503605991,
+      "clip_id": "idle/a_person_stands_and_nods_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 7.128213564846634,
+      "tvr_abs_change": 0.009374999999999994,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 9.699056503605991,
+      "clip_id": "idle/a_person_stands_and_nods_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 7.419571457021084,
+      "tvr_abs_change": 0.02708333333333332,
+      "unaffected_part_abs_change": 0.0
+    },
+    {
+      "clean_target_path": 63.135747788593974,
+      "clip_id": "locomotion/a_person_skips_forward_s9/c0",
+      "lie_abs_change": 0.012500000000000004,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 9.865321264656622,
+      "tvr_abs_change": 0.006249999999999978,
+      "unaffected_part_abs_change": 0.01887244520718845
+    },
+    {
+      "clean_target_path": 63.135747788593974,
+      "clip_id": "locomotion/a_person_skips_forward_s9/c0",
+      "lie_abs_change": 0.009374999999999998,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 30.59442812756561,
+      "tvr_abs_change": 0.006250000000000033,
+      "unaffected_part_abs_change": 0.017833526580066206
+    },
+    {
+      "clean_target_path": 63.135747788593974,
+      "clip_id": "locomotion/a_person_skips_forward_s9/c0",
+      "lie_abs_change": 0.008333333333333331,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 51.02373550718934,
+      "tvr_abs_change": 0.012500000000000011,
+      "unaffected_part_abs_change": 0.023275775010931216
+    },
+    {
+      "clean_target_path": 63.135747788593974,
+      "clip_id": "locomotion/a_person_skips_forward_s9/c0",
+      "lie_abs_change": 0.008333333333333331,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 58.43914447815415,
+      "tvr_abs_change": 0.011458333333333348,
+      "unaffected_part_abs_change": 0.010324744593665613
+    },
+    {
+      "clean_target_path": 52.592890324900125,
+      "clip_id": "sport/a_person_does_arm_circles_s9/c0",
+      "lie_abs_change": 0.0010416666666666664,
+      "selected_side": "R",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 10.464590423006472,
+      "tvr_abs_change": 0.0062500000000000056,
+      "unaffected_part_abs_change": 0.007810158521654269
+    },
+    {
+      "clean_target_path": 52.592890324900125,
+      "clip_id": "sport/a_person_does_arm_circles_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 30.51985424800271,
+      "tvr_abs_change": 0.00416666666666668,
+      "unaffected_part_abs_change": 0.017237840281683958
+    },
+    {
+      "clean_target_path": 52.592890324900125,
+      "clip_id": "sport/a_person_does_arm_circles_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 44.37573891808567,
+      "tvr_abs_change": 0.0,
+      "unaffected_part_abs_change": 0.002749300796880997
+    },
+    {
+      "clean_target_path": 52.592890324900125,
+      "clip_id": "sport/a_person_does_arm_circles_s9/c0",
+      "lie_abs_change": 0.0,
+      "selected_side": "R",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 49.975455223430096,
+      "tvr_abs_change": 0.06354166666666666,
+      "unaffected_part_abs_change": 0.03207679061888946
+    },
+    {
+      "clean_target_path": 8.134700960146953,
+      "clip_id": "transitions/a_person_stumbles_and_regains_balance_s9/c0",
+      "lie_abs_change": 0.002083333333333333,
+      "selected_side": "L",
+      "severity": 0.25,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 1.3806699351974467,
+      "tvr_abs_change": 0.0031250000000000167,
+      "unaffected_part_abs_change": 0.0007478786067599922
+    },
+    {
+      "clean_target_path": 8.134700960146953,
+      "clip_id": "transitions/a_person_stumbles_and_regains_balance_s9/c0",
+      "lie_abs_change": 0.002083333333333333,
+      "selected_side": "L",
+      "severity": 0.5,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 3.5033989441316824,
+      "tvr_abs_change": 0.001041666666666663,
+      "unaffected_part_abs_change": 0.0007478786067599922
+    },
+    {
+      "clean_target_path": 8.134700960146953,
+      "clip_id": "transitions/a_person_stumbles_and_regains_balance_s9/c0",
+      "lie_abs_change": 0.002083333333333333,
+      "selected_side": "L",
+      "severity": 0.75,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 4.835269922015769,
+      "tvr_abs_change": 0.001041666666666663,
+      "unaffected_part_abs_change": 0.0007478786067599922
+    },
+    {
+      "clean_target_path": 8.134700960146953,
+      "clip_id": "transitions/a_person_stumbles_and_regains_balance_s9/c0",
+      "lie_abs_change": 0.002083333333333333,
+      "selected_side": "L",
+      "severity": 1.0,
+      "target_drop_exceeds_unaffected_change": true,
+      "target_path_drop": 5.93613188140446,
+      "tvr_abs_change": 0.001041666666666663,
+      "unaffected_part_abs_change": 0.0007478786067599922
+    }
+  ],
+  "seed": 20260827,
+  "severities": [
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "split": "test",
+  "target_policy": "more active clean rendered arm; both coloured arm parts are targeted"
+}

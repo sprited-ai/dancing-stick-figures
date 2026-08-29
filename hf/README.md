@@ -409,8 +409,8 @@ DiT-track (Seedance-style two-stage, interim) and class-conditional checkpoints 
 
 ## Intended use / limitations
 
-- Teaching and prototyping video/image diffusion, motion-conditioned generation, pose estimation from renders,
-  I2V, and structural evaluation. Not a human-motion dataset: it is stick figures with a single body preset (jittered).
+- Teaching and prototyping video/image diffusion, prompt-conditioned generation, pose estimation from renders,
+  and structural evaluation. Not a human-motion dataset: it is stick figures with a single body preset (jittered).
 - Motion realism is bounded by the generator (ARDY); some prompts are only loosely followed. Use `qa_flags` and
   inspect motion samples when prompt semantics are central to an experiment.
 - 134 prompts is small for text conditioning; captions are the raw motion prompts. Dense templated captions
@@ -422,7 +422,7 @@ DiT-track (Seedance-style two-stage, interim) and class-conditional checkpoints 
 - **v0.1 (2026-08-18)** — initial public release: 1,430 clips, `frames` + `motion` configs, oracle v0, image baselines.
 - **v0.2 (2026-08-25)** — seed-disjoint in-domain train/validation/test partitions, visual-QA prompt curation
   (143 → 134 prompts), public-motion reconstruction and verification, seeded instructor render variants,
-  prompt-conditioned reference models, and an image-to-video Colab lesson.
+  prompt-conditioned reference models, and a reduced-budget Colab workflow for reproducing the reference pipeline.
   A learned rig estimator remains future work until its generated-video scores are validated.
 
 ## License and attribution

@@ -1,0 +1,31 @@
+{
+  "resolution": 64,
+  "source": "deterministic renderer frame shared by all four panels",
+  "corruptions": {
+    "extra_component": "add one detached arm_L-color component",
+    "broken_adjacency": "translate fore_L mask 10 pixels beyond the two-pixel adjacency tolerance",
+    "off_palette": "replace an ink-region patch with RGB (150,150,150)"
+  },
+  "scores": {
+    "clean": {
+      "tvr": 0.0,
+      "lie": 0.0,
+      "cpe": 0.006711409395973154
+    },
+    "extra_component": {
+      "tvr": 0.125,
+      "lie": 0.0,
+      "cpe": 0.0064516129032258064
+    },
+    "broken_adjacency": {
+      "tvr": 0.0,
+      "lie": 0.125,
+      "cpe": 0.006711409395973154
+    },
+    "off_palette": {
+      "tvr": 0.0,
+      "lie": 0.0,
+      "cpe": 0.10067114093959731
+    }
+  }
+}

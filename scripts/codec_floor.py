@@ -17,7 +17,7 @@ from pathlib import Path
 
 import torch
 
-from eval.baselines import composite_rgb, score_set, tensors_to_rgba
+from eval.baselines import score_set, tensors_to_premult_rgb, tensors_to_rgba
 from eval.fvd import fvd
 from eval.protocol import load_manifest_windows
 from scripts.encode_latent_cache import file_sha256, load_codec
@@ -50,7 +50,7 @@ def main():
 
     recon_rgba = tensors_to_rgba(recon)
     row = score_set(recon_rgba)
-    row["fvd"] = float(fvd(composite_rgb(tensors_to_rgba(ref_a)), composite_rgb(recon_rgba), device=a.device))
+    row["fvd"] = float(fvd(tensors_to_premult_rgb(ref_a), tensors_to_premult_rgb(recon), device=a.device))
     result = {
         "protocol_version": 1,
         "n": len(recon_rgba),

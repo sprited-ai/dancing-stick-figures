@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from eval.post_eval_t2v import (
     _straight_rgba_uint8,
+    build_model,
     experiment_specs,
     load_prompts,
     make_noise_batch,
@@ -17,6 +18,45 @@ from eval.post_eval_t2v import (
     sample_in_chunks,
 )
 from train.video_dit_fm import VideoDiT
+
+
+def _tiny_text_checkpoint(arch, **overrides):
+    args = {
+        "cond": "text",
+        "size": 8,
+        "frames": 2,
+        "patch": 4,
+        "dim": 16,
+        "depth": 2,
+        "heads": 2,
+        "full_st": False,
+        "local_3d": False,
+    }
+    args.update(overrides)
+    model = VideoDiT(
+        size=args["size"],
+        frames=args["frames"],
+        patch=args["patch"],
+        dim=args["dim"],
+        depth=args["depth"],
+        heads=args["heads"],
+        text_dim=8,
+        full_st=args["full_st"],
+        local_3d=args["local_3d"],
+    )
+    return {"arch": arch, "args": args, "ema": model.state_dict()}
+
+
+def test_build_model_restores_full_st_attention():
+    model, _ = build_model(_tiny_text_checkpoint("dit_fm_fullst_t2v", full_st=True), "cpu")
+    assert model.full_st is True
+    assert all(block.axis == "full" for block in model.blocks)
+
+
+def test_build_model_accepts_local_3d_checkpoint():
+    model, _ = build_model(_tiny_text_checkpoint("dit_fm_local3d_t2v", local_3d=True), "cpu")
+    assert model.full_st is False
+    assert all(block.local_mixer is not None for block in model.blocks)
 
 
 def test_experiment_controls_are_explicit_and_reproducible():

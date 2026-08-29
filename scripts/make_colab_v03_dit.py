@@ -1,4 +1,4 @@
-"""Create the DiT-first Colab lesson from the maintained v0.2 notebook."""
+"""Create the DiT-first Colab workflow from the maintained v0.2 notebook."""
 from __future__ import annotations
 
 import json
@@ -20,7 +20,7 @@ REPLACEMENTS = {
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sprited-ai/dancing-stick-figures/blob/main/notebooks/dancing_stick_figures_colab_v0_3.ipynb)
 
-*A hands-on notebook for readers with basic Python and neural-network familiarity. The reference `64²` route is designed for one conventional GPU; `32²` is a faster sanity check.*
+*A hands-on notebook for readers with basic Python and neural-network familiarity. The reference `64²` route targets a 16 GB Tesla T4; `32²` is a faster sanity check.*
 
 **What you'll do**
 1. 👀 Inspect the videos and their hidden skeleton labels.
@@ -28,9 +28,9 @@ REPLACEMENTS = {
 3. 🎬 Reuse those weights in a **video DiT** that jointly generates a 3.2-second action at the native 20 fps.
 4. 🤖 Generate from your own prompt and diagnose visible structural failures.
 
-The released clips contain 120 frames at 20 fps. The teaching protocol trains on the first 64 frames of each clip (3.2 seconds at the native 20 fps): the source motions concentrate their prompted action early, so the later frames often continue or idle. Native dataset evaluation still uses the complete 120-frame clips.
+The released clips contain 120 frames at 20 fps. The workflow trains on the first 64 frames of each clip (3.2 seconds at the native 20 fps): the source motions concentrate their prompted action early, so the later frames often continue or idle. The paper's benchmarks and diagnostics use this same fixed first-64-frame window; the complete 120-frame clips remain available in the dataset.
 
-Before you start: **Runtime → Change runtime type → GPU** (T4 is sufficient for the conservative batch below).
+Before you start: **Runtime → Change runtime type → GPU** (the conservative batch targets a 16 GB T4; the final verification record reports the actual device and peak allocation).
 """,
     1: r"""
 #@title 0. Setup (≈2 min) — grab the code and the small version of the dataset
@@ -94,7 +94,7 @@ from train.video_dit_fm import Attention, TextCrossAttention, Block, VideoDiT, p
 for component in (Attention, TextCrossAttention, Block, VideoDiT, prepare_warmstart_state):
     print(f"\n# --- {component.__name__} ---")
     print(inspect.getsource(component))
-print("To experiment later, edit train/video_dit_fm.py in Colab's Files pane. The lesson below uses this reference code unchanged.")
+print("To experiment later, edit train/video_dit_fm.py in Colab's Files pane. The workflow below uses this reference code unchanged.")
 """,
     8: r"""
 ## 2 · 🎨 Train an image model
@@ -133,7 +133,7 @@ Each source clip remains available in full at 120 frames and 20 fps. For this tr
 
 > **Why no Video VAE?** At `32²`–`64²`, direct pixel training is practical. Keeping generated pixels in the renderer's representation avoids adding codec reconstruction errors to the first experiment.
 
-Unlike the earlier autoregressive lesson, this baseline generates the complete clip jointly. Every temporal-attention layer can coordinate earlier and later frames at a shared patch position.
+Unlike the earlier autoregressive baseline, this model generates the complete 64-frame window jointly. Every temporal-attention layer can coordinate earlier and later frames at a shared patch position.
 """,
     14: r"""
 #@title Train the 64-frame video DiT on top of your image DiT

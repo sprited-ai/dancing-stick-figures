@@ -1,0 +1,82 @@
+{
+  "protocol_version": 1,
+  "question": "Does the I3D feature geometry separate prompt identity and controlled temporal corruption?",
+  "statistical_unit": "source_motion",
+  "clean_videos": 256,
+  "feature_dim": 400,
+  "negative_pair_policy": "different prompt, same broad motion group",
+  "seed": 20260827,
+  "bootstrap_draws": 2000,
+  "clean_pair_distance": {
+    "same_prompt_different_seed": {
+      "n": 123,
+      "median": 24.20877730590192,
+      "mean": 25.38466963925657,
+      "ci95_median": [
+        23.227608974733776,
+        26.28092114480206
+      ]
+    },
+    "different_prompt_same_group": {
+      "n": 123,
+      "median": 32.82028132264021,
+      "mean": 33.5319057826657,
+      "ci95_median": [
+        31.189670801174262,
+        34.396556569853935
+      ]
+    },
+    "probability_same_prompt_is_closer": 0.8038865754511204,
+    "nearest_neighbour_prompt_accuracy": 0.18359375,
+    "random_neighbour_prompt_accuracy": 0.0037683823529411765
+  },
+  "paired_clean_to_corruption_distance": {
+    "repeat_first": {
+      "n": 128,
+      "median": 29.08824014278357,
+      "mean": 29.59826433092038,
+      "ci95_median": [
+        27.488841558925916,
+        30.96521305031877
+      ],
+      "fraction_above_clean_same_prompt_median": 0.7421875
+    },
+    "shuffle_frames": {
+      "n": 128,
+      "median": 27.520744104163487,
+      "mean": 27.900481535493718,
+      "ci95_median": [
+        26.597568472584925,
+        28.74743788039911
+      ],
+      "fraction_above_clean_same_prompt_median": 0.71875
+    },
+    "reverse_time": {
+      "n": 128,
+      "median": 9.337775170968932,
+      "mean": 8.981092838430936,
+      "ci95_median": [
+        8.658570685629671,
+        9.488235146535871
+      ],
+      "fraction_above_clean_same_prompt_median": 0.0
+    },
+    "loop_first_8": {
+      "n": 128,
+      "median": 28.462915674887746,
+      "mean": 29.035415015227787,
+      "ci95_median": [
+        27.304277276196032,
+        29.887761333259483
+      ],
+      "fraction_above_clean_same_prompt_median": 0.7421875
+    }
+  },
+  "interpretation_guardrail": "These are per-video I3D embedding distances, not prompt-level FVD. FVD remains a distribution-level comparison and requires substantially larger sets.",
+  "inputs": {
+    "features": "results/v02c_eval/win64_features.npz",
+    "features_sha256": "9f63d829fd47f646bd1cb6a7b598950ab03082f5b7fe0de4eb5d69e12e0f0c91",
+    "manifest": "results/v02c_eval/win64_manifest.json",
+    "manifest_sha256": "1b32153fdf51193ee564904886ab9f298a58aa109792f79b39acd14e0442106a"
+  }
+}

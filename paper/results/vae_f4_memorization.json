@@ -1,0 +1,17 @@
+{
+  "ckpt": "results/vae_f4t4d8_aug_10k/ckpt_010000.pt",
+  "frames": 64,
+  "n": 64,
+  "fg_mse_seen": 0.0027294259634800255,
+  "fg_mse_unseen": 0.002987967287481297,
+  "memorization_gap_pct": 9.472369921755641,
+  "smuggle_fg_mse_base": 0.0038794786523794755,
+  "smuggle_fg_mse_bg_neutralized": 0.021229170728474855,
+  "smuggle_damage_x": 5.472171039130209,
+  "bg_latent_std": 0.7371601238846779,
+  "f8_reference": {
+    "memorization_gap_pct": 63,
+    "smuggle_damage_x": 33,
+    "bg_latent_std": 0.42
+  }
+}

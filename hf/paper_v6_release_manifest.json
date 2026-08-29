@@ -1,0 +1,59 @@
+{
+  "release": "paper-v6",
+  "paper_title": "Dancing Stick Figures: An Introductory Dataset for Training Video Generation Models",
+  "dataset": "sprited/dancing-stick-figures",
+  "code": "https://github.com/sprited-ai/dancing-stick-figures",
+  "checkpoints": {
+    "image_dit_30k.pt": {
+      "source": "gin:/data/dancing-stick-figure-paper/results/paper1_v02c_t2i30k_s0/ckpt_030000.pt",
+      "sha256": "d3865d04e2f7f0660d13c56050af89f625f1d034d437b6a9c2c07b5ae4b084e9",
+      "step": 30000,
+      "parameters": 39900000
+    },
+    "pixel_dit_factorised_random_30k.pt": {
+      "source": "gin:/data/dancing-stick-figure-paper/results/paper1_v04_t2v64_factorised_random30k_rgba_b8a2_s0/ckpt_030000.pt",
+      "sha256": "112e275dd1243b7ec9df14dce4e2d9a3f823f6474db84864019d62362f4b2821",
+      "step": 30000,
+      "parameters": 39900000
+    },
+    "pixel_dit_factorised_image_30k.pt": {
+      "source": "gin:/data/dancing-stick-figure-paper/results/paper1_v04_t2v64_factorised_image30k_rgba_b8a2_s0/ckpt_030000.pt",
+      "sha256": "2b3faba9d1262b71d668e1f13678ed33e53c281a6d89cec754a26e5288db91da",
+      "step": 30000,
+      "parameters": 39900000,
+      "initialization_sha256": "d3865d04e2f7f0660d13c56050af89f625f1d034d437b6a9c2c07b5ae4b084e9"
+    },
+    "pixel_dit_local_mixer_image_30k.pt": {
+      "source": "gin:/data/dancing-stick-figure-paper/results/paper1_v03c_t2v64_local3d_image30k_rgba_s0/ckpt_030000.pt",
+      "sha256": "d9b53e25f98ab6aa06b051cc9fa20d7816eae611d90c08b4c79af9d8ee500de9",
+      "step": 30000,
+      "parameters": 41800000,
+      "initialization_sha256": "d3865d04e2f7f0660d13c56050af89f625f1d034d437b6a9c2c07b5ae4b084e9",
+      "note": "The run resumed from its verified 10k full-state checkpoint; the final EMA-only checkpoint records that resume path rather than the original image checkpoint."
+    },
+    "mini_wan_40m_decode_30k.pt": {
+      "source": "gin:/data/dancing-stick-figure-paper/results/paper1_v02c_wanmini40_dec_s0/ckpt_030000.pt",
+      "sha256": "86902b9227d5f6e211b7d5f04ea8bade481304be0c8290718e575d0f43dbcc3a",
+      "step": 30000,
+      "parameters": 39400000,
+      "decode_loss_weight": 1.0,
+      "codec": "vae_f4t4d8_10k.pt"
+    },
+    "vae_f4t4d8_10k.pt": {
+      "source": "gin:/data/dancing-stick-figure-paper/results/vae_f4t4d8_aug_10k/ckpt_010000.pt",
+      "sha256": "9d0d609616bf66cb084d461bc83830d26ff23f08883a1308a4bd15da4b7abf47",
+      "step": 10000,
+      "temporal_compression": 4,
+      "spatial_compression": 4,
+      "latent_channels": 8
+    }
+  },
+  "evaluation": {
+    "frames": 64,
+    "reference_stride": 1,
+    "held_out_source_motions": 128,
+    "sampling_seeds": [0, 1, 2],
+    "euler_steps": 50,
+    "cfg": 3
+  }
+}

@@ -63,7 +63,8 @@ cannot identify which property failed.
 
 Procedural generation exposes variables that are usually unavailable in collected video. Each rendered frame
 is linked to its source motion, rig and body, camera, renderer, depth, surface normals, and part labels. We
-can change one variable at a time, rerender the clip, and observe which diagnostics react.
+can change one variable at a time, rerender the clip, and observe which diagnostics react. Claims from
+these interventions are limited to the recorded variables and controlled changes tested here.
 
 Can a researcher train reference models from scratch on a single workstation GPU and then iterate on them through
 short, controlled cycles? Each cycle should expose a named failure, change one mechanism, and rerun the
@@ -155,7 +156,8 @@ trajectories on a fixed 27-joint skeleton, matching the harness input without sk
 trajectory retains its prompt association, while body shape, camera, and raster appearance are applied
 later under deterministic control. Each motion is six seconds at 20 fps.
 
-The released motion table lets users rebuild or vary the rendered
+ARDY supplies only the source motion; the reference models in this paper generate rendered video and are
+evaluated with the video diagnostics. The released motion table lets users rebuild or vary the rendered
 dataset without running ARDY. For additional source-motion generation, we pin ARDY v0.2.0 and
 \texttt{nvidia/ARDY-Core-RP-20FPS-Horizon40} at Hugging Face revision
 \texttt{abe6c43beb28c867c950acb824b9c4ef3d63fb76}. The released motion table remains the canonical input for
@@ -230,7 +232,8 @@ frames of each clip (3.2 seconds), never the complete six-second clip. The windo
 Table~\ref{tab:backbone-results} compare generated 64-frame windows with real windows drawn under the same
 manifest rule. The fixed early window is a computational choice that reduces the training tensor; the
 resulting memory use depends on architecture and gradient checkpointing, with measurements in
-\S\ref{sec:access}.
+\S\ref{sec:access}. Fixing one early window can bias the benchmark toward early-clip motion and omit
+actions that complete later in the source clip.
 
 \paragraph{Structural diagnostics.} Each arm and leg uses a fixed pair of colours. The evaluator converts a
 frame into eight limb-colour masks and reports:
@@ -342,12 +345,16 @@ same-prompt pair is closer in 80.4\% of balanced comparisons, and nearest-neighb
 27.52 for shuffling, and 28.46 for looping, but only 9.34 for reversal: the embedding carries prompt-linked
 action information and reacts to several temporal corruptions, while reversal remains comparatively weak.
 
-\paragraph{Released reference models.} Every released denoiser uses velocity-prediction flow matching on a
-linear interpolant (often called rectified flow, though we apply no reflow step)~\cite{peebles2023dit,lipman2023flow},
-but the losses are not identical. The image and pixel-video DiTs minimise velocity MSE with each pixel
-weighted by $1+\alpha$, where $\alpha$ is the ground-truth soft alpha, and normalise by the mean weight.
-Mini-Wan uses the latent-space and decoded-space losses described below. Each model uses a frozen T5-small
-encoder attached through cross-attention.
+\paragraph{Training objective.} Every released denoiser uses velocity-prediction flow matching on
+$x_t=(1-t)x_0+t\epsilon$, with $t=\mathrm{sigmoid}(u)$, $u\sim\mathcal N(0,1)$, and target
+$v^*=\epsilon-x_0$ (often called rectified flow, though we apply no reflow step)~\cite{peebles2023dit,lipman2023flow}.
+For the image and pixel-video DiTs, the loss is
+$\mathcal L_{\mathrm{pixel}}=\mathrm E[(1+\alpha)\|\hat v-v^*\|_2^2]/\mathrm E[1+\alpha]$,
+where the ground-truth soft alpha is shared across the four RGBA channels. This is the complete training
+loss for the image and pixel-video rows in Table~\ref{tab:backbone-results}. Mini-Wan instead combines the
+latent-space flow loss and decoded-space auxiliary described below. Each model uses a frozen T5-small
+encoder attached through cross-attention. These rows are reference points for users of the dataset, not a
+fully loss-matched architecture ablation.
 \begin{itemize}[leftmargin=*,nosep]
 \item \textbf{Image DiT.} The 39.9M-parameter factorised backbone ($4\times4$ frame patches, alternating
 spatial and temporal attention blocks) run with $T{=}1$; its checkpoint supplies the spatial and text
@@ -362,17 +369,26 @@ stack: full self-attention over latent video tokens with 3D rotary position enco
 cross-attention~\cite{wan2025}. The scale and interface
 hyperparameters are adapted: width 384, 16 layers, 6 heads, $(1,2,2)$ patches, and 8 latent channels on a
 $16\times16\times16$ grid, with frozen T5-small conditioning. It is trained from random weights and uses no
-pretrained Wan weights. Its latent velocity MSE gives alpha-derived foreground latent cells weight 2 and
-background cells weight 1, again normalised by the mean weight. An auxiliary term of weight 1 decodes both
-the predicted clean latent and the target latent through a separately trained frozen video codec. The term,
-gated by $(1-t)$, combines alpha disagreement, squared RGB disagreement where target and prediction are
-foreground, and a 0.1-weighted background RGB penalty. The codec uses fourfold temporal and spatial
+pretrained Wan weights. For its latent velocity MSE, an alpha-derived occupancy $a_\ell\in[0,1]$ gives each
+latent cell weight $1+a_\ell$, normalised by the mean weight. An auxiliary term of weight 1 decodes both
+the predicted clean latent and the target latent through a separately trained frozen video codec. Let
+$a$ and $\hat a$ be their decoded alpha values and $w=1+9\,\mathrm{clip}(a+|a-\hat a|,0,1)$. The term,
+gated by $(1-t)$, adds mean-normalised $w|a-\hat a|$, squared RGB disagreement weighted by
+$wa\hat a$, and a 0.1-weighted background RGB penalty. The codec uses fourfold temporal and spatial
 compression with eight latent channels (f4t4d8). This is a compact Wan-architecture reference, not a
-Wan2.1 reproduction. We release checkpoints from
+reproduction of Wan2.1 at its published scale, codec, text encoder, data, or training recipe. We release checkpoints from
 the same run at 10k and 30k steps; the 30k checkpoint is the primary reference.
 \item \textbf{Codec control.} Real windows encoded and decoded by that same f4t4d8 codec, separating codec
 cost from model skill.
 \end{itemize}
+
+\paragraph{Optimisation and conditioning mixture.} All learned rows use AdamW, a $2\times10^{-4}$ peak
+learning rate after 1{,}000 warm-up updates, cosine decay, and 10\% text-conditioning dropout. The image
+stage uses batches of 128; the video stages use effective batches of 16. Pixel-video training draws a
+single-frame batch with probability .1. For the remaining video batches, it supplies the clean first frame
+through an image-conditioning input with probability .2 and zeros that input otherwise. Table~\ref{tab:backbone-results}
+evaluates the latter text-to-video mode, with no first frame supplied. Mini-Wan likewise draws a single
+latent-time batch with probability .1, but has no image-conditioning input.
 
 An audit of the frozen f4t4d8 codec bounds its role: held-out foreground reconstruction MSE is 9.5\% higher
 than training-prompt MSE, and neutralising background latent cells raises foreground error $5.5\times$. The
@@ -380,7 +396,8 @@ mini-Wan row therefore includes both generator and codec error, and it cannot su
 pixel-versus-latent claim.
 
 Table~\ref{tab:backbone-results} collects the runs. Each block names its protocol, because single-frame and
-64-frame scores are different measurements. Figure~\ref{fig:dit-samples} shows the warm-started model.
+64-frame scores are different measurements. Earlier v0.1 baselines used a superseded split and are not
+comparable rows. Figure~\ref{fig:dit-samples} shows the warm-started model.
 
 \begin{table*}[t]
 \centering
@@ -433,9 +450,9 @@ objective relative to the pixel rows, so their difference does not isolate any o
 continuing from 10k to 30k improves TVR from .371 to .199 and FVD from 274.6 to 182.6. Within the warm-started
 pixel block, the local-mixer run reports TVR .158 and centroid speed .515, compared with .169 and .850 for the
 factorised baseline; joint attention reports .240 and .556. Each architecture has one training run at one
-budget.
+budget, so these rows document observed outcomes rather than estimate an architecture effect.
 Figure~\ref{fig:dit-samples} provides representative warm-started samples spanning locomotion, gesture,
-transition, and dance prompts.
+transition, and dance prompts; it is a qualitative inspection rather than a prompt-adherence measurement.
 
 \begin{figure*}[t]
 \centering
@@ -450,7 +467,8 @@ dance prompts. Each block shows frames 0/21/42/63 from a released clip and an in
 \paragraph{Why pixel space.} For this release, at $32^2$--$64^2$, pixel-space training is practical and keeps
 thin-limb errors in the representation the evaluator scores. A separately trained video VAE adds a training
 stage and, as the audit of this released codec shows, can confound generator errors with codec artifacts. The
-core Colab therefore follows the pixel-space route; it is a choice for this dataset and this codec.
+core Colab therefore follows the pixel-space route; it is a choice for this dataset and this codec, not a
+claim that pixel space is generally superior.
 
 \section{Accessibility and reproducibility}\label{sec:access}
 The repository releases the dataset-generation harness, cache builder, trainers, sampling code, evaluator, corruptions, FVD
@@ -474,10 +492,12 @@ camera, recorded in the manifest.
 
 Reference runs were measured on one NVIDIA RTX PRO 6000 Blackwell (96\,GB). The 30k-step image stage ran at
 0.10\,s/step with a 10.5\,GB peak; each checkpointed 10k-step 64-frame video run peaked below 10\,GB.
+We did not test the same configurations on lower-memory GPUs.
 Step times were measured under different sharing conditions: 3.4\,s/step for the factorised run while two
 jobs shared the GPU, and 1.07\,s/step for the local-mixer run with exclusive access. The promoted
 local-mixer run itself disabled checkpointing, peaking at 55.1\,GB with a 0.82\,s step time; that setting
-requires a large-memory card.
+requires a large-memory card. These timings document run cost, not architecture speed, and transfer only
+approximately to other hardware.
 
 Our code is MIT and the dataset is CC0-1.0. Motions were generated with ARDY's 20-fps Core model. ARDY's
 code is Apache-2.0; its checkpoints are distributed under the

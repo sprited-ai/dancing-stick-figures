@@ -52,7 +52,7 @@ def features(videos: np.ndarray, device="cuda", bs=16) -> np.ndarray:
 def frechet(mu1, s1, mu2, s2):
     from scipy import linalg
     diff = mu1 - mu2
-    covmean, _ = linalg.sqrtm(s1.dot(s2), disp=False)
+    covmean = linalg.sqrtm(s1.dot(s2))
     if not np.isfinite(covmean).all():
         off = np.eye(s1.shape[0]) * 1e-6
         covmean = linalg.sqrtm((s1 + off).dot(s2 + off))

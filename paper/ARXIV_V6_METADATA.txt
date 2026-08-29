@@ -1,0 +1,21 @@
+Title:
+Dancing Stick Figures: An Introductory Dataset for Training Video Generation Models
+
+Authors:
+Jin Hyuk Cho
+
+Primary category:
+cs.CV (Computer Vision and Pattern Recognition)
+
+License:
+CC BY 4.0 — pending Jin's action-time confirmation
+
+Abstract:
+Training a video-generation model from scratch is hard for reasons that precede model design. The feedback loop is long: a failure that appears only after a training run can make each attempted fix another run. The data are hard to reach: the corpora and recipes behind strong models are large, heterogeneous, and often unreleased. And scoring is blunt: open-ended generation has no single correct output, and an aggregate score does not by itself establish whether a sample succeeds or which property failed. Dancing Stick Figures is a synthetic video dataset built against these three obstacles. For iteration speed, its 64x64, 64-frame reference task is sized for practical repeated training on a single workstation GPU. For accessibility, the release is a 0.79-GB training tier of 4,020 video clips—1,340 six-second source motions, each rendered from three cameras by a deterministic dataset-generation harness—with checkpoints and a Colab workflow that reruns the reference training pipeline at reduced budget on a 16 GB Tesla T4. For scoring, every frame retains its generating state (ARDY cskel27 joint positions, camera, body parameters, and source motion) and per-pixel depth, surface normals, and part labels. These annotations support dataset-specific metrics for visible topology and part-wise motion; corruptions expose their sensitivities and blind spots.
+
+Comments:
+9 pages, 4 figures. Dataset, code, reference models, and Colab notebook are linked from the paper.
+
+Submission source:
+dataset_paper_v6_arxiv.tar.gz
+SHA-256: ba3aec68b6ca28fe21319557e965b31a64de3106e73cc404fd3084b45af18e1f

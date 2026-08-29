@@ -204,8 +204,13 @@ def sample_in_chunks(
 
 def build_model(ckpt: dict, device: str) -> tuple[VideoDiT, dict]:
     args = ckpt["args"]
-    if args.get("cond") != "text" or ckpt.get("arch") != "dit_fm_t2v":
-        raise ValueError("post_eval_t2v requires a text-conditioned dit_fm_t2v checkpoint")
+    supported_arches = {
+        "dit_fm_t2v",
+        "dit_fm_fullst_t2v",
+        "dit_fm_local3d_t2v",
+    }
+    if args.get("cond") != "text" or ckpt.get("arch") not in supported_arches:
+        raise ValueError("post_eval_t2v requires a supported text-conditioned pixel VideoDiT checkpoint")
     state = ckpt.get("ema") or ckpt.get("model")
     if state is None or "text_proj.weight" not in state:
         raise ValueError("checkpoint does not contain EMA/model text projection weights")
@@ -220,6 +225,9 @@ def build_model(ckpt: dict, device: str) -> tuple[VideoDiT, dict]:
         cond_ch=5 if args.get("i2v_frac", 0) > 0 else 0,
         text_dim=text_dim,
         local_3d=bool(args.get("local_3d", False)),
+        full_st=bool(args.get("full_st", False)),
+        patch_t=int(args.get("patch_t", 1)),
+        conv_stem=bool(args.get("conv_stem", False)),
     ).to(device)
     model.load_state_dict(state)
     model.eval().requires_grad_(False)

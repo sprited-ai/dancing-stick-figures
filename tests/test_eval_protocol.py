@@ -9,7 +9,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from eval.protocol import build_reference_manifest, load_manifest_windows, motion_id
 from eval.run_ckpt import ar_seam_frames, rollout_chunks
-from eval.baselines import degenerate_videos
+from eval.baselines import degenerate_videos, tensors_to_premult_rgb
+from eval.fvd import frechet
 from eval.oracle import INK, score_seams, score_video
 from train.video_ddpm import (
     UNet3D,
@@ -87,6 +88,21 @@ def test_degenerate_baselines_preserve_length_and_are_deterministic():
         assert one[name].shape == real.shape
         assert np.array_equal(one[name], two[name])
     assert np.all(one["repeat_first"] == real[:, :1])
+
+
+def test_fvd_composite_does_not_quantize_rgba_before_white_composite():
+    # Premultiplied red=.3 and alpha=.5 should composite directly to
+    # (0.8, .5, .5). Un-premultiplying through uint8 first changes edge pixels.
+    value = torch.tensor([.3, 0.0, 0.0, .5]).view(1, 4, 1, 1, 1)
+    video = value * 2 - 1
+    rgb = tensors_to_premult_rgb(video)
+    np.testing.assert_array_equal(rgb[0, 0, 0, 0], [204, 127, 127])
+
+
+def test_frechet_supports_current_scipy_sqrtm_api():
+    mu = np.zeros(2)
+    covariance = np.eye(2)
+    assert abs(frechet(mu, covariance, mu, covariance)) < 1e-9
 
 
 def test_motion_amount_distinguishes_static_from_moving_video():

@@ -1,0 +1,1432 @@
+{
+  "data": "hf_v02/mini",
+  "selection": "one frame per rendered clip; frame_idx = first-8-byte SHA256(clip_id) mod 120",
+  "n_frames": 4020,
+  "n_unique_clips": 4020,
+  "thresholds": {
+    "20": {
+      "evaluated_foreground_pixels": 960025,
+      "assigned_fraction": 0.8967672716856332,
+      "unassigned_fraction": 0.1032327283143668,
+      "pixel_accuracy": 0.8959172938204735,
+      "accuracy_given_assigned": 0.999052175640217,
+      "macro_precision": 0.9983871541829633,
+      "macro_recall": 0.8679918858684558,
+      "macro_iou": 0.8668750200317739,
+      "segmentation_foreground_pixels": 1159262,
+      "segmentation_pixels_excluded_by_alpha_fraction": 0.1718653764205158,
+      "per_class": {
+        "ink": {
+          "support_pixels": 315887,
+          "precision": 0.999632640405511,
+          "recall": 0.9389528533937769,
+          "iou": 0.9386289699869619,
+          "unassigned_pixels": 19248
+        },
+        "arm_L": {
+          "support_pixels": 51312,
+          "precision": 0.994842379253832,
+          "recall": 0.8044512004989086,
+          "iou": 0.8011101191631409,
+          "unassigned_pixels": 9920
+        },
+        "fore_L": {
+          "support_pixels": 58790,
+          "precision": 0.9977406056762328,
+          "recall": 0.8563020921925497,
+          "iou": 0.854644845850876,
+          "unassigned_pixels": 8240
+        },
+        "arm_R": {
+          "support_pixels": 51064,
+          "precision": 0.9972135995893726,
+          "recall": 0.7989777534074887,
+          "iou": 0.7971980147719724,
+          "unassigned_pixels": 10162
+        },
+        "fore_R": {
+          "support_pixels": 58863,
+          "precision": 0.998185226547543,
+          "recall": 0.8503304282826224,
+          "iou": 0.849017878345829,
+          "unassigned_pixels": 8693
+        },
+        "leg_L": {
+          "support_pixels": 77910,
+          "precision": 0.9989109191543959,
+          "recall": 0.85940187395713,
+          "iou": 0.8585973866099021,
+          "unassigned_pixels": 10936
+        },
+        "shin_L": {
+          "support_pixels": 134494,
+          "precision": 0.9996455614628645,
+          "recall": 0.9226880009517153,
+          "iou": 0.9223862403187204,
+          "unassigned_pixels": 10320
+        },
+        "leg_R": {
+          "support_pixels": 77697,
+          "precision": 0.9995088189327975,
+          "recall": 0.8642804741495811,
+          "iou": 0.8639135468930915,
+          "unassigned_pixels": 10462
+        },
+        "shin_R": {
+          "support_pixels": 134008,
+          "precision": 0.9998046366241209,
+          "recall": 0.9165422959823294,
+          "iou": 0.9163781783454698,
+          "unassigned_pixels": 11125
+        }
+      },
+      "confusion": [
+        [
+          296603,
+          11,
+          5,
+          7,
+          6,
+          0,
+          0,
+          7,
+          0
+        ],
+        [
+          13,
+          41278,
+          99,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          5,
+          202,
+          50342,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          20,
+          0,
+          0,
+          40799,
+          82,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          1,
+          5,
+          106,
+          50053,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          0,
+          4,
+          0,
+          0,
+          66956,
+          5,
+          6,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          60,
+          124096,
+          0,
+          18
+        ],
+        [
+          65,
+          0,
+          1,
+          0,
+          1,
+          11,
+          0,
+          67152,
+          5
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          38,
+          19,
+          122824
+        ]
+      ]
+    },
+    "30": {
+      "evaluated_foreground_pixels": 960025,
+      "assigned_fraction": 0.916817791203354,
+      "unassigned_fraction": 0.08318220879664595,
+      "pixel_accuracy": 0.9137147470117966,
+      "accuracy_given_assigned": 0.9966154188745785,
+      "macro_precision": 0.9947422560326662,
+      "macro_recall": 0.890710042353709,
+      "macro_iou": 0.8867872550615505,
+      "segmentation_foreground_pixels": 1159262,
+      "segmentation_pixels_excluded_by_alpha_fraction": 0.1718653764205158,
+      "per_class": {
+        "ink": {
+          "support_pixels": 315887,
+          "precision": 0.9981892319214446,
+          "recall": 0.9493299819239158,
+          "iou": 0.9476979183455477,
+          "unassigned_pixels": 15884
+        },
+        "arm_L": {
+          "support_pixels": 51312,
+          "precision": 0.9841055355793235,
+          "recall": 0.8374064546304958,
+          "iou": 0.8262315886628466,
+          "unassigned_pixels": 7967
+        },
+        "fore_L": {
+          "support_pixels": 58790,
+          "precision": 0.9935140943718458,
+          "recall": 0.8806769858819528,
+          "iou": 0.8756426735218509,
+          "unassigned_pixels": 6349
+        },
+        "arm_R": {
+          "support_pixels": 51064,
+          "precision": 0.9911176388306057,
+          "recall": 0.8325434748550838,
+          "iou": 0.8263776849062106,
+          "unassigned_pixels": 8269
+        },
+        "fore_R": {
+          "support_pixels": 58863,
+          "precision": 0.9954277115406875,
+          "recall": 0.8765608276846236,
+          "iou": 0.8730456852791878,
+          "unassigned_pixels": 6872
+        },
+        "leg_L": {
+          "support_pixels": 77910,
+          "precision": 0.9952760000577859,
+          "recall": 0.8842767295597485,
+          "iou": 0.8805807993660288,
+          "unassigned_pixels": 8892
+        },
+        "shin_L": {
+          "support_pixels": 134494,
+          "precision": 0.9987061849123698,
+          "recall": 0.9355138519190447,
+          "iou": 0.9343814283698583,
+          "unassigned_pixels": 8343
+        },
+        "leg_R": {
+          "support_pixels": 77697,
+          "precision": 0.9970902176574812,
+          "recall": 0.8908838179080273,
+          "iou": 0.8885736659007176,
+          "unassigned_pixels": 8060
+        },
+        "shin_R": {
+          "support_pixels": 134008,
+          "precision": 0.999253689422452,
+          "recall": 0.9291982568204883,
+          "iou": 0.9285538512017062,
+          "unassigned_pixels": 9221
+        }
+      },
+      "confusion": [
+        [
+          299881,
+          40,
+          14,
+          23,
+          8,
+          3,
+          0,
+          34,
+          0
+        ],
+        [
+          78,
+          42969,
+          290,
+          1,
+          2,
+          3,
+          1,
+          0,
+          1
+        ],
+        [
+          13,
+          648,
+          51775,
+          0,
+          2,
+          2,
+          0,
+          0,
+          1
+        ],
+        [
+          68,
+          2,
+          0,
+          42513,
+          211,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          9,
+          2,
+          13,
+          357,
+          51597,
+          1,
+          0,
+          10,
+          2
+        ],
+        [
+          42,
+          2,
+          19,
+          0,
+          1,
+          68894,
+          47,
+          9,
+          4
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          276,
+          125821,
+          0,
+          53
+        ],
+        [
+          333,
+          0,
+          2,
+          0,
+          10,
+          40,
+          1,
+          69219,
+          32
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          3,
+          1,
+          114,
+          149,
+          124520
+        ]
+      ]
+    },
+    "40": {
+      "evaluated_foreground_pixels": 960025,
+      "assigned_fraction": 0.9355016796437593,
+      "unassigned_fraction": 0.0644983203562407,
+      "pixel_accuracy": 0.9275706361813495,
+      "accuracy_given_assigned": 0.9915221494146007,
+      "macro_precision": 0.9873186452960372,
+      "macro_recall": 0.9085054669717295,
+      "macro_iou": 0.8985073094786019,
+      "segmentation_foreground_pixels": 1159262,
+      "segmentation_pixels_excluded_by_alpha_fraction": 0.1718653764205158,
+      "per_class": {
+        "ink": {
+          "support_pixels": 315887,
+          "precision": 0.9955217491520959,
+          "recall": 0.9570827542760544,
+          "iou": 0.9529798548134419,
+          "unassigned_pixels": 13190
+        },
+        "arm_L": {
+          "support_pixels": 51312,
+          "precision": 0.9666564965348908,
+          "recall": 0.864437168693483,
+          "iou": 0.8394080466295749,
+          "unassigned_pixels": 6085
+        },
+        "fore_L": {
+          "support_pixels": 58790,
+          "precision": 0.9869007803790413,
+          "recall": 0.9034699778873958,
+          "iou": 0.8927640978233465,
+          "unassigned_pixels": 4219
+        },
+        "arm_R": {
+          "support_pixels": 51064,
+          "precision": 0.9775288420770758,
+          "recall": 0.8578646404511985,
+          "iou": 0.8412744137811834,
+          "unassigned_pixels": 6639
+        },
+        "fore_R": {
+          "support_pixels": 58863,
+          "precision": 0.9910797946103969,
+          "recall": 0.898459133921139,
+          "iou": 0.8912519590825595,
+          "unassigned_pixels": 4966
+        },
+        "leg_L": {
+          "support_pixels": 77910,
+          "precision": 0.9835830746977123,
+          "recall": 0.8989603388525221,
+          "iou": 0.8856712907345818,
+          "unassigned_pixels": 7500
+        },
+        "shin_L": {
+          "support_pixels": 134494,
+          "precision": 0.9971253113593282,
+          "recall": 0.946503189733371,
+          "iou": 0.9439274512275603,
+          "unassigned_pixels": 6043
+        },
+        "leg_R": {
+          "support_pixels": 77697,
+          "precision": 0.9893889549940506,
+          "recall": 0.9096490211977296,
+          "iou": 0.9008603658147983,
+          "unassigned_pixels": 6131
+        },
+        "shin_R": {
+          "support_pixels": 134008,
+          "precision": 0.9980828038597437,
+          "recall": 0.9401229777326727,
+          "iou": 0.9384283054003725,
+          "unassigned_pixels": 7147
+        }
+      },
+      "confusion": [
+        [
+          302330,
+          118,
+          39,
+          72,
+          32,
+          13,
+          0,
+          93,
+          0
+        ],
+        [
+          263,
+          44356,
+          599,
+          1,
+          2,
+          4,
+          1,
+          0,
+          1
+        ],
+        [
+          36,
+          1397,
+          53115,
+          0,
+          5,
+          10,
+          0,
+          1,
+          7
+        ],
+        [
+          223,
+          5,
+          0,
+          43806,
+          387,
+          2,
+          0,
+          2,
+          0
+        ],
+        [
+          24,
+          7,
+          19,
+          931,
+          52886,
+          1,
+          0,
+          24,
+          5
+        ],
+        [
+          171,
+          3,
+          44,
+          1,
+          8,
+          70038,
+          98,
+          42,
+          5
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          1,
+          1015,
+          127299,
+          0,
+          134
+        ],
+        [
+          641,
+          0,
+          3,
+          2,
+          37,
+          115,
+          1,
+          70677,
+          90
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          4,
+          9,
+          267,
+          596,
+          125984
+        ]
+      ]
+    },
+    "50": {
+      "evaluated_foreground_pixels": 960025,
+      "assigned_fraction": 0.9524324887372725,
+      "unassigned_fraction": 0.04756751126272751,
+      "pixel_accuracy": 0.9388953412671545,
+      "accuracy_given_assigned": 0.9857867642796757,
+      "macro_precision": 0.9795608144622676,
+      "macro_recall": 0.9225493985486624,
+      "macro_iou": 0.9057593681864213,
+      "segmentation_foreground_pixels": 1159262,
+      "segmentation_pixels_excluded_by_alpha_fraction": 0.1718653764205158,
+      "per_class": {
+        "ink": {
+          "support_pixels": 315887,
+          "precision": 0.9919875136854178,
+          "recall": 0.9637528609914304,
+          "iou": 0.9563085447908879,
+          "unassigned_pixels": 10529
+        },
+        "arm_L": {
+          "support_pixels": 51312,
+          "precision": 0.9545578976183958,
+          "recall": 0.8834385718740255,
+          "iou": 0.8477838040022443,
+          "unassigned_pixels": 4744
+        },
+        "fore_L": {
+          "support_pixels": 58790,
+          "precision": 0.9817900109369304,
+          "recall": 0.9161592107501275,
+          "iou": 0.9008513271672046,
+          "unassigned_pixels": 2980
+        },
+        "arm_R": {
+          "support_pixels": 51064,
+          "precision": 0.9607654479367116,
+          "recall": 0.8799741500861664,
+          "iou": 0.8494489498856311,
+          "unassigned_pixels": 4999
+        },
+        "fore_R": {
+          "support_pixels": 58863,
+          "precision": 0.9845406924747668,
+          "recall": 0.9163990962064454,
+          "iou": 0.9033997655334115,
+          "unassigned_pixels": 3110
+        },
+        "leg_L": {
+          "support_pixels": 77910,
+          "precision": 0.9733523412654896,
+          "recall": 0.9114106019766397,
+          "iou": 0.8892228316677937,
+          "unassigned_pixels": 6151
+        },
+        "shin_L": {
+          "support_pixels": 134494,
+          "precision": 0.9949480101503992,
+          "recall": 0.9561987895370797,
+          "iou": 0.9515786513944076,
+          "unassigned_pixels": 3982
+        },
+        "leg_R": {
+          "support_pixels": 77697,
+          "precision": 0.9777354641278476,
+          "recall": 0.9252352085666113,
+          "iou": 0.9061436458517156,
+          "unassigned_pixels": 4255
+        },
+        "shin_R": {
+          "support_pixels": 134008,
+          "precision": 0.9963699519644506,
+          "recall": 0.9503760969494358,
+          "iou": 0.9470967933844964,
+          "unassigned_pixels": 4916
+        }
+      },
+      "confusion": [
+        [
+          304437,
+          311,
+          88,
+          175,
+          82,
+          35,
+          0,
+          229,
+          1
+        ],
+        [
+          458,
+          45331,
+          756,
+          9,
+          7,
+          5,
+          1,
+          0,
+          1
+        ],
+        [
+          78,
+          1818,
+          53861,
+          1,
+          22,
+          20,
+          0,
+          3,
+          7
+        ],
+        [
+          468,
+          11,
+          3,
+          44935,
+          641,
+          2,
+          0,
+          4,
+          1
+        ],
+        [
+          50,
+          12,
+          43,
+          1646,
+          53942,
+          2,
+          0,
+          53,
+          5
+        ],
+        [
+          334,
+          5,
+          97,
+          1,
+          15,
+          71008,
+          190,
+          100,
+          9
+        ],
+        [
+          1,
+          0,
+          6,
+          0,
+          1,
+          1614,
+          128603,
+          2,
+          285
+        ],
+        [
+          1068,
+          0,
+          6,
+          3,
+          73,
+          248,
+          1,
+          71888,
+          155
+        ],
+        [
+          2,
+          1,
+          0,
+          0,
+          6,
+          18,
+          461,
+          1246,
+          127358
+        ]
+      ]
+    },
+    "60": {
+      "evaluated_foreground_pixels": 960025,
+      "assigned_fraction": 0.9638249003932189,
+      "unassigned_fraction": 0.036175099606781114,
+      "pixel_accuracy": 0.9463628551339809,
+      "accuracy_given_assigned": 0.9818825543393681,
+      "macro_precision": 0.9754907778476133,
+      "macro_recall": 0.9312444934275046,
+      "macro_iou": 0.9105320638741308,
+      "segmentation_foreground_pixels": 1159262,
+      "segmentation_pixels_excluded_by_alpha_fraction": 0.1718653764205158,
+      "per_class": {
+        "ink": {
+          "support_pixels": 315887,
+          "precision": 0.9881682974938744,
+          "recall": 0.9690047390364276,
+          "iou": 0.957891047466453,
+          "unassigned_pixels": 8198
+        },
+        "arm_L": {
+          "support_pixels": 51312,
+          "precision": 0.9488975678300581,
+          "recall": 0.8949173682569379,
+          "iou": 0.8537696383750116,
+          "unassigned_pixels": 3906
+        },
+        "fore_L": {
+          "support_pixels": 58790,
+          "precision": 0.9794032549728753,
+          "recall": 0.9212621194080626,
+          "iou": 0.9037527741160373,
+          "unassigned_pixels": 2511
+        },
+        "arm_R": {
+          "support_pixels": 51064,
+          "precision": 0.957454850902982,
+          "recall": 0.8928795237349209,
+          "iou": 0.8588058014692033,
+          "unassigned_pixels": 4079
+        },
+        "fore_R": {
+          "support_pixels": 58863,
+          "precision": 0.9825994060983559,
+          "recall": 0.9219203914173589,
+          "iou": 0.9071108585183204,
+          "unassigned_pixels": 2635
+        },
+        "leg_L": {
+          "support_pixels": 77910,
+          "precision": 0.969681848220427,
+          "recall": 0.9228468745988961,
+          "iou": 0.8969659921654732,
+          "unassigned_pixels": 4868
+        },
+        "shin_L": {
+          "support_pixels": 134494,
+          "precision": 0.9927468863089796,
+          "recall": 0.9606896961946257,
+          "iou": 0.9539937092987197,
+          "unassigned_pixels": 3118
+        },
+        "leg_R": {
+          "support_pixels": 77697,
+          "precision": 0.966457966563861,
+          "recall": 0.9397145320926162,
+          "iou": 0.9100347745883761,
+          "unassigned_pixels": 2366
+        },
+        "shin_R": {
+          "support_pixels": 134008,
+          "precision": 0.994006922237106,
+          "recall": 0.957965196107695,
+          "iou": 0.952463978869582,
+          "unassigned_pixels": 3048
+        }
+      },
+      "confusion": [
+        [
+          306096,
+          498,
+          145,
+          306,
+          122,
+          97,
+          0,
+          424,
+          1
+        ],
+        [
+          686,
+          45920,
+          757,
+          20,
+          13,
+          7,
+          1,
+          0,
+          2
+        ],
+        [
+          127,
+          1874,
+          54161,
+          5,
+          54,
+          41,
+          2,
+          8,
+          7
+        ],
+        [
+          712,
+          21,
+          6,
+          45594,
+          643,
+          2,
+          0,
+          6,
+          1
+        ],
+        [
+          79,
+          16,
+          63,
+          1688,
+          54267,
+          5,
+          0,
+          105,
+          5
+        ],
+        [
+          510,
+          61,
+          151,
+          1,
+          22,
+          71899,
+          192,
+          192,
+          14
+        ],
+        [
+          1,
+          0,
+          7,
+          0,
+          2,
+          1629,
+          129207,
+          7,
+          523
+        ],
+        [
+          1546,
+          1,
+          10,
+          5,
+          97,
+          435,
+          3,
+          73013,
+          221
+        ],
+        [
+          4,
+          2,
+          0,
+          1,
+          8,
+          32,
+          746,
+          1792,
+          128375
+        ]
+      ]
+    },
+    "70": {
+      "evaluated_foreground_pixels": 960025,
+      "assigned_fraction": 0.9744371240332284,
+      "unassigned_fraction": 0.025562875966771648,
+      "pixel_accuracy": 0.9518585453503815,
+      "accuracy_given_assigned": 0.9768291066442611,
+      "macro_precision": 0.9692707840373137,
+      "macro_recall": 0.9377873896755129,
+      "macro_iou": 0.9112757616922136,
+      "segmentation_foreground_pixels": 1159262,
+      "segmentation_pixels_excluded_by_alpha_fraction": 0.1718653764205158,
+      "per_class": {
+        "ink": {
+          "support_pixels": 315887,
+          "precision": 0.984957710574438,
+          "recall": 0.9736266449711447,
+          "iou": 0.9593616649614454,
+          "unassigned_pixels": 5362
+        },
+        "arm_L": {
+          "support_pixels": 51312,
+          "precision": 0.9330754429567867,
+          "recall": 0.9072536638603056,
+          "iou": 0.8518233884100931,
+          "unassigned_pixels": 2767
+        },
+        "fore_L": {
+          "support_pixels": 58790,
+          "precision": 0.9776091218099743,
+          "recall": 0.9246130294267733,
+          "iou": 0.9054384942117099,
+          "unassigned_pixels": 1917
+        },
+        "arm_R": {
+          "support_pixels": 51064,
+          "precision": 0.9537514968823554,
+          "recall": 0.9046294845683848,
+          "iou": 0.8666141377757767,
+          "unassigned_pixels": 3113
+        },
+        "fore_R": {
+          "support_pixels": 58863,
+          "precision": 0.9799049071499059,
+          "recall": 0.9278324244431986,
+          "iou": 0.9105079772602237,
+          "unassigned_pixels": 1503
+        },
+        "leg_L": {
+          "support_pixels": 77910,
+          "precision": 0.9638475836431227,
+          "recall": 0.9318059299191375,
+          "iou": 0.9003385710565153,
+          "unassigned_pixels": 3571
+        },
+        "shin_L": {
+          "support_pixels": 134494,
+          "precision": 0.9908447582802207,
+          "recall": 0.964028135084093,
+          "iou": 0.955516905934027,
+          "unassigned_pixels": 2398
+        },
+        "leg_R": {
+          "support_pixels": 77697,
+          "precision": 0.9475335743801653,
+          "recall": 0.9443993976601414,
+          "iou": 0.8974681996086106,
+          "unassigned_pixels": 1684
+        },
+        "shin_R": {
+          "support_pixels": 134008,
+          "precision": 0.9919124606588536,
+          "recall": 0.961897797146439,
+          "iou": 0.9544125160115209,
+          "unassigned_pixels": 2226
+        }
+      },
+      "confusion": [
+        [
+          307556,
+          843,
+          189,
+          455,
+          182,
+          151,
+          0,
+          1143,
+          6
+        ],
+        [
+          990,
+          46553,
+          762,
+          29,
+          21,
+          185,
+          1,
+          1,
+          3
+        ],
+        [
+          179,
+          2150,
+          54358,
+          9,
+          90,
+          57,
+          2,
+          14,
+          14
+        ],
+        [
+          1010,
+          44,
+          8,
+          46194,
+          643,
+          40,
+          0,
+          11,
+          1
+        ],
+        [
+          145,
+          23,
+          96,
+          1735,
+          54615,
+          9,
+          1,
+          725,
+          11
+        ],
+        [
+          717,
+          271,
+          154,
+          1,
+          30,
+          72597,
+          192,
+          344,
+          33
+        ],
+        [
+          1,
+          4,
+          17,
+          0,
+          3,
+          1645,
+          129656,
+          13,
+          757
+        ],
+        [
+          1650,
+          1,
+          13,
+          9,
+          138,
+          593,
+          6,
+          73377,
+          226
+        ],
+        [
+          5,
+          3,
+          6,
+          2,
+          13,
+          43,
+          996,
+          1812,
+          128902
+        ]
+      ]
+    },
+    "80": {
+      "evaluated_foreground_pixels": 960025,
+      "assigned_fraction": 0.9836972995494909,
+      "unassigned_fraction": 0.016302700450509078,
+      "pixel_accuracy": 0.956166766490456,
+      "accuracy_given_assigned": 0.9720132066321182,
+      "macro_precision": 0.9632475018282065,
+      "macro_recall": 0.9429393832350654,
+      "macro_iou": 0.9107755804415122,
+      "segmentation_foreground_pixels": 1159262,
+      "segmentation_pixels_excluded_by_alpha_fraction": 0.1718653764205158,
+      "per_class": {
+        "ink": {
+          "support_pixels": 315887,
+          "precision": 0.9816309782816138,
+          "recall": 0.9769727782403201,
+          "iou": 0.9594325720787659,
+          "unassigned_pixels": 3171
+        },
+        "arm_L": {
+          "support_pixels": 51312,
+          "precision": 0.9201095461658841,
+          "recall": 0.9166666666666666,
+          "iou": 0.8490865766481335,
+          "unassigned_pixels": 1718
+        },
+        "fore_L": {
+          "support_pixels": 58790,
+          "precision": 0.9768134134313637,
+          "recall": 0.9265521347167885,
+          "iou": 0.906612519348235,
+          "unassigned_pixels": 1414
+        },
+        "arm_R": {
+          "support_pixels": 51064,
+          "precision": 0.9385109371864339,
+          "recall": 0.915831113896287,
+          "iou": 0.8639890629618682,
+          "unassigned_pixels": 2058
+        },
+        "fore_R": {
+          "support_pixels": 58863,
+          "precision": 0.9781800636191429,
+          "recall": 0.9299050337223723,
+          "iou": 0.9110079222421943,
+          "unassigned_pixels": 687
+        },
+        "leg_L": {
+          "support_pixels": 77910,
+          "precision": 0.9568123661810016,
+          "recall": 0.9406751379797202,
+          "iou": 0.902361545470216,
+          "unassigned_pixels": 2410
+        },
+        "shin_L": {
+          "support_pixels": 134494,
+          "precision": 0.9882185828877005,
+          "recall": 0.9673070917661755,
+          "iou": 0.956279172332684,
+          "unassigned_pixels": 1628
+        },
+        "leg_R": {
+          "support_pixels": 77697,
+          "precision": 0.9397911773715919,
+          "recall": 0.9476170251103646,
+          "iou": 0.8933797655738103,
+          "unassigned_pixels": 1114
+        },
+        "shin_R": {
+          "support_pixels": 134008,
+          "precision": 0.989160451329126,
+          "recall": 0.9649274670168945,
+          "iou": 0.9548310873177035,
+          "unassigned_pixels": 1451
+        }
+      },
+      "confusion": [
+        [
+          308613,
+          1324,
+          191,
+          850,
+          185,
+          216,
+          0,
+          1330,
+          7
+        ],
+        [
+          1341,
+          47036,
+          765,
+          54,
+          30,
+          362,
+          1,
+          2,
+          3
+        ],
+        [
+          247,
+          2385,
+          54472,
+          14,
+          120,
+          62,
+          5,
+          24,
+          47
+        ],
+        [
+          1411,
+          49,
+          12,
+          46766,
+          644,
+          86,
+          0,
+          37,
+          1
+        ],
+        [
+          152,
+          33,
+          126,
+          2125,
+          54737,
+          28,
+          2,
+          955,
+          18
+        ],
+        [
+          957,
+          285,
+          155,
+          6,
+          42,
+          73288,
+          192,
+          530,
+          45
+        ],
+        [
+          2,
+          4,
+          22,
+          0,
+          3,
+          1661,
+          130097,
+          24,
+          1053
+        ],
+        [
+          1660,
+          1,
+          15,
+          12,
+          177,
+          837,
+          11,
+          73627,
+          243
+        ],
+        [
+          5,
+          3,
+          7,
+          3,
+          20,
+          56,
+          1340,
+          1815,
+          129308
+        ]
+      ]
+    },
+    "100": {
+      "evaluated_foreground_pixels": 960025,
+      "assigned_fraction": 0.9986552433530377,
+      "unassigned_fraction": 0.0013447566469623196,
+      "pixel_accuracy": 0.9621874430353377,
+      "accuracy_given_assigned": 0.963483093329328,
+      "macro_precision": 0.9540052008779222,
+      "macro_recall": 0.9500040009768269,
+      "macro_iou": 0.9088240294614585,
+      "segmentation_foreground_pixels": 1159262,
+      "segmentation_pixels_excluded_by_alpha_fraction": 0.1718653764205158,
+      "per_class": {
+        "ink": {
+          "support_pixels": 315887,
+          "precision": 0.9766076526978564,
+          "recall": 0.9810565170456524,
+          "iou": 0.9585320590145681,
+          "unassigned_pixels": 106
+        },
+        "arm_L": {
+          "support_pixels": 51312,
+          "precision": 0.90352820862451,
+          "recall": 0.9297825070159027,
+          "iou": 0.8458142750771195,
+          "unassigned_pixels": 59
+        },
+        "fore_L": {
+          "support_pixels": 58790,
+          "precision": 0.9756419872138291,
+          "recall": 0.9293077053920735,
+          "iou": 0.9082355288093892,
+          "unassigned_pixels": 121
+        },
+        "arm_R": {
+          "support_pixels": 51064,
+          "precision": 0.9330717975002957,
+          "recall": 0.9268956603477988,
+          "iou": 0.8691125433812593,
+          "unassigned_pixels": 60
+        },
+        "fore_R": {
+          "support_pixels": 58863,
+          "precision": 0.9761007184010243,
+          "recall": 0.9325382668229618,
+          "iou": 0.911721228428588,
+          "unassigned_pixels": 40
+        },
+        "leg_L": {
+          "support_pixels": 77910,
+          "precision": 0.9442970485560139,
+          "recall": 0.9547811577461173,
+          "iou": 0.9038737271865659,
+          "unassigned_pixels": 367
+        },
+        "shin_L": {
+          "support_pixels": 134494,
+          "precision": 0.9840244296856784,
+          "recall": 0.9727497137418769,
+          "iou": 0.957626374269862,
+          "unassigned_pixels": 130
+        },
+        "leg_R": {
+          "support_pixels": 77697,
+          "precision": 0.9159675303783997,
+          "recall": 0.9527137469915183,
+          "iou": 0.8761362560363601,
+          "unassigned_pixels": 278
+        },
+        "shin_R": {
+          "support_pixels": 134008,
+          "precision": 0.9768074348436925,
+          "recall": 0.9702107336875411,
+          "iou": 0.9483642729494146,
+          "unassigned_pixels": 130
+        }
+      },
+      "confusion": [
+        [
+          309903,
+          2002,
+          195,
+          1076,
+          189,
+          426,
+          0,
+          1967,
+          23
+        ],
+        [
+          2036,
+          47709,
+          766,
+          113,
+          51,
+          558,
+          1,
+          9,
+          10
+        ],
+        [
+          405,
+          2697,
+          54634,
+          24,
+          177,
+          106,
+          7,
+          36,
+          583
+        ],
+        [
+          1647,
+          51,
+          24,
+          47331,
+          646,
+          196,
+          0,
+          1103,
+          6
+        ],
+        [
+          155,
+          36,
+          173,
+          2144,
+          54892,
+          79,
+          3,
+          983,
+          358
+        ],
+        [
+          1501,
+          297,
+          156,
+          22,
+          59,
+          74387,
+          194,
+          838,
+          89
+        ],
+        [
+          3,
+          4,
+          24,
+          0,
+          8,
+          1722,
+          130829,
+          35,
+          1739
+        ],
+        [
+          1670,
+          4,
+          18,
+          13,
+          193,
+          1207,
+          12,
+          74023,
+          279
+        ],
+        [
+          6,
+          3,
+          8,
+          3,
+          21,
+          94,
+          1907,
+          1820,
+          130016
+        ]
+      ]
+    }
+  }
+}

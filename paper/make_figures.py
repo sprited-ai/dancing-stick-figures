@@ -149,9 +149,10 @@ def training_curve():
     plt.close(fig)
 
 
-def failure_modes():
-    metrics = load("degenerate_120f_n128.json")["baselines"]
-    distances = {name: row["fvd"] for name, row in metrics.items()}
+def failure_modes_64f():
+    """Protocol-matched stress test for the first-64-frame model window."""
+    metrics = load("degenerate_64f_n128.json")["baselines"]
+    distances = load("fvd_64f_n128.json")["fvd"]
     names = ["repeat_first", "shuffle_frames", "reverse_time", "loop_first_8"]
     labels = ["freeze", "shuffle", "reverse", "first 8\nlooped"]
     signals = [("centroid speed", "centroid_speed"), ("centroid accel.", "centroid_accel"),
@@ -174,7 +175,7 @@ def failure_modes():
     left.set_xticks(x, labels)
     left.set_ylabel("signal / real reference")
     left.set_ylim(0, 11.2)
-    left.set_title("(a) Controlled temporal failures")
+    left.set_title("(a) Controlled failures, first 64 frames")
     left.grid(axis="y", color="#dddddd", lw=.5)
     left.legend(ncol=1, loc="upper right")
 
@@ -185,14 +186,15 @@ def failure_modes():
     right.set_xticks(x, labels)
     right.set_ylabel("FVD to real reference A")
     right.set_ylim(0, max(values) * 1.18)
-    right.set_title("(b) FVD sensitivity to temporal failures")
+    right.set_title("(b) FVD, protocol-matched 64-frame sets")
     right.grid(axis="y", color="#dddddd", lw=.5)
     right.legend(loc="upper left")
     for bar, value in zip(bars, values):
-        right.text(bar.get_x() + bar.get_width() / 2, value + 8, f"{value:.0f}", ha="center", fontsize=7)
+        right.text(bar.get_x() + bar.get_width() / 2, value + max(values) * .018,
+                   f"{value:.0f}", ha="center", fontsize=7)
 
-    fig.savefig(FIGS / "failure_modes.pdf")
-    fig.savefig(FIGS / "failure_modes.png")
+    fig.savefig(FIGS / "failure_modes_64f.pdf")
+    fig.savefig(FIGS / "failure_modes_64f.png")
     plt.close(fig)
 
 
@@ -323,7 +325,7 @@ def main():
     fig.savefig(FIGS / "benchmark_summary.png")
     plt.close(fig)
     training_curve()
-    failure_modes()
+    failure_modes_64f()
     k1_warmstart_tradeoff()
     m6_milestone_tradeoff()
     m6_fix_comparison()

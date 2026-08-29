@@ -1,6 +1,12 @@
-# STATUS — 2026-08-24 PDT (Pixel) — dataset paper + factorised-UNet Colab v0.2 release loop
+# HISTORICAL STATUS SNAPSHOT — 2026-08-24 PDT (Pixel)
 
-## Current release direction
+> **Do not use this file as the current paper protocol or result source.** It preserves the v0.2
+> factorised-UNet/120-frame release state for provenance. The active manuscript is
+> `paper/dataset_paper_v6.tex`; its benchmarks and diagnostics use fixed first-64-frame windows.
+> The verified numerical evidence and release audit are archived under `paper/results/` and
+> `paper/ARXIV_V6_NUMBER_AUDIT.md`.
+
+## Historical release direction at this snapshot
 
 - The active paper is a **dataset, deterministic rendering pipeline, and evaluation-suite report**. M6 and the latent
   long-horizon architecture track are no longer the paper's centre; they remain historical research artifacts below.
@@ -18,7 +24,7 @@
 - `notebooks/dancing_stick_figures_colab_v0_2.ipynb` is the active lesson: fixed factorised 3D UNet, 32²/64² only,
   complete-prompt T5 conditioning, image→video warm-start, typed-prompt rollout, and video/reference diagnostics.
 
-## Active evidence collection
+## Evidence collection active at this snapshot
 
 - RunPod `z631kxnqqf3cx6` (RTX 4090, $0.74/h): the lower-cost 64² full-prompt UNet route is complete (image 30k →
   video 10k, stride 2). At 60 frames, TVR is .157 versus .127 real, while centroid speed and angular jerk are

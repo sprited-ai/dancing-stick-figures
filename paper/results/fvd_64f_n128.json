@@ -1,0 +1,13 @@
+{
+  "n": 128,
+  "feature_dim": 400,
+  "fvd": {
+    "real_reference_a": -0.000123697577009807,
+    "real_reference_b": 114.73182503750263,
+    "repeat_first": 620.7545100079633,
+    "shuffle_frames": 520.7063630553998,
+    "reverse_time": 120.1384454694014,
+    "loop_first_8": 418.2166163127022,
+    "train_replay": 125.4895789960326
+  }
+}

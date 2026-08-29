@@ -10,8 +10,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from train.video_dit_fm import (
     diverse_text_prompts,
     foreground_weighted_mse,
+    optimizer_step_due,
     parse_step_set,
     prepare_warmstart_state,
+    rgba_x0_disagreement,
 )
 
 
@@ -56,6 +58,28 @@ def test_foreground_weight_uses_soft_alpha_edges():
     clean[:, 3, :, :, 0] = -1.0
     clean[:, 3, :, :, 1] = 0.0  # 50% alpha -> weight 2 when foreground_weight=3
     assert foreground_weighted_mse(err, clean, 3.0).item() == pytest.approx((1.0 + 2.0 * 3.0) / 3.0)
+
+
+def test_rgba_x0_disagreement_is_zero_for_exact_prediction():
+    clean = torch.randn(2, 4, 3, 4, 4).clamp(-1, 1)
+    t = torch.tensor([0.2, 0.8])
+    assert rgba_x0_disagreement(clean, clean, t).item() == pytest.approx(0.0)
+
+
+def test_rgba_x0_disagreement_matches_mini_wan_noise_gate():
+    clean = -torch.ones(2, 4, 1, 1, 1)
+    predicted = clean.clone()
+    predicted[:, 3] = 1.0  # opaque prediction against transparent target
+    ungated = rgba_x0_disagreement(predicted[:1], clean[:1], torch.tensor([0.0]))
+    gated = rgba_x0_disagreement(predicted[1:], clean[1:], torch.tensor([1.0]))
+    assert ungated.item() > 0
+    assert gated.item() == pytest.approx(0.0)
+
+
+def test_optimizer_step_due_counts_updates_after_accumulation():
+    assert [optimizer_step_due(i, 2) for i in range(6)] == [False, True, False, True, False, True]
+    with pytest.raises(ValueError):
+        optimizer_step_due(0, 0)
 
 
 def test_parse_step_set_is_deduplicated_and_validated():

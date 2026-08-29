@@ -23,18 +23,19 @@ a checkpoint at every step and a scorer that tells you whether each coloured lim
 | **4 · video DiT** | `python -m train.video_dit_fm --cache data/cache --out runs/dit_vid64 --arch dit --size 64 --frames 64 --stride 1 --first_frames 64 --batch 4 --steps 2000 --patch 4 --cond text --fg_weight 2 --img_frac .1 --i2v_frac .2 --init runs/dit_img64/ckpt.pt --grad_ckpt --fast` | jointly generated 64-frame (3.2 s) windows at the native 20 fps |
 | **5 · generate & diagnose** | `python -m eval.post_eval_t2v --ckpt runs/dit_vid64/ckpt.pt --out out/prompt_suite --prompts_file prompts/v1.txt --n 4 --steps 30 --cfg 3 --fps 20` | fixed prompt/noise comparisons, frame strips, and manifests |
 
-The 2,000-step cells are a teaching run, not the released model's full budget. Fixed intermediate samples make it easy
+The 2,000-step cells are a reduced-budget run, not the released model's full budget. Fixed intermediate samples make it easy
 to decide whether another 1,000 steps changed the result before spending more compute.
 
-**How does it remain small enough for one GPU?** The public videos remain 120 frames at 20 fps. The reference training
+**What is the reference compute scope?** The public videos remain 120 frames at 20 fps. The reference training
 protocol trains on the first 64 frames of each clip (3.2 seconds at 20 fps) — the span where the prompted action
 concentrates (`--first_frames 64`) — and the video model jointly generates that complete 64-frame native-cadence
-window. Native dataset evaluation still uses complete 120-frame clips. Within
+window. The paper's benchmarks and diagnostic experiments use that same fixed first-64-frame window; the complete
+120-frame clips remain available in the dataset. Within
 each transformer block, spatial attention exchanges information inside one frame and temporal attention exchanges
 information across all 64 frames at the same patch position. Patchifying each frame and training on the first-64
 view keeps the baseline practical without a Video VAE.
 
-**Why image first?** A video is a sequence of pictures. Teaching one network to draw a good *frame* first, then adding
+**Why image first?** A video is a sequence of pictures. Training one network to draw a good *frame* first, then adding
 the "what changes between frames" part, separates spatial learning from temporal learning while keeping one backbone.
 Our `--init` copies every compatible spatial and text-conditioning tensor. A one-frame image model keeps fresh video
 time positions; when extending an existing video checkpoint to a new length, the learned temporal positions are
@@ -50,7 +51,7 @@ interpolated. The image and video stages therefore use one readable backbone and
 - **Structural evaluator:** `eval/oracle.py` parses a rendered figure by colour and counts limbs / checks attachment / colour purity;
   `eval/corrupt.py` validates it on synthetic corruptions; `eval/run_ckpt.py` adds temporal metrics + FVD for video checkpoints.
 - **Reconstructing the data:** rebuild the released visual data from the public motion table with `generator/rebuild_from_motion.py`; ARDY is not required (see below).
-- **Tech report** in `paper/` — native 120-frame diagnostics, reconstruction evidence, and the factorised-DiT reference route; the dataset card remains the schema reference. `paper/EXPERIMENT_MATRIX.md` separates paper evidence from additional UNet, VAE, and autoregressive research.
+- **Tech report** in `paper/` — protocol-matched first-64-frame diagnostics, reconstruction evidence, and the reference-model suite; the dataset card remains the schema reference. `paper/EXPERIMENT_MATRIX.md` separates paper evidence from additional UNet, VAE, and autoregressive research.
 
 ## Layout
 
@@ -111,11 +112,11 @@ repeatable rendering.
 
 ## Status
 
-v0.2 is in final release QA. The full-prompt factorised UNet has completed its three-seed, 120-frame evaluation, and
-the public-motion reconstruction passes all 514,800 frames in both released tiers. On a Tesla T4, the released 64²
-lesson completes its 2k image and 1.2k video stages at 0.76/1.12 seconds per update, peaks at 6.9/11.3 GB, and produces
-a 120-frame rollout. The same release source completed setup through typed-prompt generation and scoring on an RTX
-4090 in 944 seconds; hardware-specific timings are kept separate.
+v0.2 is the release used by the paper. The public-motion reconstruction passes all 514,800 pre-curation frames in
+both released tiers, a superset of the 482,400 released frames. The paper's reference protocol trains and evaluates
+fixed first-64-frame windows. The current v0.3 Colab workflow targets a Tesla T4 with a conservative batch, but its
+end-to-end timing is not used as paper evidence; measured hardware and memory for the full reference runs are reported
+separately in the paper.
 `STATUS.md` records the live engineering state.
 
 ## License

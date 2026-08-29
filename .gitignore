@@ -34,3 +34,13 @@ paper.fdb_latexmk
 paper.fls
 paper.log
 paper.out
+*.sqlite3-shm
+*.sqlite3-wal
+*.aux
+*.brf
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.autobuild.pid
+.vscode/

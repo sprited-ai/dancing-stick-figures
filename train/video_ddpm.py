@@ -302,7 +302,6 @@ def sample(model, shape, ac, device, steps=50, y=None, cfg=0.0, null_y=None, noi
 
 def to_gif(x, path, fps=10):
     """Write a sample grid and return its actual path (PNG for T=1, GIF otherwise)."""
-    import imageio
     x = ((x.clamp(-1, 1) + 1) / 2).cpu().numpy()
     B, C, T, H, W = x.shape
     cols = int(math.ceil(math.sqrt(B))); rows = int(math.ceil(B / cols))
@@ -316,9 +315,13 @@ def to_gif(x, path, fps=10):
         frames.append((np.clip(canvas, 0, 1) * 255).astype(np.uint8))
     if T == 1:                                     # image model: write a PNG grid instead of a 1-frame GIF
         destination = path[:-4] + ".png"
-        imageio.imwrite(destination, frames[0])
+        from PIL import Image
+        Image.fromarray(frames[0]).save(destination)
         return destination
-    imageio.mimsave(path, frames, duration=1000 / fps, loop=0)
+    from PIL import Image
+    images = [Image.fromarray(frame) for frame in frames]
+    images[0].save(path, save_all=True, append_images=images[1:],
+                   duration=round(1000 / fps), loop=0, disposal=2)
     return path
 
 

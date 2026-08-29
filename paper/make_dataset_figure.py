@@ -1,6 +1,7 @@
-"""Build the dataset-anatomy figure directly from a released parquet shard."""
+"""Build the dataset-anatomy figure directly from released frame shards."""
 from __future__ import annotations
 
+import argparse
 import io
 import sys
 from pathlib import Path
@@ -15,14 +16,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from eval.keyframes import select_representative_frames
-from generator.rebuild_from_motion import _body_and_cameras
-from generator.render import render_all
-from generator.skeleton import NAMES, PARENT, project
+from generator.skeleton import NAMES, PARENT
 
 
-SOURCE = ROOT / "data/v1"
-OUT = ROOT / "paper/figs/dataset_anatomy"
-EXAMPLE_MOTION = "dance/a_person_does_the_running_man_dance_s0"
+SOURCE = ROOT / "data/hf/frames"
+OUT = ROOT / "paper/figs/dataset_anatomy_sqlite_pass"
+EXAMPLE_MOTION = "gesture/a_person_waves_goodbye_with_both_hands_s3"
 
 plt.rcParams.update({
     "font.family": "serif",
@@ -95,41 +94,48 @@ def show(ax, image, title=""):
         spine.set_linewidth(0.6); spine.set_edgecolor("#777777")
 
 
-def rerender_view(row, camera, body):
-    xyz = np.frombuffer(row["joint_xyz"], np.float32).reshape(len(NAMES), 3)
-    joints3 = {name: xyz[index] for index, name in enumerate(NAMES)}
-    joints2, joint_depth = project(joints3, camera, body.px_per_m)
-    return on_white(render_all(joints2, joint_depth, body)["color"])
-
-
 def main():
-    dataset = ds.dataset(sorted(SOURCE.glob("*.parquet")), format="parquet")
-    table = dataset.to_table(filter=ds.field("clip_id") == EXAMPLE_MOTION + "/c0")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source", type=Path, default=SOURCE)
+    parser.add_argument("--example-motion", default=EXAMPLE_MOTION)
+    parser.add_argument("--out", type=Path, default=OUT)
+    args = parser.parse_args()
+
+    paths = sorted(args.source.glob("*.parquet"))
+    if not paths:
+        raise FileNotFoundError(f"no released frame shards under {args.source}")
+    dataset = ds.dataset(paths, format="parquet")
+    view_ids = [f"{args.example_motion}/c{camera}" for camera in range(3)]
+    table = dataset.to_table(filter=ds.field("clip_id").isin(view_ids))
     rows = table.to_pylist()
-    if len(rows) != 120:
-        raise RuntimeError(f"expected 120 example frames, found {len(rows)}")
-    motion_id = EXAMPLE_MOTION
-    by_frame = {row["frame_idx"]: row for row in rows}
+    if len(rows) != 360:
+        raise RuntimeError(f"expected 360 rows for three 120-frame views, found {len(rows)}")
+    by_view = {
+        view_id: {row["frame_idx"]: row for row in rows if row["clip_id"] == view_id}
+        for view_id in view_ids
+    }
+    first_rows = {view_id: by_view[view_id][0] for view_id in view_ids}
+    ordered_views = sorted(view_ids, key=lambda view_id: abs(float(first_rows[view_id]["cam_yaw"])))
+    view_names = ("front", "three-quarter", "side")
+    front_rows = by_view[ordered_views[0]]
     joints = np.stack([
-        np.frombuffer(by_frame[f]["joint_xyz"], np.float32).reshape(27, 3) for f in range(120)
+        np.frombuffer(front_rows[f]["joint_xyz"], np.float32).reshape(27, 3) for f in range(120)
     ])
     strip_frames = select_representative_frames(joints, count=5)
     focus_frame = strip_frames[len(strip_frames) // 2]
-    focus = by_frame[focus_frame]
-    body, cameras = _body_and_cameras(motion_id, "", {})
+    focus = front_rows[focus_frame]
 
     fig = plt.figure(figsize=(12.6, 4.1), facecolor="white")
     outer = fig.add_gridspec(2, 2, width_ratios=(0.42, 0.58), height_ratios=(1, 1),
                              left=0.025, right=0.985, top=0.94, bottom=0.04,
                              wspace=0.08, hspace=0.23)
     cams = outer[0, 0].subgridspec(1, 3, wspace=0.08)
-    for camera in range(3):
-        show(fig.add_subplot(cams[0, camera]), rerender_view(focus, cameras[camera], body),
-             f"view {camera + 1}")
+    for column, (view_id, name) in enumerate(zip(ordered_views, view_names)):
+        show(fig.add_subplot(cams[0, column]), on_white(decode(by_view[view_id][focus_frame]["color"])), name)
 
     timeline = outer[0, 1].subgridspec(1, 5, wspace=0.06)
     for column, frame in enumerate(strip_frames):
-        show(fig.add_subplot(timeline[0, column]), on_white(decode(by_frame[frame]["color"])),
+        show(fig.add_subplot(timeline[0, column]), on_white(decode(front_rows[frame]["color"])),
              rf"$t={frame / 20:.1f}\,$s")
 
     labels = outer[1, :].subgridspec(1, 5, wspace=0.06)
@@ -148,10 +154,10 @@ def main():
     fig.text(0.455, 0.965, "(b)", fontsize=9, fontweight="bold")
     fig.text(0.025, 0.49, "(c)", fontsize=9, fontweight="bold")
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT.with_suffix(".pdf"), dpi=300, bbox_inches="tight")
-    fig.savefig(OUT.with_suffix(".png"), dpi=180, bbox_inches="tight")
-    print(OUT.with_suffix(".pdf"))
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(args.out.with_suffix(".pdf"), dpi=300, bbox_inches="tight")
+    fig.savefig(args.out.with_suffix(".png"), dpi=180, bbox_inches="tight")
+    print(args.out.with_suffix(".pdf"))
 
 
 if __name__ == "__main__":

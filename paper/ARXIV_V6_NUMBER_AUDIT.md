@@ -1,0 +1,193 @@
+# arXiv v6 numeric audit
+
+- Manuscript: `paper/dataset_paper_v6.tex`
+- Manuscript SHA-256: `5ba98d75c3cb05ef4c84ac6ef063d54899b0dc9c299f69d3df2b1b35263f6f9c`
+- Numeric tokens extracted: **568**
+- Evidence assertions passed: **107**
+- Superseded 10k learned-model rows: **absent**
+- Reference convention: Table real row is half B; learned-row FVD uses half A; codec control is B reconstructed vs A.
+
+## Verified checks
+
+- PASS — No superseded 10k model row remains
+- PASS — Final title is present
+- PASS — Dataset count token 134 is present
+- PASS — Dataset count token 1,340 is present
+- PASS — Dataset count token 4,020 is present
+- PASS — Dataset count token 482,400 is present
+- PASS — Palette audit uses one frame for each of 4,020 clips
+- PASS — Palette assigned fraction matches evidence
+- PASS — Palette assigned-pixel accuracy matches evidence
+- PASS — Palette macro IoU matches evidence
+- PASS — Controlled structural study has n=500
+- PASS — Structural-corruption value .063 matches evidence
+- PASS — Structural-corruption value .266 matches evidence
+- PASS — Structural-corruption value .176 matches evidence
+- PASS — Structural-corruption value .261 matches evidence
+- PASS — 64-frame diagnostic control protocol is n=128, stride 1
+- PASS — Real-reference centroid_speed .373 matches evidence
+- PASS — Real-reference centroid_accel .415 matches evidence
+- PASS — Real-reference motion_fraction .501 matches evidence
+- PASS — Real-reference angle_jerk .073 matches evidence
+- PASS — FVD real_reference_b 114.7 matches evidence
+- PASS — FVD repeat_first 620.8 matches evidence
+- PASS — FVD shuffle_frames 520.7 matches evidence
+- PASS — FVD reverse_time 120.1 matches evidence
+- PASS — FVD loop_first_8 418.2 matches evidence
+- PASS — FVD train_replay 125.5 matches evidence
+- PASS — Reverse uncertainty uses 30 resamples
+- PASS — Reverse uncertainty 5.24 matches evidence
+- PASS — Reverse uncertainty 5.24 matches evidence
+- PASS — Reverse uncertainty -5.76 matches evidence
+- PASS — Reverse uncertainty 15.74 matches evidence
+- PASS — Reverse positive-resample count is 25/30
+- PASS — Localization study n=24 is stated
+- PASS — Localization severity 0.25 value 1.51 matches
+- PASS — Localization severity 0.5 value 4.69 matches
+- PASS — Localization severity 0.75 value 8.61 matches
+- PASS — Localization severity 1.0 value 9.11 matches
+- PASS — Prompt-FVD value 26.37 matches evidence
+- PASS — Prompt-FVD value 23.72 matches evidence
+- PASS — Prompt-FVD value 30.13 matches evidence
+- PASS — Prompt-FVD value 24.61 matches evidence
+- PASS — Prompt-FVD value 21.39 matches evidence
+- PASS — Prompt-FVD value 28.03 matches evidence
+- PASS — Prompt-FVD value 47.82 matches evidence
+- PASS — Prompt-FVD value 39.51 matches evidence
+- PASS — Prompt-FVD value 57.32 matches evidence
+- PASS — I3D feature value 24.21 matches evidence
+- PASS — I3D feature value 32.82 matches evidence
+- PASS — I3D feature value 29.09 matches evidence
+- PASS — I3D feature value 27.52 matches evidence
+- PASS — I3D feature value 28.46 matches evidence
+- PASS — I3D feature value 9.34 matches evidence
+- PASS — I3D same-prompt comparison rate 80.4% matches
+- PASS — Single-frame Image DiT was rerun at step 30k, n=512, 50 steps, 134 prompts
+- PASS — Single-frame table value .113 matches fresh rerun
+- PASS — Single-frame table value .092 matches fresh rerun
+- PASS — Single-frame table value .039 matches fresh rerun
+- PASS — Single-frame table value .128 matches fresh rerun
+- PASS — Single-frame table value .051 matches fresh rerun
+- PASS — Single-frame table value .030 matches fresh rerun
+- PASS — codec table value .153 matches evidence
+- PASS — codec table value .118 matches evidence
+- PASS — codec table value .053 matches evidence
+- PASS — codec table value .383 matches evidence
+- PASS — codec table value .507 matches evidence
+- PASS — codec table value .106 matches evidence
+- PASS — codec table value 127.1 matches evidence
+- PASS — factorized image canonical protocol metadata matches
+- PASS — factorized image table value .161 matches evidence
+- PASS — factorized image table value .033 matches evidence
+- PASS — factorized image table value .028 matches evidence
+- PASS — factorized image table value .350 matches evidence
+- PASS — factorized image table value .447 matches evidence
+- PASS — factorized image table value .151 matches evidence
+- PASS — factorized image table value 319.0 matches evidence
+- PASS — factorized random canonical protocol metadata matches
+- PASS — factorized random table value .259 matches evidence
+- PASS — factorized random table value .042 matches evidence
+- PASS — factorized random table value .032 matches evidence
+- PASS — factorized random table value .366 matches evidence
+- PASS — factorized random table value .431 matches evidence
+- PASS — factorized random table value .172 matches evidence
+- PASS — factorized random table value 483.7 matches evidence
+- PASS — local mixer canonical protocol metadata matches
+- PASS — local mixer table value .149 matches evidence
+- PASS — local mixer table value .050 matches evidence
+- PASS — local mixer table value .035 matches evidence
+- PASS — local mixer table value .355 matches evidence
+- PASS — local mixer table value .470 matches evidence
+- PASS — local mixer table value .146 matches evidence
+- PASS — local mixer table value 282.9 matches evidence
+- PASS — Mini-Wan canonical protocol metadata matches
+- PASS — Mini-Wan table value .199 matches evidence
+- PASS — Mini-Wan table value .101 matches evidence
+- PASS — Mini-Wan table value .058 matches evidence
+- PASS — Mini-Wan table value .423 matches evidence
+- PASS — Mini-Wan table value .534 matches evidence
+- PASS — Mini-Wan table value .148 matches evidence
+- PASS — Mini-Wan table value 182.6 matches evidence
+- PASS — Codec memorization gap 9.5% matches
+- PASS — Codec background-neutralization factor 5.5x matches
+- PASS — Full 128px rebuild audit passed all 514,800 rows
+- PASS — Rebuild agreement 99.88% matches evidence
+- PASS — Rebuild agreement 99.92% matches evidence
+- PASS — Rebuild agreement 99.50% matches evidence
+- PASS — 30k updates at effective batch 16 equal 480k examples and 37.3 loader epochs
+- PASS — Table discloses the reference-half convention
+
+## Evidence hashes
+
+- `paper/results/codec_floor_f4t4d8_64f_n128.json` — `1774ef51686b7c12de4cd59b8061f03d4135de0fa43735e99fbce01de88af7a1`
+- `paper/results/colab_v02_t4.json` — `7d4feeedfe3603e6f51fd8e598326dafe4c6a3c94296fa9cdf363347014859f8`
+- `paper/results/corruption_500.json` — `5ef4c39fac67909cd7e16b0614eea1b1b063e997d79d9ca7191cbe739fcdea9f`
+- `paper/results/dataset_characterization_v02.json` — `863d9a7225059f2494de7cd31c6273dad3f92d7c767b942791c237483ea1f41c`
+- `paper/results/degenerate_120f_n128.json` — `be9e073477cbdf9f6a350857677c50a0ae7a0cf0cbcde318eecfb03bb7e516dc`
+- `paper/results/degenerate_40f_n128.json` — `ebc7a3b5d02535b8ba7193f7f7aa596e515a05615cf3dad5f1a509f2768b875b`
+- `paper/results/degenerate_50f_n128.json` — `6eabc014fb0cb4fbb19e2512fe82eb442a757e0fa76ff374941a3d5fe14486e1`
+- `paper/results/degenerate_64f_n128.json` — `6430582514e37e6f6cc2cc8ce3aab0d0baf5d6b638c8943b4c482c9251d88d19`
+- `paper/results/dit120_native_protocol.json` — `5a4dea27247ac3278f968156a8f41f5de0629752f0333bab9d5e6bc982b39002`
+- `paper/results/dit60_extension_protocol.json` — `8e416df95678d5a67fa5004e1d4b47dfd24d366854a81615284847316538a066`
+- `paper/results/eval_a64_final.json` — `9a61eedc7cb1ba3e2b235d693a970bc4e3816fe33c8a235b7f7c93da22458b74`
+- `paper/results/eval_a64i_final.json` — `08787703cfceb1f7a677940ca4c58f1c808046c0c3b545b3a92084761c998270`
+- `paper/results/fvd_120f_reverse_uncertainty.json` — `7f5bc335e582e09d4dd3fe51375bb936f7393d17f7264366055764884ab7e05b`
+- `paper/results/fvd_50f_n128.json` — `3928a93aa7510a9d0f3181459e4ae743640a959902bc57f664e360c11d58d070`
+- `paper/results/fvd_64f_n128.json` — `a40d67095147e985bbf46576d9631efb09a80e68dd9eb118224197b00b6e6de2`
+- `paper/results/fvd_64f_reverse_uncertainty.json` — `4cac0773d53760d3dc170a2219b1e8ff440ed6c2f51c1501c63a336805ecb418`
+- `paper/results/fvd_prompt_seed_validation_64f_v02.json` — `4494ddef8780eb9e6a18b1508a140fb1a151c36e069c50a12ad6e07d8430313e`
+- `paper/results/fvd_prompt_seed_validation_v02.json` — `0faec7271931d6cc7c4432b2fa0e397eb4c27bcfb20a1277c2f400d6b3ae82a9`
+- `paper/results/fvd_reverse_subsets_n64.json` — `ae132e563b187147f6ab93b567ad59deaf3f1dca39ced51ffb1528a7745c0c28`
+- `paper/results/i3d_embedding_validation_120f_v02c.json` — `16a0b0cc34b0d4107ff3a3dbe0f1e072d679d53c63ae75ecee5808d37575f780`
+- `paper/results/i3d_embedding_validation_50f_pilot.json` — `bc9918e6c1084c77622e135494d094a3dc45324dd4dd51c1893b7268689981de`
+- `paper/results/i3d_embedding_validation_64f_v02c.json` — `6bf77721267f0b42e3faf3bbb2e4b5ede833b4c98df4bd151cc6ffd5618c7dd3`
+- `paper/results/i3d_fvd_onion_skin.json` — `9f956b24e43a5fba35190d77453ea8cea37480f236917bf8df307a811be045fd`
+- `paper/results/ia64L_scores.json` — `69f7aa8c028cc03e73a5caac91518ea5617281f59d822206cebc3d8c5c1974c4`
+- `paper/results/ib64L_scores.json` — `e88d74126cda507f84d2a9e6eb2c2fd1d551786f9257cc376273964f50922b25`
+- `paper/results/image_dit_30k_n512.json` — `5fae091db3019ded7fffdabc4e55631eddbcd7a37a7326667351d2e8d77ff7de`
+- `paper/results/initialization_contrast_50step.json` — `eaa689dab6a2e53739fb4bb1bf6ac04c870193d808356517b1ed3828f193ba6d`
+- `paper/results/m6_h8_milestones_n64.json` — `1b8038bf6d30027113862592f2b81992c33d6cafe8591a109632f0c21b9f8db9`
+- `paper/results/m6v9p3_flagship_warmup_100k_s0_010000.json` — `6fe88b7b4fd7cab13bc94fef271457f467e4bcedb6b686cd1693fe966c1224cf`
+- `paper/results/m6v9p3_flagship_warmup_100k_s0_040000.json` — `69eed3a05f80dfd19096c87f6666b185e60294b7b933d66ab0ea373bbcf9c46f`
+- `paper/results/m6v9p3_flagship_warmup_100k_s0_100000.json` — `24b105ea98ea699f40010c9cf23f8e02a12804d238fe35f67035ae646158073c`
+- `paper/results/metric_horizon_64_vs_120.json` — `59c0f2dde672f1361f59f0b22f3cfa97d88f6f17682f379e66d920ec9427589a`
+- `paper/results/native120_manifest_seedsplit.json` — `b2f9359e6effefb2bf354e92799348988e444f69548377953bf35280afed05b7`
+- `paper/results/neighbor_temporal_gate_protocol.json` — `3388f4c3bba9f3b1eacb88915b834fc0e94be59ffbbbed597fc18da65d0aadc8`
+- `paper/results/notebook_v02_4090_completion.json` — `ecc656db77b01bd972fe2f671c85c328587c45cf571cb89908d3871e454a9955`
+- `paper/results/palette_mask_validation_v02.json` — `fdd93789f5070e069f8e4ddad4bce2c8f4876e12402dacdee863ffd4e0981fe9`
+- `paper/results/part_feature_distance_n128.json` — `7a355eafe37df862a56b1f8d45573838c14a60e6e78b3251bbb50e09c2c8d33b`
+- `paper/results/part_motion_localization_v02_n24.json` — `0f4e65295e6defbd171d3a767c858082d5fe876ffaf08d6dcbb40678bb25a2e3`
+- `paper/results/pixel_factorised_image30k_args.json` — `40f4ecbc5c316d0d1d4580ad17553eadad6dfd343558e6652fdfd0cb513e6f55`
+- `paper/results/pixel_factorised_image30k_win64_n128.json` — `c75ef54f26acac4154b23c1ce272204fb25c026229c04ceb55341f7b8c11fac7`
+- `paper/results/pixel_factorised_random30k_args.json` — `5250ebf464c6e87516b0890ce8726708ab3dcb4da6d4612d642b888b39bda2b1`
+- `paper/results/pixel_factorised_random30k_win64_n128.json` — `55114d60152a347318787ddc892c53dc551fe52f851743f1538db0677084d292`
+- `paper/results/pixel_localmixer_image30k_win64_n128.json` — `ad12d5b712915dc66ec33d57f850428b9d4a1cd9dad6c908b0bb007b0c0f91a4`
+- `paper/results/rebuild_full_frames_v2.json` — `d28fd40b299477978d1a0545305d41d36228b48ec51b89512d0965b6664b3539`
+- `paper/results/rebuild_full_mini_v2.json` — `bd781d536dea7c80b550c5c326b3c537af47d517b770c45c5c2407f45bab794e`
+- `paper/results/reference_50f_s2_n128.json` — `0cbdeb7daa4ab0ce4504871d38fadb341fb207fecec1d1c34bf87e31f62642d8`
+- `paper/results/rigspace_flagship_s0_010000.json` — `fc4520daacf478f0f9d6f72e2871cc71a56d6d38a5ed31d98753f7dc770b270c`
+- `paper/results/rigspace_flagship_s0_040000.json` — `892e1c55c6d6fdc58c75ce6f3cec5649b999b046cab992fed761f306102bdb4a`
+- `paper/results/rigspace_flagship_s0_100000.json` — `9e6fa973d5eb35e098f3c9258994c40200fff2938a037026754ceffe2e10ca91`
+- `paper/results/rigspace_v8_100k.json` — `069957ebc513b1e978cf03f7ec40b7494bf83feff89e5dd8a9c5f4cfc654725f`
+- `paper/results/rigspace_v8_10k.json` — `c79dc8316570ae0ebab0e569fc44701f8f6d542c1ef149cad516e57c75dede50`
+- `paper/results/rigspace_v9conv_100k.json` — `9d0fb3a962f57c75186e2e13d322acfcae85312ecce6195ff61095c2033ab7a4`
+- `paper/results/rigspace_v9rigcogen_10k.json` — `a6c40191acf6954f33249713f7cea966f8e8195dad3f444860db7f25895d247e`
+- `paper/results/score_ia128.json` — `8ab7432c0b3878dd0fbc2d53cc0b1efd078c9b30bcb5e587f6fbca9cef0889ab`
+- `paper/results/score_ia64.json` — `93436673b3f7c15c3c3d1690323eab73216dbd0c631548700df64db1d848d584`
+- `paper/results/score_ia64L.json` — `c0420fc5cbe1a5055574fd19e90010309341a5fc54ab96ce0d9893f285b2696c`
+- `paper/results/score_ib128.json` — `0fe91fbdccae3a08d7812638d3779abe2b8c6c090ba6a8f1de80e99480218cc0`
+- `paper/results/score_ib64.json` — `ba550b79a189462d419b333946b2a9a2ec41004594b3497e409d40298f8d6b99`
+- `paper/results/score_ib64L.json` — `e111722e7857524d3c510af41422275df14d98dbc2d2eea5d3e3e7bfe46a0a1f`
+- `paper/results/sre_v1_validation_corruptions.json` — `d3caeee05e406e9a2643c2318928ff6009ed91594fa20a9e154715cf971d9fde`
+- `paper/results/sre_v1_validation_corruptions_v2.json` — `d9d6a72824248d193428679b9737157284b370cfac23a95123bfc4bc310c06f5`
+- `paper/results/sre_v1_validation_test.json` — `92e138a2e9acbe8c8004a633ab2a72eaf620c1ebe09559a953849ce9fcc5f8fd`
+- `paper/results/sre_v1_validation_val.json` — `3b7b51137c6908acb402dce566fca59b56be8622181e5fed2eae794784aad166`
+- `paper/results/topology_metric_examples.json` — `1102fc6409b1a76763ef8fdea0cdb8c324045a7ce64661e23966cbfc210794f7`
+- `paper/results/unet_native120_v02.json` — `30789a88afebd4181c03f3b59e814711aaa4b2e6d4ff3b6feb98e36bd3e7677e`
+- `paper/results/unet_prompt_suite_legible_v02.json` — `a8bf2b0d0ca5c4410399c9222ff7ab08ed9adf477519633e2c0f929dcaa1916b`
+- `paper/results/vae_f4_memorization.json` — `46b12ba39d2c6e03191ae522e7ea5ed82596de5b8e276a265e0a82145551a38c`
+- `paper/results/wanmini40_10k_win64_n128.json` — `3a190516c8df8ccd8316f16d1ffcceb95698927466b8790db346fa484dfcd84b`
+- `paper/results/wanmini40_decode_10k_win64_n128.json` — `2d2c60318539dcfc063a4aabe0ddbdfba176d2b354ceead1bdfa807bb950b469`
+- `paper/results/wanmini40_decode_30k_win64_n128.json` — `60c3491ebd66c318b3bdd1900fae31b329c379039d154c457a7b08d9c3575e47`
+- `paper/results/win40_manifest_seedsplit.json` — `e3bcac088ee57c90deacf40282035ad4f849915e637614e0924b27f1aae2568d`
+- `paper/results/win64_manifest.json` — `1b32153fdf51193ee564904886ab9f298a58aa109792f79b39acd14e0442106a`
